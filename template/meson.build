@@ -19,6 +19,7 @@ subdir('src')
 executable(
   'template',
   sources,
+  include_directories: include_directories('include'),
   cpp_args: extra_args,
   dependencies: argparse_dep,
 )

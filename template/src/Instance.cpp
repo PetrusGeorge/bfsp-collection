@@ -3,16 +3,16 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 
-
-Instance::Instance(const std::filesystem::path& path){
+Instance::Instance(const std::filesystem::path &path) {
 
     std::ifstream file(path);
 
-    if(!file){
+    if (!file) {
         throw std::runtime_error("Could not read file");
     }
 
@@ -23,10 +23,10 @@ Instance::Instance(const std::filesystem::path& path){
     getline(file, current_line);
     m_num_machines = std::stoull(current_line);
 
-    matrix.reserve(m_num_jobs);
-    while(getline(file, current_line)){
+    m_matrix.reserve(m_num_jobs);
+    while (getline(file, current_line)) {
         std::istringstream iss(current_line);
-        std::stringstream ss(current_line);
+
         size_t number = std::numeric_limits<size_t>::max();
 
         std::vector<double> temporary;
@@ -39,10 +39,10 @@ Instance::Instance(const std::filesystem::path& path){
         if (temporary.size() != m_num_machines) {
             throw std::runtime_error("Wrong number of machines on instance");
         }
-        matrix.emplace_back(std::move(temporary));
+        m_matrix.emplace_back(std::move(temporary));
     }
 
-    if (matrix.size() != m_num_jobs || !file.eof()) {
+    if (m_matrix.size() != m_num_jobs || !file.eof()) {
         throw std::runtime_error("Wrong number of jobs on instance");
     }
 }

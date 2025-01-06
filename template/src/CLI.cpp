@@ -2,7 +2,7 @@
 
 #include "argparse/argparse.hpp"
 
-void Parse(argparse::ArgumentParser &cli, int argc, char **argv) {
+void parse(argparse::ArgumentParser &cli, int argc, char **argv) {
 
     cli.add_argument("instance").help("Instance path");
 

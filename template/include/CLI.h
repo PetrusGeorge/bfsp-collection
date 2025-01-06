@@ -3,6 +3,6 @@
 
 #include "argparse/argparse.hpp"
 
-void Parse(argparse::ArgumentParser &cli, int argc, char **argv);
+void parse(argparse::ArgumentParser &cli, int argc, char **argv);
 
 #endif
