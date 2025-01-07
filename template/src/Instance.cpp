@@ -29,7 +29,7 @@ Instance::Instance(const std::filesystem::path &path) {
 
         size_t number = std::numeric_limits<size_t>::max();
 
-        std::vector<double> temporary;
+        std::vector<size_t> temporary;
         temporary.reserve(m_num_machines);
 
         while (iss >> number) {

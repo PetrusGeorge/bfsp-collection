@@ -1,1 +1,1 @@
-sources = files('CLI.cpp', 'Instance.cpp', 'main.cpp')
+sources = files('Instance.cpp', 'Parameters.cpp', 'main.cpp')

@@ -1,27 +1,30 @@
 #include <cstdlib>
+#include <iostream>
+#include <stdexcept>
 
-#include "argparse/argparse.hpp"
-
-#include "CLI.h"
 #include "Instance.h"
 #include "Log.h"
+#include "Parameters.h"
+#include "RNG.h"
 
 int main(int argc, char *argv[]) {
 
-    argparse::ArgumentParser cli("template", "1.0", argparse::default_arguments::help);
-    parse(cli, argc, argv);
-
-    const bool verbose = cli.get<bool>("-v");
-
+    Parameters params(argc, argv);
     try {
-        const Instance instance(cli.get<std::string>("instance"));
-    } catch (const std::runtime_error &err) {
-        std::cout << err.what() << '\n';
+        Instance instance(params.instance_path());
+    } catch (std::runtime_error &err) {
+        std::cerr << err.what() << '\n';
         exit(EXIT_FAILURE);
     }
 
-    DEBUG_EXTRA << "Showing normal debug macro";
-    DEBUG_EXTRA << "Showing extra debug macro";
+    if (auto seed = params.seed()) {
+        RNG::instance().set_seed(*seed);
+    }
 
-    VERBOSE(verbose) << "Showing verbose macro";
+    std::cout << "Seed: " << RNG::instance().seed() << '\n';
+
+    DEBUG << "Showing normal debug macro\n";
+    DEBUG_EXTRA << "Showing extra debug macro\n";
+
+    VERBOSE(params.verbose()) << "Showing verbose macro\n";
 }
