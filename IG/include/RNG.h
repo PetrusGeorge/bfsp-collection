@@ -21,7 +21,7 @@ class RNG {
     void set_seed(size_t seed) { m_seed = seed; }
 
     // If any more functions are needed make them here on this class
-    template <typename T> T generate(T min, T max) const {
+    template <typename T> T generate(T min, T max) {
         static_assert(std::is_integral_v<T>, "must be an integer type");
         std::uniform_int_distribution<T> dis(min, max);
         return dis(m_gen);

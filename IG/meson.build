@@ -8,9 +8,10 @@ project(
     'b_ndebug=if-release',
     'b_lto=true',
   ],
+  license: 'MIT',
 )
 
-argparse_dep = dependency('argparse')
+argparse_dep = subproject('argparse').get_variable('argparse_dep')
 
 extra_args = ['-march=native']
 
