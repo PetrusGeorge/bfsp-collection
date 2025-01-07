@@ -16,11 +16,12 @@ class RNG {
         return instance;
     }
 
-    const std::mt19937 &gen() { return m_gen; }
-    void set_seed(unsigned int seed) { m_gen.seed(seed); }
+    const std::mt19937 &gen() const { return m_gen; }
+    size_t seed() const { return m_seed; }
+    void set_seed(size_t seed) { m_seed = seed; }
 
     // If any more functions are needed make them here on this class
-    template <typename T> T generate(T min, T max) {
+    template <typename T> T generate(T min, T max) const {
         static_assert(std::is_integral_v<T>, "must be an integer type");
         std::uniform_int_distribution<T> dis(min, max);
         return dis(m_gen);
@@ -29,8 +30,9 @@ class RNG {
   private:
     RNG() {}
 
-    // Random seed if no seed is setted
-    std::mt19937 m_gen{std::random_device{}()};
+    // Random seed if no seed is set
+    size_t m_seed = std::random_device{}();
+    std::mt19937 m_gen{m_seed};
 };
 
 #endif

@@ -1,1 +1,1 @@
-sources = files('Parameters.cpp', 'IG.cpp', 'Instance.cpp', 'main.cpp')
+sources = files('IG.cpp', 'Instance.cpp', 'Parameters.cpp', 'main.cpp')
