@@ -6,7 +6,7 @@ project(
     'buildtype=release',
     'warning_level=3',
     'b_ndebug=if-release',
-    'b_lto=true',
+    'b_lto=false',
   ],
   license: 'MIT',
 )

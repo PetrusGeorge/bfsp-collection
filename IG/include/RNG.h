@@ -28,7 +28,7 @@ class RNG {
     }
 
   private:
-    RNG() {}
+    RNG() = default;
 
     // Random seed if no seed is set
     size_t m_seed = std::random_device{}();
