@@ -8,6 +8,7 @@
 #include <functional>
 #include <iostream>
 #include <limits>
+#include <ostream>
 #include <vector>
 
 #include "Instance.h"
@@ -162,9 +163,10 @@ std::vector<size_t> IG::min_max(bool jobs_reversed) {
             first_node = i;
         }
     }
-    // HACK: this is not pretty
+
     size_t last_node = 0;
-    if (first_node == 0) {
+    if (first_node == last_node) {
+        // Avoid first_node being equal to last_node in case 0 is best in both cases
         last_node = 1;
     }
     for (size_t i = 1; i < m_instance.num_jobs(); i++) {
@@ -175,7 +177,6 @@ std::vector<size_t> IG::min_max(bool jobs_reversed) {
             last_node = i;
         }
     }
-    assert(first_node != last_node);
 
     // Put the remaining nodes in a vector
     std::vector<size_t> cl;
@@ -255,7 +256,7 @@ Solution IG::initial_solution() {
     Solution best;
 
     Solution normal = neh(min_max());
-    recalculate_solution(normal); // Maybe remove this if departure times are not needed for later
+    recalculate_solution(normal);
 
     Solution jobs_reversed = neh(min_max(true), true);
     std::reverse(jobs_reversed.sequence.begin(), jobs_reversed.sequence.end());
@@ -270,7 +271,7 @@ Solution IG::solve() {
 
     VERBOSE(m_params.verbose()) << "Initial solution started\n";
     Solution current = initial_solution();
-    m_best = current;
+    Solution best = current;
     VERBOSE(m_params.verbose()) << "Initial solution finished, solution obtained:\n";
     VERBOSE(m_params.verbose()) << current;
 
@@ -278,14 +279,17 @@ Solution IG::solve() {
     std::cout << "Time limit: " << time_limit << "s\n";
     size_t timer_counter = 1;
 
-
-    while (uptime() < time_limit) {
+    while (true) {
         Solution incumbent = local_search(current);
 
-        if (incumbent.cost < m_best.cost) {
+        //  Program should not accept any solution if the time is out
+        if (uptime() > time_limit) {
+            break;
+        }
+        if (incumbent.cost < best.cost) {
             VERBOSE(m_params.verbose()) << "Local search has found a new best\n";
             VERBOSE(m_params.verbose()) << incumbent;
-            m_best = current = std::move(incumbent);
+            best = current = std::move(incumbent);
         }
         // If the solution is worse than the best it's accepted 50% of the times
         else if (RNG::instance().generate(0, 1) == 1) {
@@ -295,19 +299,23 @@ Solution IG::solve() {
         std::vector<size_t> removed = destroy(current);
         neh_second_step(std::move(removed), current); // Construct phase
 
-        if (current.cost < m_best.cost) {
+        if (uptime() > time_limit) {
+            break;
+        }
+        if (current.cost < best.cost) {
             VERBOSE(m_params.verbose()) << "Destroy and construct has found a new best";
             VERBOSE(m_params.verbose()) << current;
-            m_best = current;
+            best = current;
         }
 
-        if(uptime() > timer_counter*(time_limit/20)){ // Get progress of program
-            std::cout << timer_counter*(time_limit/20) << " Seconds out of " << time_limit << '\n';
+        // Get progress of program
+        if (uptime() > timer_counter * (time_limit / 20)) {
+            std::cout << timer_counter * (time_limit / 20) << " Seconds out of " << time_limit << '\n';
             timer_counter++;
         }
     }
 
-    return std::move(m_best);
+    return best;
 }
 
 bool IG::swap_first_improvement(Solution &s) {
@@ -332,7 +340,10 @@ bool IG::swap_first_improvement(Solution &s) {
 }
 
 Solution IG::local_search(Solution s) {
-    while (swap_first_improvement(s)) {
+    while (true) {
+        if (!swap_first_improvement(s)) {
+            break;
+        }
     }
     return s;
 }
@@ -346,7 +357,7 @@ std::vector<size_t> IG::destroy(Solution &s) {
     removed.reserve(destroy_size);
     // Random remove d nodes
     for (size_t i = 0; i < destroy_size; i++) {
-        const long chose = RNG::instance().generate<long>(0, (long)s.sequence.size() - 1);
+        const long chose = RNG::instance().generate<long>(0, ((long)s.sequence.size()) - 1);
         removed.push_back(s.sequence[chose]);
         s.sequence.erase(s.sequence.begin() + chose);
     }

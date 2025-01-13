@@ -16,13 +16,16 @@ Instance::Instance(const std::filesystem::path &path) {
         throw std::runtime_error("Could not read file");
     }
 
+    // Read number of jobs
     std::string current_line;
     getline(file, current_line);
     m_num_jobs = std::stoull(current_line);
 
+    // Read number of machines
     getline(file, current_line);
     m_num_machines = std::stoull(current_line);
 
+    // Read the main matrix
     m_matrix.reserve(m_num_jobs);
     while (getline(file, current_line)) {
         std::istringstream iss(current_line);
