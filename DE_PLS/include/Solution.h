@@ -5,11 +5,29 @@
 #include <ostream>
 #include <vector>
 
+struct Chromosome {
+    double ds;  // destruction size
+    double ps;  // perturbation strength
+    double tau; // temperature adjustment parameter
+    double jP;  // algorithm jumping probability
+
+    std::vector<size_t> permutation;
+
+    Chromosome(double ds = 5.0, double ps = 2.5, double tau = 0.5, double jp = 0.5)
+        : ds(ds), ps(ps), tau(tau), jP(jp) {}
+};
+
 struct Solution {
     size_t cost = std::numeric_limits<size_t>::max();
     std::vector<size_t> sequence;
     std::vector<std::vector<size_t>> departure_times;
 };
+
+struct Individual {
+    Chromosome chrom;
+    Solution sol;
+};
+
 
 inline std::ostream &operator<<(std::ostream &os, const Solution &sol) {
 
