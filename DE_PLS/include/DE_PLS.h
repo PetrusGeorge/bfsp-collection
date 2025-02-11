@@ -14,7 +14,8 @@ class DE_PLS{
         Solution PF(Solution &sol);
         Solution createSolutionFromInstance(const Instance &instance);
 
-        Solution PF_NEH(int);
+        // PF_NEH: gera x sequências candidatas e melhora os últimos δ jobs de cada uma
+        Solution PF_NEH(int x, int delta);
         Solution GRASP_NEH(int gamma, int x);
         
     private:

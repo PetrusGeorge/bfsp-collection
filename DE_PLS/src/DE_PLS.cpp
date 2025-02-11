@@ -96,7 +96,9 @@ Solution DE_PLS::PF(Solution &sol) {
     size_t m = processing_times[0].size();        // número de máquinas
 
     // Passo 1: Ordena os jobs usando a regra STPT.
-    STPT_Sort(sol);
+    if (sol.sequence.empty()) {
+        STPT_Sort(sol);
+    }
 
     // Vetores auxiliares para indicar os jobs já agendados e armazenar a nova sequência.
     std::vector<bool> scheduled(n, false);
@@ -157,35 +159,98 @@ Solution DE_PLS::PF(Solution &sol) {
     return sol;
 }
 
-// Solution DE_PLS::PF_NEH(int x){
-//     // sort the jobs with STPT rule
 
-//     for(int h = 0; h < x; h++){
-//         // take pi_h as the first job
+//-------------------------------------------------------------------
+// PF_NEH(x, delta):
+// - x: número de sequências candidatas a serem geradas.
+// - delta: número de jobs do final da sequência que serão reavaliados (reinseridos).
+//
+// O procedimento é:
+// 1. Ordenar os jobs com a regra STPT (já feito por STPT_Sort).
+// 2. Para h = 1 a x:
+//     - Forçar o h-ésimo job da ordem STPT como primeiro job da sequência.
+//     - Gerar a sequência completa chamando PF (que, se a sequência já estiver definida, não a reordena).
+//     - Para i = n - δ + 1 até n, remover o job π_i e testá-lo em todas as posições para encontrar
+//       a inserção que produz o menor makespan.
+// 3. Retornar a sequência com o menor makespan dentre as x candidatas.
 
-//         // generate a sequence pi = {pi_1, pi_2, ..., pi_n} by PF
+Solution DE_PLS::PF_NEH(int x, int delta) {
+    size_t nJobs = processing_times.size();
+    size_t m = processing_times[0].size();
 
-//         // denote it by pi^h = {pi_1, pi_2, ..., pi_n}
+    // Cria o vetor de índices (0, 1, ..., nJobs-1) e ordena com a regra STPT.
+    std::vector<size_t> sortedJobs(nJobs);
+    std::iota(sortedJobs.begin(), sortedJobs.end(), 0);
+    // Reutiliza sua função STPT_Sort – como ela age sobre uma Solution,
+    // criamos uma solução temporária e a usamos apenas para obter a ordem.
+    Solution tempSol;
+    tempSol.sequence = sortedJobs;  // Inicialmente, a sequência é a ordem natural
+    // Aqui, supondo que STPT_Sort ordene in-place (você já tem essa função implementada)
+    STPT_Sort(tempSol);
+    sortedJobs = tempSol.sequence;  // Agora, sortedJobs contém os índices ordenados pelo tempo total
 
+    // Vetor para armazenar as soluções candidatas geradas.
+    std::vector<Solution> candidateSolutions;
 
-//         int delta = 20; 
+    // Para cada candidato de primeiro job (h = 0 até x-1)
+    for (int h = 0; h < x && h < static_cast<int>(sortedJobs.size()); h++) {
+        // Cria uma solução candidata: comece com a ordem STPT
+        Solution candSol;
+        candSol.sequence = sortedJobs;  
+        // Força que o primeiro job seja o h-ésimo (ou seja, troca o job da posição 0 com o da posição h)
+        std::swap(candSol.sequence[0], candSol.sequence[h]);
 
-//         // n is the number of jobs
-//         int n;
+        // Chama PF para gerar a sequência completa.
+        // Como PF verifica se a sequência já não está vazia, ela usará a sequência que você definiu.
+        candSol = PF(candSol);
 
-//         for(int i = n - delta + 1; i < n){
-//             // remove job pi_i from pi^h
+        // --- Melhoria local: reinserção dos últimos delta jobs ---
+        // Se delta for maior que o número de jobs, usa todos.
+        size_t startIndex = (delta > static_cast<int>(candSol.sequence.size()))
+                                ? 0 
+                                : candSol.sequence.size() - delta;
+        // Para cada posição na região final da sequência:
+        for (size_t pos = startIndex; pos < candSol.sequence.size(); pos++) {
+            size_t job = candSol.sequence[pos];
+            // Remove o job da posição pos.
+            std::vector<size_t> tempSeq = candSol.sequence;
+            tempSeq.erase(tempSeq.begin() + pos);
 
-//             // test it in all positions in pi^h
+            size_t bestCmax = std::numeric_limits<size_t>::max();
+            std::vector<size_t> bestSeq;
+            // Testa inserir o job em todas as posições possíveis.
+            for (size_t j = 0; j <= tempSeq.size(); j++) {
+                std::vector<size_t> candidateSeq = tempSeq;
+                candidateSeq.insert(candidateSeq.begin() + j, job);
+                // Avalia a sequência: calcula os departure times e o makespan
+                auto dCandidate = computeDepartureTimes(candidateSeq, processing_times);
+                size_t candidateCmax = dCandidate.back()[m]; // makespan é o último valor da última máquina
+                if (candidateCmax < bestCmax) {
+                    bestCmax = candidateCmax;
+                    bestSeq = candidateSeq;
+                }
+            }
+            // Atualiza a sequência candidata com a melhor inserção encontrada.
+            candSol.sequence = bestSeq;
+        }
+        // Recalcula os departure times e o custo (makespan) da solução candidata.
+        auto dFinal = computeDepartureTimes(candSol.sequence, processing_times);
+        candSol.departure_times = dFinal;
+        candSol.cost = dFinal.back()[m];
 
-//             // insert pi_i in pi^h with the lowest makespan
-//         }
+        candidateSolutions.push_back(candSol);
+    }
 
-//         // generate a sequence pi^h 
-//     }
+    // Seleciona a melhor solução dentre as candidatas (a de menor makespan).
+    Solution bestSolution = candidateSolutions.front();
+    for (const auto &solCand : candidateSolutions) {
+        if (solCand.cost < bestSolution.cost)
+            bestSolution = solCand;
+    }
 
-//     // return pi = min Cmax{pi^1, pi^2, ..., pi^x}   
-// }
+    return bestSolution;
+}
+
 
 // Solution DE_PLS::GRASP_NEH(int gamma, int x){
 //     // sort the jobs with STPT rule
