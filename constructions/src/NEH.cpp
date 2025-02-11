@@ -1,0 +1,136 @@
+#include "NEH.h"
+
+#include "Instance.h"
+#include "Parameters.h"
+#include "Solution.h"
+#include <utility>
+
+NEH::NEH(const std::vector<size_t> &phi, const Instance &instance, const Parameters &params, bool jobs_reversed)
+    : m_instance(instance), m_params(params), m_phi(phi), m_reversed(jobs_reversed) {}
+
+Solution NEH::solve() {
+    Solution s;
+    s.sequence.reserve(m_instance.num_jobs());
+    s.sequence = {m_phi[0]};
+    m_phi.erase(m_phi.begin());
+
+    while (!m_phi.empty()) {
+        set_taillard_matrices(s.sequence, m_phi.front());
+
+        auto [best_index, makespan] = get_best_insertion();
+        s.sequence.insert(s.sequence.begin() + (long)best_index, m_phi.front());
+
+        s.cost = makespan;
+        m_phi.erase(m_phi.begin());
+    }
+
+    return s;
+}
+void NEH::set_taillard_matrices(const std::vector<size_t> &sequence, size_t k) {
+    e = calculate_departure_times(sequence);
+
+    q = calculate_tail(sequence);
+    q.emplace_back(m_instance.num_machines(),
+                   0); // Make it easier to implement find_best_insertion without an out of bound access
+
+    auto p = get_reversible_matrix();
+
+    // f needs to store all possibilities of insertion so it has sequence.size + 1
+    f = std::vector(sequence.size() + 1, std::vector<size_t>(m_instance.num_machines()));
+    f[0][0] = p(k, 0);
+    for (size_t j = 1; j < m_instance.num_machines(); j++) {
+        f[0][j] = f[0][j - 1] + p(k, j);
+    }
+    for (size_t i = 1; i <= sequence.size(); i++) {
+        f[i][0] = std::max(e[i - 1][0] + p(k, 0), e[i - 1][1]);
+        for (size_t j = 1; j < m_instance.num_machines() - 1; j++) {
+            f[i][j] = std::max(f[i][j - 1] + p(k, j), e[i - 1][j + 1]);
+        }
+        f[i].back() = f[i][m_instance.num_machines() - 2] + p(k, m_instance.num_machines() - 1);
+    }
+}
+
+std::vector<std::vector<size_t>> NEH::calculate_departure_times(const std::vector<size_t> &sequence) {
+    auto departure_times = std::vector(sequence.size(), std::vector<size_t>(m_instance.num_machines()));
+
+    const std::function<long(size_t, size_t)> p = get_reversible_matrix();
+
+    // Calculate first job
+    departure_times[0][0] = p(sequence[0], 0);
+    for (size_t j = 1; j < m_instance.num_machines(); j++) {
+        departure_times[0][j] = departure_times[0][j - 1] + p(sequence[0], j);
+    }
+
+    for (size_t i = 1; i < sequence.size(); i++) {
+        const size_t node = sequence[i];
+        departure_times[i][0] = std::max(departure_times[i - 1][0] + p(node, 0), departure_times[i - 1][1]);
+        for (size_t j = 1; j < m_instance.num_machines() - 1; j++) {
+
+            const size_t current_finish_time = departure_times[i][j - 1] + p(node, j);
+
+            departure_times[i][j] = std::max(current_finish_time, departure_times[i - 1][j + 1]);
+        }
+        departure_times[i].back() =
+            departure_times[i][m_instance.num_machines() - 2] + p(node, m_instance.num_machines() - 1);
+    }
+
+    return departure_times;
+}
+
+std::vector<std::vector<size_t>> NEH::calculate_tail(const std::vector<size_t> &sequence) {
+
+    auto tail = std::vector(sequence.size(), std::vector<size_t>(m_instance.num_machines()));
+
+    const std::function<long(size_t, size_t)> p = get_reversible_matrix();
+
+    // Calculate first job
+    tail.back().back() = p(sequence.back(), m_instance.num_machines() - 1);
+    for (long j = (long)m_instance.num_machines() - 2; j >= 0; j--) {
+        tail.back()[j] = tail.back()[j + 1] + p(sequence.back(), j);
+    }
+
+    for (long i = ((long)sequence.size()) - 2; i >= 0; i--) {
+        const size_t node = sequence[i];
+        tail[i].back() = std::max(tail[i + 1].back() + p(node, m_instance.num_machines() - 1),
+                                  tail[i + 1][m_instance.num_machines() - 2]);
+        for (long j = (long)m_instance.num_machines() - 2; j >= 1; j--) {
+
+            const size_t current_finish_time = tail[i][j + 1] + p(node, j);
+
+            tail[i][j] = std::max(current_finish_time, tail[i + 1][j - 1]);
+        }
+        tail[i][0] = tail[i][1] + p(node, 0);
+    }
+
+    return tail;
+}
+
+std::function<long(size_t, size_t)> NEH::get_reversible_matrix() {
+
+    // A c++ hack using lambda functions to call normal matrix view or the m_reversed one
+    std::function<long(size_t, size_t)> p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
+    if (m_reversed) {
+        p = [this](size_t i, size_t j) { return m_instance.rp(i, j); };
+    }
+
+    return p;
+}
+
+std::pair<size_t, size_t> NEH::get_best_insertion() {
+    size_t best_index = 0;
+    size_t best_value = std::numeric_limits<size_t>::max();
+
+    for (size_t i = 0; i < f.size(); i++) {
+        size_t max_value = 0;
+        for (size_t j = 0; j < f[i].size(); j++) {
+            const size_t sum = f[i][j] + q[i][j];
+            max_value = std::max(sum, max_value);
+        }
+
+        if (max_value < best_value) {
+            best_value = max_value;
+            best_index = i;
+        }
+    }
+    return {best_index, best_value};
+}

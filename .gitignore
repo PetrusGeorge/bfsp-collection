@@ -32,3 +32,6 @@
 *.app
 
 *.cache
+
+# Compilation Database
+**/compile_commands.json
