@@ -3,9 +3,10 @@
 #include <numeric>
 
 #include "Instance.h"
-#include "LPT.h"
+#include "algorithms/LPT.h"
 #include "Log.h"
-#include "NEH.h"
+#include "algorithms/NEH.h"
+#include "algorithms/PF.h"
 #include "Parameters.h"
 #include "RNG.h"
 
@@ -44,4 +45,12 @@ int main(int argc, char *argv[]) {
     const Solution s_lpt = l.solve();
     std::cout << "\nLPT:" << '\n';
     std::cout << s_lpt << '\n';
+
+    PF pf;
+    Solution s_pf = pf.createSolutionFromInstance(instance);
+    pf.STPT_Sort(s_pf);
+    s_pf = pf.solve(s_pf);
+
+    std::cout << "\nPF:" << '\n';
+    std::cout << s_pf << '\n';
 }

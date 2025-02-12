@@ -2,7 +2,7 @@ project(
   'template',
   'cpp',
   default_options: [
-    'cpp_std=c++26',
+    'cpp_std=c++2a',
     'buildtype=release',
     'warning_level=3',
     'b_ndebug=if-release',
