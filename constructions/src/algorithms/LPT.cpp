@@ -1,10 +1,6 @@
-#include "LPT.h"
-
-#include "Instance.h"
-#include "Parameters.h"
-#include "Solution.h"
+#include "algorithms/LPT.h"
+#include "Core.h"
 #include <numeric>
-#include <utility>
 
 LPT::LPT(Instance &instance, Parameters &params, bool jobs_reversed)
     : m_instance(instance), m_params(params), m_reversed(jobs_reversed) {}
@@ -12,8 +8,11 @@ LPT::LPT(Instance &instance, Parameters &params, bool jobs_reversed)
 Solution LPT::solve() {
     Solution s;
     s.sequence.reserve(m_instance.num_jobs());
+    
+    m_phi.resize(m_instance.num_jobs());
+    std::iota(m_phi.begin(), m_phi.end(), 0);
 
-    m_phi = initial_job_sequence();
+    core::stpt_sort(m_instance, m_phi);
 
     s.sequence = {m_phi[0]};
     m_phi.erase(m_phi.begin());
@@ -31,37 +30,14 @@ Solution LPT::solve() {
     return s;
 }
 
-std::vector<size_t> LPT::initial_job_sequence() {
-    std::vector<size_t> sequence(m_instance.num_jobs());
-    std::iota(sequence.begin(), sequence.end(), 0);
-
-    auto p = get_reversible_matrix();
-
-    std::sort(sequence.begin(), sequence.end(), [p, this](size_t a, size_t b) {
-        size_t sum_a = 0;
-
-        for (size_t j = 0; j < m_instance.num_machines(); j++) {
-            sum_a += p(a, j);
-        }
-        size_t sum_b = 0;
-
-        for (size_t j = 0; j < m_instance.num_machines(); j++) {
-            sum_b += p(b, j);
-        }
-        return sum_a < sum_b;
-    });
-
-    return sequence;
-}
-
 void LPT::set_taillard_matrices(const std::vector<size_t> &sequence, size_t k) {
-    m_e = calculate_departure_times(sequence);
+    m_e = core::calculate_departure_times(m_instance, sequence, m_reversed);
 
     m_q = calculate_tail(sequence);
     m_q.emplace_back(m_instance.num_machines(),
                      0); // Make it easier to implement find_best_insertion without an out of bound access
 
-    auto p = get_reversible_matrix();
+    auto p = core::get_reversible_matrix(m_instance, m_reversed);
 
     // f needs to store all possibilities of insertion so it has sequence.size + 1
     m_f = std::vector(sequence.size() + 1, std::vector<size_t>(m_instance.num_machines()));
@@ -78,38 +54,11 @@ void LPT::set_taillard_matrices(const std::vector<size_t> &sequence, size_t k) {
     }
 }
 
-std::vector<std::vector<size_t>> LPT::calculate_departure_times(const std::vector<size_t> &sequence) {
-    auto departure_times = std::vector(sequence.size(), std::vector<size_t>(m_instance.num_machines()));
-
-    const std::function<long(size_t, size_t)> p = get_reversible_matrix();
-
-    // Calculate first job
-    departure_times[0][0] = p(sequence[0], 0);
-    for (size_t j = 1; j < m_instance.num_machines(); j++) {
-        departure_times[0][j] = departure_times[0][j - 1] + p(sequence[0], j);
-    }
-
-    for (size_t i = 1; i < sequence.size(); i++) {
-        const size_t node = sequence[i];
-        departure_times[i][0] = std::max(departure_times[i - 1][0] + p(node, 0), departure_times[i - 1][1]);
-        for (size_t j = 1; j < m_instance.num_machines() - 1; j++) {
-
-            const size_t current_finish_time = departure_times[i][j - 1] + p(node, j);
-
-            departure_times[i][j] = std::max(current_finish_time, departure_times[i - 1][j + 1]);
-        }
-        departure_times[i].back() =
-            departure_times[i][m_instance.num_machines() - 2] + p(node, m_instance.num_machines() - 1);
-    }
-
-    return departure_times;
-}
-
 std::vector<std::vector<size_t>> LPT::calculate_tail(const std::vector<size_t> &sequence) {
 
     auto tail = std::vector(sequence.size(), std::vector<size_t>(m_instance.num_machines()));
 
-    const std::function<long(size_t, size_t)> p = get_reversible_matrix();
+    const std::function<long(size_t, size_t)> p = core::get_reversible_matrix(m_instance, m_reversed);
 
     // Calculate first job
     tail.back().back() = p(sequence.back(), m_instance.num_machines() - 1);
@@ -131,17 +80,6 @@ std::vector<std::vector<size_t>> LPT::calculate_tail(const std::vector<size_t> &
     }
 
     return tail;
-}
-
-std::function<long(size_t, size_t)> LPT::get_reversible_matrix() {
-
-    // A c++ hack using lambda functions to call normal matrix view or the m_reversed one
-    std::function<long(size_t, size_t)> p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
-    if (m_reversed) {
-        p = [this](size_t i, size_t j) { return m_instance.rp(i, j); };
-    }
-
-    return p;
 }
 
 std::pair<size_t, size_t> LPT::get_best_insertion() {

@@ -32,10 +32,12 @@ class NEH {
     std::pair<size_t, size_t> get_best_insertion();
 
     std::vector<std::vector<size_t>> calculate_departure_times(const std::vector<size_t> &sequence);
+
     // Pretty similiar to calculate departure times but everything is reversed,
     // jobs sequence, machines sequence and the matrix filling itself, used to
     // calculate the tail from taillard data structure
     std::vector<std::vector<size_t>> calculate_tail(const std::vector<size_t> &sequence);
+
     // Easy hack to implement algorithms using both direct and reverse instances
     std::function<long(size_t, size_t)> get_reversible_matrix();
 

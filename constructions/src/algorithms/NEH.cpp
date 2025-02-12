@@ -1,4 +1,4 @@
-#include "NEH.h"
+#include "algorithms/NEH.h"
 
 #include "Instance.h"
 #include "Parameters.h"
