@@ -31,7 +31,7 @@ void NEH::set_taillard_matrices(const std::vector<size_t> &sequence, size_t k) {
 
     m_q = calculate_tail(sequence);
     m_q.emplace_back(m_instance.num_machines(),
-                   0); // Make it easier to implement find_best_insertion without an out of bound access
+                     0); // Make it easier to implement find_best_insertion without an out of bound access
 
     auto p = get_reversible_matrix();
 

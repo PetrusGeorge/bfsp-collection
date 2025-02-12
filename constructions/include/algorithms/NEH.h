@@ -40,7 +40,6 @@ class NEH {
 
     // Easy hack to implement algorithms using both direct and reverse instances
     std::function<long(size_t, size_t)> get_reversible_matrix();
-
 };
 
 #endif

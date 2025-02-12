@@ -1,7 +1,7 @@
 #include "Core.h"
 
-#include <algorithm>
 #include "Instance.h"
+#include <algorithm>
 
 std::vector<std::vector<size_t>>
 core::calculate_departure_times(const Instance &instance, const std::vector<size_t> &sequence, bool jobs_reversed) {
@@ -42,20 +42,20 @@ std::function<long(size_t, size_t)> core::get_reversible_matrix(const Instance &
     return p;
 }
 
-void core::stpt_sort(const Instance& instance, std::vector<size_t> &sequence, bool jobs_reversed) {
-    auto p = get_reversible_matrix(instance, jobs_reversed);
+// void core::stpt_sort(const Instance& instance, std::vector<size_t> &sequence, bool jobs_reversed) {
+//     auto p = get_reversible_matrix(instance, jobs_reversed);
 
-    std::ranges::sort(sequence,[p, instance](size_t a, size_t b) {
-        size_t sum_a = 0;
+//     std::ranges::sort(sequence,[p, instance](size_t a, size_t b) {
+//         size_t sum_a = 0;
 
-        for (size_t j = 0; j < instance.num_machines(); j++) {
-            sum_a += p(a, j);
-        }
-        size_t sum_b = 0;
+//         for (size_t j = 0; j < instance.num_machines(); j++) {
+//             sum_a += p(a, j);
+//         }
+//         size_t sum_b = 0;
 
-        for (size_t j = 0; j < instance.num_machines(); j++) {
-            sum_b += p(b, j);
-        }
-        return sum_a < sum_b;
-    });
-}
+//         for (size_t j = 0; j < instance.num_machines(); j++) {
+//             sum_b += p(b, j);
+//         }
+//         return sum_a < sum_b;
+//     });
+// }

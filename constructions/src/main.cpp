@@ -3,12 +3,11 @@
 #include <numeric>
 
 #include "Instance.h"
-#include "algorithms/LPT.h"
-#include "Log.h"
-#include "algorithms/NEH.h"
-#include "algorithms/PF.h"
 #include "Parameters.h"
 #include "RNG.h"
+#include "algorithms/LPT.h"
+#include "algorithms/NEH.h"
+#include "algorithms/PF.h"
 
 int main(int argc, char *argv[]) {
 
@@ -28,11 +27,6 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Seed: " << RNG::instance().seed() << '\n';
 
-    DEBUG << "Showing normal debug macro\n";
-    DEBUG_EXTRA << "Showing extra debug macro\n";
-
-    VERBOSE(params.verbose()) << "Showing verbose macro\n";
-
     std::vector<size_t> phi(instance.num_jobs());
     std::iota(phi.begin(), phi.end(), 0);
 
@@ -41,15 +35,12 @@ int main(int argc, char *argv[]) {
     std::cout << "\nNEH:" << '\n';
     std::cout << s_neh << '\n';
 
-    LPT l(instance, params, false); // false -> not reversed jobs);
-    const Solution s_lpt = l.solve();
+    const Solution s_lpt = LPT::solve(instance);
     std::cout << "\nLPT:" << '\n';
     std::cout << s_lpt << '\n';
 
-    PF pf;
-    Solution s_pf = pf.createSolutionFromInstance(instance);
-    pf.STPT_Sort(s_pf);
-    s_pf = pf.solve(s_pf);
+    Solution s_pf;
+    s_pf = PF::solve(instance);
 
     std::cout << "\nPF:" << '\n';
     std::cout << s_pf << '\n';
