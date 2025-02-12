@@ -1,9 +1,8 @@
 #include "PF.h"
 #include <cassert>
-#include <iostream>
 #include <numeric>
 
-PF::PF() {}
+PF::PF() = default;
 
 void PF::STPT_Sort(Solution &sol) {
     if (sol.sequence.empty()) {

@@ -1,9 +1,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <numeric>
-#include <stdexcept>
 
 #include "Instance.h"
+#include "LPT.h"
 #include "Log.h"
 #include "NEH.h"
 #include "Parameters.h"
@@ -35,8 +35,13 @@ int main(int argc, char *argv[]) {
     std::vector<size_t> phi(instance.num_jobs());
     std::iota(phi.begin(), phi.end(), 0);
 
-    NEH n(phi, instance, params, false);
-    const Solution s = n.solve();
+    NEH n(phi, instance, params, false); // false -> not reversed jobs);
+    const Solution s_neh = n.solve();
     std::cout << "\nNEH:" << '\n';
-    std::cout << s << '\n';
+    std::cout << s_neh << '\n';
+
+    LPT l(instance, params, false); // false -> not reversed jobs);
+    const Solution s_lpt = l.solve();
+    std::cout << "\nLPT:" << '\n';
+    std::cout << s_lpt << '\n';
 }

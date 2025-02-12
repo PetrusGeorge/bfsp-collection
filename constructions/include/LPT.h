@@ -1,15 +1,15 @@
-#ifndef NEH_H
-#define NEH_H
+#ifndef LPT_H
+#define LPT_H
 
 #include "Instance.h"
 #include "Parameters.h"
 #include "Solution.h"
 #include <functional>
 
-class NEH {
+class LPT {
   public:
-    // Given a sequence phi, this function applies the NEH algorithm and returns a Solution object
-    NEH(const std::vector<size_t> &phi, Instance &instance, Parameters &params, bool jobs_reversed);
+    // this function generates a sequence based on the LPT, applies the NEH algorithm and returns a Solution object
+    LPT(Instance &instance, Parameters &params, bool jobs_reversed);
     Solution solve();
 
   private:
@@ -22,6 +22,9 @@ class NEH {
     std::vector<std::vector<size_t>> m_e; // Departure time
     std::vector<std::vector<size_t>> m_q; // Tail duration
     std::vector<std::vector<size_t>> m_f;
+
+    // Generate initial job sequence based on the LPT criterium
+    std::vector<size_t> initial_job_sequence();
 
     // Sets all matrices, based on the sequence and the node
     // to be inserted k
@@ -38,7 +41,6 @@ class NEH {
     std::vector<std::vector<size_t>> calculate_tail(const std::vector<size_t> &sequence);
     // Easy hack to implement algorithms using both direct and reverse instances
     std::function<long(size_t, size_t)> get_reversible_matrix();
-
 };
 
 #endif

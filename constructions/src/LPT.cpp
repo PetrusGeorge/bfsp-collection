@@ -1,16 +1,20 @@
-#include "NEH.h"
+#include "LPT.h"
 
 #include "Instance.h"
 #include "Parameters.h"
 #include "Solution.h"
+#include <numeric>
 #include <utility>
 
-NEH::NEH(const std::vector<size_t> &phi, Instance &instance, Parameters &params, bool jobs_reversed)
-    : m_instance(instance), m_params(params), m_phi(phi), m_reversed(jobs_reversed) {}
+LPT::LPT(Instance &instance, Parameters &params, bool jobs_reversed)
+    : m_instance(instance), m_params(params), m_reversed(jobs_reversed) {}
 
-Solution NEH::solve() {
+Solution LPT::solve() {
     Solution s;
     s.sequence.reserve(m_instance.num_jobs());
+
+    m_phi = initial_job_sequence();
+
     s.sequence = {m_phi[0]};
     m_phi.erase(m_phi.begin());
 
@@ -26,12 +30,36 @@ Solution NEH::solve() {
 
     return s;
 }
-void NEH::set_taillard_matrices(const std::vector<size_t> &sequence, size_t k) {
+
+std::vector<size_t> LPT::initial_job_sequence() {
+    std::vector<size_t> sequence(m_instance.num_jobs());
+    std::iota(sequence.begin(), sequence.end(), 0);
+
+    auto p = get_reversible_matrix();
+
+    std::sort(sequence.begin(), sequence.end(), [p, this](size_t a, size_t b) {
+        size_t sum_a = 0;
+
+        for (size_t j = 0; j < m_instance.num_machines(); j++) {
+            sum_a += p(a, j);
+        }
+        size_t sum_b = 0;
+
+        for (size_t j = 0; j < m_instance.num_machines(); j++) {
+            sum_b += p(b, j);
+        }
+        return sum_a < sum_b;
+    });
+
+    return sequence;
+}
+
+void LPT::set_taillard_matrices(const std::vector<size_t> &sequence, size_t k) {
     m_e = calculate_departure_times(sequence);
 
     m_q = calculate_tail(sequence);
     m_q.emplace_back(m_instance.num_machines(),
-                   0); // Make it easier to implement find_best_insertion without an out of bound access
+                     0); // Make it easier to implement find_best_insertion without an out of bound access
 
     auto p = get_reversible_matrix();
 
@@ -50,7 +78,7 @@ void NEH::set_taillard_matrices(const std::vector<size_t> &sequence, size_t k) {
     }
 }
 
-std::vector<std::vector<size_t>> NEH::calculate_departure_times(const std::vector<size_t> &sequence) {
+std::vector<std::vector<size_t>> LPT::calculate_departure_times(const std::vector<size_t> &sequence) {
     auto departure_times = std::vector(sequence.size(), std::vector<size_t>(m_instance.num_machines()));
 
     const std::function<long(size_t, size_t)> p = get_reversible_matrix();
@@ -77,7 +105,7 @@ std::vector<std::vector<size_t>> NEH::calculate_departure_times(const std::vecto
     return departure_times;
 }
 
-std::vector<std::vector<size_t>> NEH::calculate_tail(const std::vector<size_t> &sequence) {
+std::vector<std::vector<size_t>> LPT::calculate_tail(const std::vector<size_t> &sequence) {
 
     auto tail = std::vector(sequence.size(), std::vector<size_t>(m_instance.num_machines()));
 
@@ -105,7 +133,7 @@ std::vector<std::vector<size_t>> NEH::calculate_tail(const std::vector<size_t> &
     return tail;
 }
 
-std::function<long(size_t, size_t)> NEH::get_reversible_matrix() {
+std::function<long(size_t, size_t)> LPT::get_reversible_matrix() {
 
     // A c++ hack using lambda functions to call normal matrix view or the m_reversed one
     std::function<long(size_t, size_t)> p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
@@ -116,7 +144,7 @@ std::function<long(size_t, size_t)> NEH::get_reversible_matrix() {
     return p;
 }
 
-std::pair<size_t, size_t> NEH::get_best_insertion() {
+std::pair<size_t, size_t> LPT::get_best_insertion() {
     size_t best_index = 0;
     size_t best_value = std::numeric_limits<size_t>::max();
 
