@@ -1,5 +1,6 @@
 #include "algorithms/LPT.h"
 #include "Core.h"
+#include <algorithm>
 #include <numeric>
 
 LPT::LPT(Instance &instance, Parameters &params, bool jobs_reversed)
@@ -8,11 +9,8 @@ LPT::LPT(Instance &instance, Parameters &params, bool jobs_reversed)
 Solution LPT::solve() {
     Solution s;
     s.sequence.reserve(m_instance.num_jobs());
-    
-    m_phi.resize(m_instance.num_jobs());
-    std::iota(m_phi.begin(), m_phi.end(), 0);
 
-    core::stpt_sort(m_instance, m_phi);
+    m_phi = initial_job_sequence();
 
     s.sequence = {m_phi[0]};
     m_phi.erase(m_phi.begin());
@@ -28,6 +26,29 @@ Solution LPT::solve() {
     }
 
     return s;
+}
+
+std::vector<size_t> LPT::initial_job_sequence() {
+    std::vector<size_t> sequence(m_instance.num_jobs());
+    std::iota(sequence.begin(), sequence.end(), 0);
+
+    auto p = core::get_reversible_matrix(m_instance, m_reversed);
+
+    std::ranges::sort(sequence, [p, this](size_t a, size_t b) {
+        size_t sum_a = 0;
+
+        for (size_t j = 0; j < m_instance.num_machines(); j++) {
+            sum_a += p(a, j);
+        }
+        size_t sum_b = 0;
+
+        for (size_t j = 0; j < m_instance.num_machines(); j++) {
+            sum_b += p(b, j);
+        }
+        return sum_a > sum_b;
+    });
+
+    return sequence;
 }
 
 void LPT::set_taillard_matrices(const std::vector<size_t> &sequence, size_t k) {
