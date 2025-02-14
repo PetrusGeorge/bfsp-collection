@@ -8,6 +8,7 @@
 #include "algorithms/LPT.h"
 #include "algorithms/NEH.h"
 #include "algorithms/PF.h"
+#include "algorithms/mNEH.h"
 
 int main(int argc, char *argv[]) {
 
@@ -34,6 +35,10 @@ int main(int argc, char *argv[]) {
     const Solution s_neh = n.solve();
     std::cout << "\nNEH:" << '\n';
     std::cout << s_neh << '\n';
+
+    const Solution s_mneh = MNEH::solve(0.8, instance, params, false);
+    std::cout << "\nmNEH:" << '\n';
+    std::cout << s_mneh << '\n';
 
     const Solution s_lpt = LPT::solve(instance);
     std::cout << "\nLPT:" << '\n';
