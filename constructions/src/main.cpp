@@ -9,6 +9,7 @@
 #include "algorithms/NEH.h"
 #include "algorithms/PF.h"
 #include "algorithms/mNEH.h"
+#include "algorithms/PW.h"
 
 int main(int argc, char *argv[]) {
 
@@ -49,4 +50,12 @@ int main(int argc, char *argv[]) {
 
     std::cout << "\nPF:" << '\n';
     std::cout << s_pf << '\n';
+
+    PW pw = PW(instance);
+    Solution s_pw;
+    s_pw = pw.applyPW();
+
+    std::cout << "\nPW:" << '\n';
+    std::cout << s_pw << '\n';
+        
 }
