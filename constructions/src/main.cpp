@@ -8,8 +8,11 @@
 #include "algorithms/LPT.h"
 #include "algorithms/NEH.h"
 #include "algorithms/PF.h"
+#include "algorithms/PF_NEH.h"
 #include "algorithms/mNEH.h"
 #include "algorithms/PW.h"
+#include "algorithms/GRASP.h"
+#include "algorithms/Grasp_NEH.h"
 
 int main(int argc, char *argv[]) {
 
@@ -51,11 +54,18 @@ int main(int argc, char *argv[]) {
     std::cout << "\nPF:" << '\n';
     std::cout << s_pf << '\n';
 
-    PW pw = PW(instance);
-    Solution s_pw;
-    s_pw = pw.applyPW();
+    // PW pw = PW(instance);
+    // Solution s_pw;
+    // s_pw = pw.applyPW();
 
-    std::cout << "\nPW:" << '\n';
-    std::cout << s_pw << '\n';
-        
+    // std::cout << "\nPW:" << '\n';
+    // std::cout << s_pw << '\n';
+
+
+    Solution s_grasp;
+    GRASP grasp(instance);
+    s_grasp = grasp.solve(15);
+    std::cout << "\nGrasp:" << '\n';
+    std::cout << s_grasp << '\n';
+
 }
