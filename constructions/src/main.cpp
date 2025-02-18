@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
 
     PW pw = PW(instance);
     Solution s_pw;
-    s_pw = pw.applyPW();
+    s_pw = pw.solve();
 
     std::cout << "\nPW:" << '\n';
     std::cout << s_pw << '\n';

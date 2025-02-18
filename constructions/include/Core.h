@@ -2,6 +2,7 @@
 #define CORE_H
 
 #include "Instance.h"
+#include <numeric>
 #include <functional>
 
 namespace core {
@@ -10,6 +11,12 @@ calculate_departure_times(const Instance &instance, const std::vector<size_t> &s
 
 // Easy hack to implement algorithms using both direct and reverse instances
 std::function<long(size_t, size_t)> get_reversible_matrix(const Instance &instance, bool jobs_reversed);
+
+std::vector<size_t> stpt_sort(const Instance &instance);
+
+std::vector<size_t> calculate_new_departure_time(const Instance &instance, std::vector<std::vector<size_t>> &d, size_t node);
+
+size_t calculate_sigma(const Instance &instance, std::vector<std::vector<size_t>> &d, std::vector<size_t> &new_departure_time, size_t job, size_t k);
 
 } // namespace core
 

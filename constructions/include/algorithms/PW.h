@@ -15,17 +15,15 @@ class PW {
 		PW(const Instance &instance);
 		~PW();
 
-		
-		std::vector<double> computeAvgProcessingTime(size_t candidate_job, std::vector<size_t> &unscheduled);
-		std::vector<double> computeArtificialDepartureTime(std::vector<std::vector<size_t>> &d, std::vector<double> &artificialProcessingTimes);
-		std::vector<size_t>	 computeNewDepartureTime(std::vector<std::vector<size_t>> &d, size_t node);
+		std::vector<double> calculate_avg_processing_time(const size_t candidate_job, std::vector<size_t> &unscheduled);
+		void update_avg_processing_time(const size_t previus_job, const size_t next_job, const size_t qt_unscheduled, std::vector<double> &artificial_processing_times);
+		std::vector<double> calculate_artificial_departure_time(std::vector<std::vector<size_t>> &d, std::vector<double> &artificial_processing_times);
 
-		// double computeWeight(double i, double k);		
-		double computeChi(std::vector<size_t> &newDepartureTime, std::vector<double> &artificialDepartureTime, std::vector<double> &artificialProcessingTimes); 
-		double computeSigma(std::vector<std::vector<size_t>> &d, std::vector<size_t> &newDepartureTime, size_t job, double k);
-		double computeF(std::vector<std::vector<size_t>> &d, std::vector<size_t> &newDepartureTime, double chi, size_t job, int k); 
+		// chi is basically the sigma for the artificial job
+		double calculate_chi(std::vector<size_t> &new_departure_time, std::vector<double> &artificial_departure_time, std::vector<double> &artificial_processing_times); 
+		double calculate_f(std::vector<std::vector<size_t>> &d, std::vector<size_t> &new_departure_time, double chi, size_t job, int k); 
 		
-		Solution applyPW();
+		Solution solve();
 
 	private:
 		const Instance *instance;
