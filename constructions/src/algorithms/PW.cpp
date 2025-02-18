@@ -2,18 +2,14 @@
 
 PW::PW() { /*ctor */ }
 PW::~PW() { /* dtor */ }
-
-PW::PW(const Instance &instance) {
-	this->instance = &instance;
-}
+PW::PW(const Instance &instance) { this->instance = &instance; }
 
 
-std::vector<double> PW::computeAvgProcessingTime(size_t candidate_job, std::vector<size_t> &unscheduled) {
+std::vector<double> PW::calculate_avg_processing_time(size_t candidate_job, std::vector<size_t> &unscheduled) {
 
 	double m = instance->num_machines();        // number of machines
 	
-	std::vector<double> artificialTimes(m, 0); // m processing times
-
+	std::vector<double> artificial_times(m, 0); // m processing times
 
 	auto p = core::get_reversible_matrix(*instance, false);
 
@@ -24,84 +20,75 @@ std::vector<double> PW::computeAvgProcessingTime(size_t candidate_job, std::vect
 		if(job == candidate_job) continue; // avoiding the candidate job
 		
 		// getting the sum of the processing time on each machine for each job
-		for(size_t machine = 0; machine < m; machine++) artificialTimes[machine] += p(job, machine);
+		for(size_t machine = 0; machine < m; machine++) artificial_times[machine] += p(job, machine);
 		
 	}
 	
 	// dividing each processing time by (n - k - 1)
 	for (auto i = 0; i < m; i++) {
-		artificialTimes[i] /= ((double) unscheduled.size() - 1);
+		artificial_times[i] /= ((double) unscheduled.size() - 1);
 	}	
 
-	return artificialTimes;
+	return artificial_times;
 
 }
 
 
-std::vector<double> PW::computeArtificialDepartureTime(
-	std::vector<std::vector<size_t>> &d, 
-	std::vector<double> &artificialProcessingTimes
+void PW::update_avg_processing_time(
+	const size_t previus_job, 
+	const size_t next_job, 
+	const size_t qt_unscheduled,
+	std::vector<double> &artificial_processing_times
 	) {
 
 	double m = instance->num_machines();        // number of machines
 	auto p = core::get_reversible_matrix(*instance, false);
 
-	std::vector<double> artificialDepartureTime(m);
+	for(size_t machine = 0; machine < m; machine++) artificial_processing_times[machine] *= (qt_unscheduled - 1);
 
-	artificialDepartureTime[0] = std::max(
-		((double) d[ d.size() - 1 ][0]) + artificialProcessingTimes[0], (double) d[ d.size() - 1 ][1]
+	for(size_t machine = 0; machine < m; machine++) artificial_processing_times[machine] += p(previus_job, machine);
+
+	for(size_t machine = 0; machine < m; machine++) artificial_processing_times[machine] -= p(next_job, machine);
+	
+	for(size_t machine = 0; machine < m; machine++) artificial_processing_times[machine] /= (qt_unscheduled - 1);
+
+}
+
+
+std::vector<double> PW::calculate_artificial_departure_time(
+	std::vector<std::vector<size_t>> &d, 
+	std::vector<double> &artificial_processing_times
+	) {
+
+	double m = instance->num_machines();        // number of machines
+	auto p = core::get_reversible_matrix(*instance, false);
+
+	std::vector<double> artificial_departure_time(m);
+
+	artificial_departure_time[0] = std::max(
+		((double) d[ d.size() - 1 ][0]) + artificial_processing_times[0], (double) d[ d.size() - 1 ][1]
 	);
 
 	for (size_t j = 1; j < m - 1; j++) {
 
-			const double current_finish_time = artificialDepartureTime[j - 1] + artificialProcessingTimes[j];
+			const double current_finish_time = artificial_departure_time[j - 1] + artificial_processing_times[j];
 
-			artificialDepartureTime[j] = std::max(current_finish_time, (double)  d[ d.size() - 1 ][j + 1]);
+			artificial_departure_time[j] = std::max(current_finish_time, (double)  d[ d.size() - 1 ][j + 1]);
 	}
 
-	artificialDepartureTime.back() =
-		artificialDepartureTime[m - 2] + artificialProcessingTimes[m - 1];
+	artificial_departure_time.back() =
+		artificial_departure_time[m - 2] + artificial_processing_times[m - 1];
 
 
-	return artificialDepartureTime;
+	return artificial_departure_time;
 
 }
 
 
-std::vector<size_t> PW::computeNewDepartureTime(std::vector<std::vector<size_t>> &d, size_t node) {
-
-	double m = instance->num_machines();        // number of machines
-
-	auto p = core::get_reversible_matrix(*instance, false);
-
-	std::vector<size_t> newDepartureTime(m);
-
-	const size_t k_job = d.size() - 1;
-
-	/* Calculating equal how to calculate any departure time */
-	newDepartureTime[0] = std::max((d[ k_job ][0]) + p(node, 0), d[ k_job ][1]);
-
-	for (size_t j = 1; j < m - 1; j++) {
-
-		const size_t current_finish_time = newDepartureTime[j - 1] + p(node, j);
-
-		newDepartureTime[j] = std::max(current_finish_time, d[ k_job ][j + 1]);
-
-	}
-
-	newDepartureTime.back() =
-			newDepartureTime[m - 2] + p(node, m - 1);
-
-
-	return newDepartureTime;
-
-}
-
-
-double PW::computeChi(
-	std::vector<size_t> &newDepartureTime, 
-	std::vector<double> &artificialDepartureTime, 
-	std::vector<double> &artificialProcessingTimes
+double PW::calculate_chi(
+	std::vector<size_t> &new_departure_time, 
+	std::vector<double> &artificial_departure_time, 
+	std::vector<double> &artificial_processing_times
 	) {
 	
 	double m = instance->num_machines();        // number of machines
@@ -110,7 +97,7 @@ double PW::computeChi(
 	
 	for (size_t machine = 0; machine < m; machine++) {
 	
-		double sum = (artificialDepartureTime[machine] - newDepartureTime[machine] - artificialProcessingTimes[machine]);
+		double sum = (artificial_departure_time[machine] - new_departure_time[machine] - artificial_processing_times[machine]);
 
 		chi += sum;
 
@@ -121,45 +108,16 @@ double PW::computeChi(
 }
 
 
-double PW::computeSigma(
+double PW::calculate_f(
 	std::vector<std::vector<size_t>> &d, 
-	std::vector<size_t> &newDepartureTime,
-	size_t job,
-	double k) {
-	
-
-	double m = instance->num_machines();        // number of machines
-
-	auto p = core::get_reversible_matrix(*instance, false);
-
-	double sigma = 0;
-
-	for (size_t machine = 0; machine < m; machine++) {
-		double sum;
-
-		if (k == 0) sum = (newDepartureTime[machine] - p(job, machine));
-		else sum = (newDepartureTime[machine] - d[ d.size() - 1 ][machine] - p(job, machine));
-
-		sigma += sum;
-
-	}
-
-
-	return sigma;
-
-}
-
-
-double PW::computeF(
-	std::vector<std::vector<size_t>> &d, 
-	std::vector<size_t> &newDepartureTime, 
+	std::vector<size_t> &new_departure_time, 
 	double chi, 
 	size_t job, 
 	int k
 	) {
 
 	double n = instance->num_jobs();         // number of jobs
-	double sigma = computeSigma(d, newDepartureTime, job, k);
+	double sigma = core::calculate_sigma(*instance, d, new_departure_time, job, k);
 
 	double f = ( (n - k - 2) * sigma + chi );
 
@@ -168,7 +126,7 @@ double PW::computeF(
 }
 
 
-Solution PW::applyPW() {
+Solution PW::solve() {
 
 	size_t n = instance->num_jobs();         // number of jobs
 	size_t m = instance->num_machines();     // number of machines
@@ -177,9 +135,9 @@ Solution PW::applyPW() {
 	std::vector<size_t> unscheduled(n); // list of unscheduled jobs (initially 0, 1, ..., n)
 	std::iota(unscheduled.begin(), unscheduled.end(), 0);
 
-	std::vector<double> artificialProcessingTimes; // processing time of the artificial job v 
-	std::vector<double> artificialDepartureTime; // departure time of the artificial job v 
-	std::vector<size_t> newDepartureTime; // hipotetical departure time of the job j 
+	std::vector<double> artificial_processing_times; // processing time of the artificial job v 
+	std::vector<double> artificial_departure_time; // departure time of the artificial job v 
+	std::vector<size_t> new_departure_time; // hipotetical departure time of the job j 
 
 	size_t best_i = std::numeric_limits<size_t>::max(); // store the index of the variable with smallest f
 	double smallestF = std::numeric_limits<double>::max(); // smallest f
@@ -190,28 +148,30 @@ Solution PW::applyPW() {
 
 	std::vector<std::vector<size_t>> d_current; // current departure time 
 
-//////////////////////////// allocating the first job
-/* revisar isso, talvez possa ser colocado dentro do loop */
+// allocating the first job
 
 	newSeq.push_back({});
+	artificial_processing_times = calculate_avg_processing_time(0, unscheduled);
 	for(size_t i = 0; i < n; i++) {
 		newSeq[0] = i;
 
 		d_current = core::calculate_departure_times(*instance, newSeq, false);
 
-		artificialProcessingTimes = computeAvgProcessingTime(i, unscheduled);
+		artificial_departure_time = calculate_artificial_departure_time(d_current, artificial_processing_times);
 
-		artificialDepartureTime = computeArtificialDepartureTime(d_current, artificialProcessingTimes);
+		chi = calculate_chi(d_current[0], artificial_departure_time, artificial_processing_times);
 
-		chi = computeChi(d_current[0], artificialDepartureTime, artificialProcessingTimes);
-
-		f = computeF(d_current, d_current[0], chi, i, 0);
+		f = calculate_f(d_current, d_current[0], chi, i, 0);
 
 		if(f < smallestF || (f == smallestF && chi < smallestChi)) {
 			best_i = i;
 			smallestChi = chi;
 			smallestF = f;
 		} 			
+
+		if(i+1 == n) break;
+
+		update_avg_processing_time(i, i+1, unscheduled.size(), artificial_processing_times);
 
 	}
 
@@ -229,20 +189,24 @@ Solution PW::applyPW() {
 		smallestChi = std::numeric_limits<size_t>::max();
 		smallestF = std::numeric_limits<size_t>::max();
 
+		artificial_processing_times = calculate_avg_processing_time(unscheduled[0], unscheduled);
 		for(size_t i = 0; i < unscheduled.size(); i++) {
 
-			artificialProcessingTimes = computeAvgProcessingTime(unscheduled[i], unscheduled);
-			artificialDepartureTime = computeArtificialDepartureTime(d_current, artificialProcessingTimes);
-			newDepartureTime = computeNewDepartureTime(d_current, unscheduled[i]);
+			artificial_departure_time = calculate_artificial_departure_time(d_current, artificial_processing_times);
+			new_departure_time = core::calculate_new_departure_time(*instance, d_current, unscheduled[i]);
 
-			chi = computeChi(newDepartureTime, artificialDepartureTime, artificialProcessingTimes);
-			f = computeF(d_current, newDepartureTime, chi, unscheduled[i], k);
+			chi = calculate_chi(new_departure_time, artificial_departure_time, artificial_processing_times);
+			f = calculate_f(d_current, new_departure_time, chi, unscheduled[i], k);
 
 			if(f < smallestF || (f == smallestF && chi < smallestChi)) {
 				best_i = i;
 				smallestChi = chi;
 				smallestF = f;
-			} 			
+			} 
+
+			if(i+1 == unscheduled.size()) break;
+
+			update_avg_processing_time(unscheduled[i], unscheduled[i+1], unscheduled.size(), artificial_processing_times);
 
 		}
 
