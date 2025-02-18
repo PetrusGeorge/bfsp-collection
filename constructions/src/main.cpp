@@ -54,12 +54,12 @@ int main(int argc, char *argv[]) {
     std::cout << "\nPF:" << '\n';
     std::cout << s_pf << '\n';
 
-    // PW pw = PW(instance);
-    // Solution s_pw;
-    // s_pw = pw.applyPW();
+    PW pw = PW(instance);
+    Solution s_pw;
+    s_pw = pw.solve();
 
-    // std::cout << "\nPW:" << '\n';
-    // std::cout << s_pw << '\n';
+    std::cout << "\nPW:" << '\n';
+    std::cout << s_pw << '\n';
 
 
     Solution s_grasp;

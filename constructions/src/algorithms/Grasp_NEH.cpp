@@ -20,7 +20,7 @@ Solution GraspNeh::solve(int x, int delta, const Instance &instance) {
 
     GRASP grasp(instance);
 
-    sorted_jobs = grasp.stpt_sort(instance);
+    sorted_jobs = core::stpt_sort(instance);
 
     // Vetor para armazenar as soluções candidatas geradas.
     std::vector<Solution> candidate_solutions;

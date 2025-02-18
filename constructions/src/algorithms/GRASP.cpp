@@ -5,85 +5,85 @@ GRASP::GRASP(const Instance &instance) { this->instance = &instance; }
 
 GRASP::~GRASP() { /* dtor */ }
 
-std::vector<size_t> GRASP::stpt_sort(const Instance &instance) {
-    std::vector<size_t> seq(instance.num_jobs());
-    std::iota(seq.begin(), seq.end(), 0);
+// std::vector<size_t> GRASP::stpt_sort(const Instance &instance) {
+//     std::vector<size_t> seq(instance.num_jobs());
+//     std::iota(seq.begin(), seq.end(), 0);
 
-    std::vector<size_t> optzado;
-    optzado.reserve(instance.num_jobs());
+//     std::vector<size_t> optzado;
+//     optzado.reserve(instance.num_jobs());
 
-    for (size_t i = 0; i < instance.num_jobs(); i++) {
-        size_t sum = 0;
-        for (size_t j = 0; j < instance.num_machines(); j++) {
-            sum += instance.p(i, j);
-        }
-        optzado.push_back(sum);
-    }
+//     for (size_t i = 0; i < instance.num_jobs(); i++) {
+//         size_t sum = 0;
+//         for (size_t j = 0; j < instance.num_machines(); j++) {
+//             sum += instance.p(i, j);
+//         }
+//         optzado.push_back(sum);
+//     }
 
-    std::sort(seq.begin(),seq.end(),
-              [optzado, instance](size_t a, size_t b) { return optzado[a] < optzado[b]; });
+//     std::sort(seq.begin(),seq.end(),
+//               [optzado, instance](size_t a, size_t b) { return optzado[a] < optzado[b]; });
 
-    return seq;
-}
-
-
-std::vector<size_t> GRASP::computeNewDepartureTime(std::vector<std::vector<size_t>> &d, size_t node) {
-
-	double m = instance->num_machines();        // number of machines
-
-	auto p = core::get_reversible_matrix(*instance, false);
-
-	std::vector<size_t> newDepartureTime(m);
-
-	const size_t k_job = d.size() - 1;
-
-	/* Calculating equal how to calculate any departure time */
-	newDepartureTime[0] = std::max((d[ k_job ][0]) + p(node, 0), d[ k_job ][1]);
-
-	for (size_t j = 1; j < m - 1; j++) {
-
-		const size_t current_finish_time = newDepartureTime[j - 1] + p(node, j);
-
-		newDepartureTime[j] = std::max(current_finish_time, d[ k_job ][j + 1]);
-
-	}
-
-	newDepartureTime.back() =
-			newDepartureTime[m - 2] + p(node, m - 1);
+//     return seq;
+// }
 
 
-	return newDepartureTime;
+// std::vector<size_t> GRASP::computeNewDepartureTime(std::vector<std::vector<size_t>> &d, size_t node) {
 
-}
+// 	double m = instance->num_machines();        // number of machines
+
+// 	auto p = core::get_reversible_matrix(*instance, false);
+
+// 	std::vector<size_t> newDepartureTime(m);
+
+// 	const size_t k_job = d.size() - 1;
+
+// 	/* Calculating equal how to calculate any departure time */
+// 	newDepartureTime[0] = std::max((d[ k_job ][0]) + p(node, 0), d[ k_job ][1]);
+
+// 	for (size_t j = 1; j < m - 1; j++) {
+
+// 		const size_t current_finish_time = newDepartureTime[j - 1] + p(node, j);
+
+// 		newDepartureTime[j] = std::max(current_finish_time, d[ k_job ][j + 1]);
+
+// 	}
+
+// 	newDepartureTime.back() =
+// 			newDepartureTime[m - 2] + p(node, m - 1);
 
 
-double GRASP::computeSigma(
-	std::vector<std::vector<size_t>> &d, 
-	std::vector<size_t> &newDepartureTime,
-	size_t job,
-	double k) {
+// 	return newDepartureTime;
+
+// }
+
+
+// double GRASP::computeSigma(
+// 	std::vector<std::vector<size_t>> &d, 
+// 	std::vector<size_t> &newDepartureTime,
+// 	size_t job,
+// 	double k) {
 	
 
-	double m = instance->num_machines();        // number of machines
+// 	double m = instance->num_machines();        // number of machines
 
-	auto p = core::get_reversible_matrix(*instance, false);
+// 	auto p = core::get_reversible_matrix(*instance, false);
 
-	double sigma = 0;
+// 	double sigma = 0;
 
-	for (size_t machine = 0; machine < m; machine++) {
-		double sum;
+// 	for (size_t machine = 0; machine < m; machine++) {
+// 		double sum;
 
-		if (k == 0) sum = (newDepartureTime[machine] - p(job, machine));
-		else sum = (newDepartureTime[machine] - d[ d.size() - 1 ][machine] - p(job, machine));
+// 		if (k == 0) sum = (newDepartureTime[machine] - p(job, machine));
+// 		else sum = (newDepartureTime[machine] - d[ d.size() - 1 ][machine] - p(job, machine));
 
-		sigma += sum;
+// 		sigma += sum;
 
-	}
+// 	}
 
 
-	return sigma;
+// 	return sigma;
 
-}
+// }
 
 
 Solution GRASP::solve(double beta) {
@@ -93,7 +93,7 @@ Solution GRASP::solve(double beta) {
 
   std::vector<std::vector<size_t>> d(1, std::vector<size_t>(m, 0)); // departure time matrix
 
-  std::vector<size_t> seq = stpt_sort(*instance); // sorting using the stpt rule
+  std::vector<size_t> seq = core::stpt_sort(*instance); // sorting using the stpt rule
 
   std::vector<size_t> pi; // sequence
   
@@ -122,10 +122,10 @@ Solution GRASP::solve(double beta) {
       pi[i] = seq[j];
 
       // calculating the departure time of the job j that will be possibly inserted in the solution  
-      std::vector<size_t> newDepartureTime = computeNewDepartureTime(d, pi[i]);  
+      std::vector<size_t> newDepartureTime = core::calculate_new_departure_time(*instance, d, pi[i]);  
 
       // computing the sum of the idle and blocking time of the job j
-      sigma[ sigma.size()-1 ] = computeSigma(d, newDepartureTime, pi[i], i);
+      sigma[ sigma.size()-1 ] = core::calculate_sigma(*instance, d, newDepartureTime, pi[i], i);
 
       // updating cmin or cmax
       if(sigma[ sigma.size()-1 ] < cmin) cmin = sigma[ sigma.size()-1 ];
