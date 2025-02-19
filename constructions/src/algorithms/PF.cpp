@@ -6,27 +6,6 @@
 #include <numeric>
 #include <vector>
 
-std::vector<size_t> PF::stpt_sort(const Instance &instance) {
-    std::vector<size_t> seq(instance.num_jobs());
-    std::iota(seq.begin(), seq.end(), 0);
-
-    std::vector<size_t> optzado;
-    optzado.reserve(instance.num_jobs());
-
-    for (size_t i = 0; i < instance.num_jobs(); i++) {
-        size_t sum = 0;
-        for (size_t j = 0; j < instance.num_machines(); j++) {
-            sum += instance.p(i, j);
-        }
-        optzado.push_back(sum);
-    }
-
-    std::sort(seq.begin(),seq.end(),
-              [optzado, instance](size_t a, size_t b) { return optzado[a] < optzado[b]; });
-
-    return seq;
-}
-
 //---------------------------------------------------------
 // PF heuristic implementation.
 // This function builds a new job sequence by selecting, at each iteration,
@@ -41,7 +20,7 @@ Solution PF::solve(const Instance &instance) {
     //     PF::stpt_sort(sol, instance);
     // }
 
-    std::vector<size_t> stpt = stpt_sort(instance);
+    std::vector<size_t> stpt = core::stpt_sort(instance);
 
     // Vetores auxiliares para indicar os jobs já agendados e armazenar a nova sequência.
     std::vector<bool> scheduled(n, false);

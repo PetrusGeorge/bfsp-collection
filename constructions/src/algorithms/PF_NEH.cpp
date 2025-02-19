@@ -18,7 +18,7 @@ Solution PFNeh::solve(int x, int delta, const Instance &instance) {
     // Reutiliza sua função STPT_Sort – como ela age sobre uma Solution,
     // criamos uma solução temporária e a usamos apenas para obter a ordem.
 
-    sorted_jobs = PF::stpt_sort(instance);
+    sorted_jobs = core::stpt_sort(instance);
 
     // Vetor para armazenar as soluções candidatas geradas.
     std::vector<Solution> candidate_solutions;
