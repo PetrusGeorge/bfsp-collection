@@ -6,7 +6,7 @@
 #include <functional>
 
 namespace core {
-template <bool JobsReversed = false>
+
 std::vector<std::vector<size_t>>
 calculate_departure_times(const Instance &instance, const std::vector<size_t> &sequence, bool jobs_reversed = false);
 
