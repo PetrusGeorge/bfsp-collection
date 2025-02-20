@@ -1,7 +1,7 @@
 #include "algorithms/GRASP.h"
 #include "Core.h"
 
-GRASP::GRASP(const Instance &instance) : m_instance(instance) {}
+GRASP::GRASP(Instance &instance) : m_instance(instance) {}
 
 Solution GRASP::solve(double beta) {
 
@@ -25,7 +25,7 @@ Solution GRASP::solve(double beta) {
         size_t cmin = std::numeric_limits<size_t>::max();
         size_t cmax = std::numeric_limits<size_t>::min();
 
-        d = core::calculate_departure_times(m_instance, pi, false);
+        d = core::calculate_departure_times(m_instance, pi);
 
         pi.push_back({});
         std::vector<size_t> sigma;
@@ -79,7 +79,7 @@ Solution GRASP::solve(double beta) {
     Solution s;
     s.sequence = pi;
 
-    d = core::calculate_departure_times(m_instance, pi, false);
+    d = core::calculate_departure_times(m_instance, pi);
     s.departure_times = d;
 
     s.cost = d[n - 1][m - 1];

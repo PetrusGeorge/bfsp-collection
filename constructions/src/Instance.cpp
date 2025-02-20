@@ -1,5 +1,6 @@
 #include "Instance.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -8,7 +9,7 @@
 #include <stdexcept>
 #include <string>
 
-Instance::Instance(const std::filesystem::path &path) {
+Instance::Instance(const std::filesystem::path &path, bool jobs_reversed) {
 
     std::ifstream file(path);
 
@@ -34,6 +35,10 @@ Instance::Instance(const std::filesystem::path &path) {
 
         while (iss >> number) {
             temporary.emplace_back(number);
+        }
+
+        if (jobs_reversed) {
+            std::reverse(temporary.begin(), temporary.end());
         }
 
         if (temporary.size() != m_num_machines) {

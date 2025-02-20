@@ -6,7 +6,7 @@
 
 struct Instance {
   public:
-    Instance(const std::filesystem::path &path);
+    Instance(const std::filesystem::path &path, bool jobs_reversed = false);
 
     size_t num_jobs() const { return m_num_jobs; }
     size_t num_machines() const { return m_num_machines; }

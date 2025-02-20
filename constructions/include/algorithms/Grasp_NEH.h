@@ -6,7 +6,7 @@
 
 class GraspNeh {
   public:
-    static Solution solve(int x, int delta, const Instance &instance);
+    static Solution solve(int x, int delta, Instance &instance);
 };
 
 #endif

@@ -4,11 +4,11 @@
 #include <algorithm>
 #include <numeric>
 
-std::vector<std::vector<size_t>>
-core::calculate_departure_times(const Instance &instance, const std::vector<size_t> &sequence, bool jobs_reversed) {
+std::vector<std::vector<size_t>> core::calculate_departure_times(const Instance &instance,
+                                                                 const std::vector<size_t> &sequence) {
     auto departure_times = std::vector(sequence.size(), std::vector<size_t>(instance.num_machines()));
 
-    const std::function<long(size_t, size_t)> p = get_reversible_matrix(instance, jobs_reversed);
+    auto p = [&instance](size_t i, size_t j) { return instance.p(i, j); };
 
     // Calculate first job
     departure_times[0][0] = p(sequence[0], 0);
@@ -30,17 +30,6 @@ core::calculate_departure_times(const Instance &instance, const std::vector<size
     }
 
     return departure_times;
-}
-
-std::function<long(size_t, size_t)> core::get_reversible_matrix(const Instance &instance, bool jobs_reversed) {
-
-    // A c++ hack using lambda functions to call normal matrix view or the m_reversed one
-    std::function<long(size_t, size_t)> p = [&instance](size_t i, size_t j) { return instance.p(i, j); };
-    if (jobs_reversed) {
-        p = [&instance](size_t i, size_t j) { return instance.rp(i, j); };
-    }
-
-    return p;
 }
 
 std::vector<size_t> core::stpt_sort(const Instance &instance) {
@@ -68,7 +57,7 @@ size_t core::calculate_sigma(const Instance &instance, std::vector<std::vector<s
 
     const size_t m = instance.num_machines(); // number of machines
 
-    auto p = get_reversible_matrix(instance, false);
+    auto p = [&instance](size_t i, size_t j) { return instance.p(i, j); };
 
     size_t sigma = 0;
 
@@ -92,7 +81,7 @@ std::vector<size_t> core::calculate_new_departure_time(const Instance &instance,
 
     const size_t m = instance.num_machines(); // number of machines
 
-    auto p = core::get_reversible_matrix(instance, false);
+    auto p = [&instance](size_t i, size_t j) { return instance.p(i, j); };
 
     std::vector<size_t> new_departure_time(m);
 

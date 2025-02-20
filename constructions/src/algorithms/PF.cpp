@@ -73,13 +73,12 @@ Solution PF::solve(const Instance &instance) {
         unscheduled.erase(std::remove(unscheduled.begin(), unscheduled.end(), best_job), unscheduled.end());
     } // fim do loop principal
 
-    // BUG: PF solution is giving a wrong cost
     Solution sol;
     // Atualiza a solução: sequência, departure_times e custo (makespan)
     sol.sequence = new_seq;
     std::vector<std::vector<size_t>> d_final = core::calculate_departure_times(instance, new_seq);
     sol.departure_times = d_final;
-    sol.cost = d_final.back()[m]; // o makespan é o departure time do último job na última máquina
+    sol.cost = d_final.back()[m - 1]; // o makespan é o departure time do último job na última máquina
 
     return sol;
 }

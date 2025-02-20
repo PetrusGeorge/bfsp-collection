@@ -6,11 +6,9 @@
 #include "Parameters.h"
 #include "RNG.h"
 #include "algorithms/GRASP.h"
-#include "algorithms/Grasp_NEH.h"
 #include "algorithms/LPT.h"
 #include "algorithms/NEH.h"
 #include "algorithms/PF.h"
-#include "algorithms/PF_NEH.h"
 #include "algorithms/PW.h"
 #include "algorithms/mNEH.h"
 
@@ -35,12 +33,12 @@ int main(int argc, char *argv[]) {
     std::vector<size_t> phi(instance.num_jobs());
     std::iota(phi.begin(), phi.end(), 0);
 
-    NEH n(phi, instance, params, false); // false -> not reversed jobs);
+    NEH n(phi, instance, params); // false -> not reversed jobs);
     const Solution s_neh = n.solve();
     std::cout << "\nNEH:" << '\n';
     std::cout << s_neh << '\n';
 
-    const Solution s_mneh = MNEH::solve(0.8, instance, params, false);
+    const Solution s_mneh = MNEH::solve(0.8, instance, params);
     std::cout << "\nmNEH:" << '\n';
     std::cout << s_mneh << '\n';
 

@@ -7,13 +7,13 @@
 class GRASP {
 
   public:
-    GRASP(const Instance &instance);
+    GRASP(Instance &instance);
 
     // construct a solution using the greed GRASP criterion
     Solution solve(double beta);
 
   private:
-    const Instance &m_instance;
+    Instance &m_instance;
 };
 
 #endif

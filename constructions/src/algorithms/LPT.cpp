@@ -4,11 +4,9 @@
 #include <algorithm>
 #include <numeric>
 
-std::vector<size_t> initial_job_sequence(const Instance &instance, bool jobs_reversed = false) {
+std::vector<size_t> initial_job_sequence(const Instance &instance) {
     std::vector<size_t> sequence(instance.num_jobs());
     std::iota(sequence.begin(), sequence.end(), 0);
-
-    auto p = core::get_reversible_matrix(instance, jobs_reversed);
 
     const std::vector<size_t> &pts = instance.processing_times_sum();
 
@@ -17,10 +15,10 @@ std::vector<size_t> initial_job_sequence(const Instance &instance, bool jobs_rev
     return sequence;
 }
 
-Solution LPT::solve(const Instance &instance, bool jobs_reversed) {
+Solution LPT::solve(const Instance &instance) {
     Solution s;
 
-    s.sequence = initial_job_sequence(instance, jobs_reversed);
+    s.sequence = initial_job_sequence(instance);
     core::recalculate_solution(instance, s);
     return s;
 }

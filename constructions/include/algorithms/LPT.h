@@ -6,7 +6,7 @@
 
 class LPT {
   public:
-    static Solution solve(const Instance &instance, bool jobs_reversed = false);
+    static Solution solve(const Instance &instance);
 };
 
 #endif

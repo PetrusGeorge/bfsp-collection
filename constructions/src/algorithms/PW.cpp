@@ -4,7 +4,7 @@
 #include <cmath>
 #include <numeric>
 
-PW::PW(const Instance &instance) : m_instance(instance) {}
+PW::PW(Instance &instance) : m_instance(instance) {}
 
 std::vector<double> PW::calculate_avg_processing_time(size_t candidate_job, std::vector<size_t> &unscheduled) {
 
@@ -12,7 +12,7 @@ std::vector<double> PW::calculate_avg_processing_time(size_t candidate_job, std:
 
     std::vector<double> artificial_times(m, 0); // m processing times
 
-    auto p = core::get_reversible_matrix(m_instance, false);
+    auto p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
 
     for (const unsigned long job : unscheduled) {
 
@@ -34,18 +34,18 @@ std::vector<double> PW::calculate_avg_processing_time(size_t candidate_job, std:
     return artificial_times;
 }
 
-void PW::update_avg_processing_time(const size_t previus_job, const size_t next_job, const size_t qt_unscheduled,
+void PW::update_avg_processing_time(const size_t previous_job, const size_t next_job, const size_t qt_unscheduled,
                                     std::vector<double> &artificial_processing_times) {
 
     const size_t m = m_instance.num_machines(); // number of machines
-    auto p = core::get_reversible_matrix(m_instance, false);
+    auto p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
 
     for (size_t machine = 0; machine < m; machine++) {
         artificial_processing_times[machine] *= (double)(qt_unscheduled - 1);
     }
 
     for (size_t machine = 0; machine < m; machine++) {
-        artificial_processing_times[machine] += (double)p(previus_job, machine);
+        artificial_processing_times[machine] += (double)p(previous_job, machine);
     }
 
     for (size_t machine = 0; machine < m; machine++) {
@@ -61,7 +61,6 @@ std::vector<double> PW::calculate_artificial_departure_time(std::vector<std::vec
                                                             std::vector<double> &artificial_processing_times) {
 
     const size_t m = m_instance.num_machines(); // number of machines
-    auto p = core::get_reversible_matrix(m_instance, false);
 
     std::vector<double> artificial_departure_time(m);
 
@@ -99,7 +98,7 @@ double PW::calculate_chi(std::vector<size_t> &new_departure_time, std::vector<do
 }
 
 double PW::calculate_f(std::vector<std::vector<size_t>> &d, std::vector<size_t> &new_departure_time, double chi,
-                       size_t job, int k) {
+                       size_t job, size_t k) {
 
     const size_t n = m_instance.num_jobs(); // number of jobs
     const size_t sigma = core::calculate_sigma(m_instance, d, new_departure_time, job, k);
@@ -138,7 +137,7 @@ Solution PW::solve() {
     for (size_t i = 0; i < n; i++) {
         new_seq[0] = i;
 
-        d_current = core::calculate_departure_times(m_instance, new_seq, false);
+        d_current = core::calculate_departure_times(m_instance, new_seq);
 
         artificial_departure_time = calculate_artificial_departure_time(d_current, artificial_processing_times);
 
@@ -166,7 +165,7 @@ Solution PW::solve() {
 
     for (size_t k = 1; k <= n - 2; k++) {
 
-        d_current = core::calculate_departure_times(m_instance, new_seq, false);
+        d_current = core::calculate_departure_times(m_instance, new_seq);
 
         best_i = std::numeric_limits<size_t>::max();
         smallest_chi = std::numeric_limits<double>::infinity();
@@ -204,7 +203,7 @@ Solution PW::solve() {
     Solution s;
     s.sequence = new_seq;
 
-    d_current = core::calculate_departure_times(m_instance, new_seq, false);
+    d_current = core::calculate_departure_times(m_instance, new_seq);
     s.departure_times = d_current;
 
     s.cost = d_current[n - 1][m - 1];

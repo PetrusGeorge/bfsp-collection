@@ -5,8 +5,8 @@
 #include "Solution.h"
 #include <utility>
 
-NEH::NEH(const std::vector<size_t> &phi, Instance &instance, Parameters &params, bool jobs_reversed)
-    : m_instance(instance), m_params(params), m_phi(phi), m_reversed(jobs_reversed) {}
+NEH::NEH(const std::vector<size_t> &phi, Instance &instance, Parameters &params)
+    : m_instance(instance), m_params(params), m_phi(phi) {}
 
 Solution NEH::solve() {
     Solution s;
@@ -33,7 +33,7 @@ void NEH::set_taillard_matrices(const std::vector<size_t> &sequence, size_t k) {
     m_q.emplace_back(m_instance.num_machines(),
                      0); // Make it easier to implement find_best_insertion without an out of bound access
 
-    auto p = get_reversible_matrix();
+    auto p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
 
     // f needs to store all possibilities of insertion so it has sequence.size + 1
     m_f = std::vector(sequence.size() + 1, std::vector<size_t>(m_instance.num_machines()));
@@ -53,7 +53,7 @@ void NEH::set_taillard_matrices(const std::vector<size_t> &sequence, size_t k) {
 std::vector<std::vector<size_t>> NEH::calculate_departure_times(const std::vector<size_t> &sequence) {
     auto departure_times = std::vector(sequence.size(), std::vector<size_t>(m_instance.num_machines()));
 
-    const std::function<long(size_t, size_t)> p = get_reversible_matrix();
+    auto p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
 
     // Calculate first job
     departure_times[0][0] = p(sequence[0], 0);
@@ -81,7 +81,7 @@ std::vector<std::vector<size_t>> NEH::calculate_tail(const std::vector<size_t> &
 
     auto tail = std::vector(sequence.size(), std::vector<size_t>(m_instance.num_machines()));
 
-    const std::function<long(size_t, size_t)> p = get_reversible_matrix();
+    auto p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
 
     // Calculate first job
     tail.back().back() = p(sequence.back(), m_instance.num_machines() - 1);
@@ -103,17 +103,6 @@ std::vector<std::vector<size_t>> NEH::calculate_tail(const std::vector<size_t> &
     }
 
     return tail;
-}
-
-std::function<long(size_t, size_t)> NEH::get_reversible_matrix() {
-
-    // A c++ hack using lambda functions to call normal matrix view or the m_reversed one
-    std::function<long(size_t, size_t)> p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
-    if (m_reversed) {
-        p = [this](size_t i, size_t j) { return m_instance.rp(i, j); };
-    }
-
-    return p;
 }
 
 std::pair<size_t, size_t> NEH::get_best_insertion() {
