@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <numeric>
 #include <vector>
 
 //---------------------------------------------------------
@@ -12,8 +11,8 @@
 // the candidate job (among unscheduled jobs) that minimizes the sum of idle and blocking times.
 // (Here we use a measure sigma computed from the difference in departure times.)
 Solution PF::solve(const Instance &instance) {
-    size_t n = instance.num_jobs();     // número de jobs
-    size_t m = instance.num_machines(); // número de máquinas
+    const size_t n = instance.num_jobs();     // número de jobs
+    const size_t m = instance.num_machines(); // número de máquinas
 
     // Passo 1: Ordena os jobs usando a regra STPT.
     // if (sol.sequence.empty()) {
@@ -28,7 +27,7 @@ Solution PF::solve(const Instance &instance) {
     std::vector<size_t> unscheduled;
 
     // Passos 2 e 3: Seleciona o primeiro job (o primeiro na ordem STPT).
-    size_t first_job = stpt.front();
+    const size_t first_job = stpt.front();
     new_seq.push_back(first_job);
     scheduled[first_job] = true;
 
@@ -47,12 +46,13 @@ Solution PF::solve(const Instance &instance) {
         size_t best_job = unscheduled.front(); // valor inicial
 
         // Para cada job candidato não agendado:
-        for (size_t candidate : unscheduled) {
+        for (const size_t candidate : unscheduled) {
             std::vector<size_t> candidate_sequence = new_seq;
             candidate_sequence.push_back(candidate);
 
             // Calcula os departure times da sequência candidata.
-            std::vector<std::vector<size_t>> d_candidate = core::calculate_departure_times(instance, candidate_sequence);
+            std::vector<std::vector<size_t>> d_candidate =
+                core::calculate_departure_times(instance, candidate_sequence);
             const std::vector<size_t> &d_new = d_candidate.back();
 
             // Calcula sigma como a soma, para cada máquina k (de 1 a m), de:
@@ -73,6 +73,7 @@ Solution PF::solve(const Instance &instance) {
         unscheduled.erase(std::remove(unscheduled.begin(), unscheduled.end(), best_job), unscheduled.end());
     } // fim do loop principal
 
+    // BUG: PF solution is giving a wrong cost
     Solution sol;
     // Atualiza a solução: sequência, departure_times e custo (makespan)
     sol.sequence = new_seq;

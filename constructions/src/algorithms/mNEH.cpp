@@ -16,7 +16,7 @@ double MNEH::average(const size_t job, Instance &instance, const bool jobs_rever
     for (size_t machine = 0; machine < instance.num_machines(); ++machine) {
         sum += static_cast<double>(processing_time_matrix(job, machine));
     }
-    double average = sum / static_cast<double>(instance.num_machines());
+    const double average = sum / static_cast<double>(instance.num_machines());
 
     return average;
 }
@@ -27,11 +27,11 @@ double MNEH::standard_deviation(const size_t job, Instance &instance, const bool
     double sum = 0;
 
     for (size_t machine = 0; machine < instance.num_machines(); ++machine) {
-        double deviation =
+        const double deviation =
             static_cast<double>(processing_time_matrix(job, machine)) - average(job, instance, jobs_reversed);
         sum += deviation * deviation;
     }
-    double standard_deviation = sqrt(sum / (static_cast<double>(instance.num_machines()) - 1));
+    const double standard_deviation = sqrt(sum / (static_cast<double>(instance.num_machines()) - 1));
 
     return standard_deviation;
 }
@@ -44,8 +44,8 @@ std::vector<size_t> MNEH::priority_rule(const double alpha, Instance &instance, 
     initial_sequence.reserve(instance.num_machines());
 
     for (size_t job = 0; job < instance.num_jobs(); ++job) {
-        double priority_value = (alpha * average(job, instance, jobs_reversed)) +
-                                ((1 + alpha) * standard_deviation(job, instance, jobs_reversed));
+        const double priority_value = (alpha * average(job, instance, jobs_reversed)) +
+                                      ((1 + alpha) * standard_deviation(job, instance, jobs_reversed));
         priority_rule_values.emplace_back(job, priority_value);
     }
 
@@ -61,7 +61,7 @@ std::vector<size_t> MNEH::priority_rule(const double alpha, Instance &instance, 
 }
 
 Solution MNEH::solve(const double alpha, Instance &instance, Parameters &params, const bool jobs_reversed) {
-    std::vector<size_t> priority_rule_sequence = priority_rule(alpha, instance, jobs_reversed);
+    const std::vector<size_t> priority_rule_sequence = priority_rule(alpha, instance, jobs_reversed);
 
     NEH neh(priority_rule_sequence, instance, params, jobs_reversed);
 

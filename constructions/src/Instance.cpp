@@ -45,4 +45,20 @@ Instance::Instance(const std::filesystem::path &path) {
     if (m_matrix.size() != m_num_jobs || !file.eof()) {
         throw std::runtime_error("Wrong number of jobs on instance");
     }
+
+    // Used for LPT
+    calculate_processing_times_sum();
+}
+
+void Instance::calculate_processing_times_sum() {
+
+    m_processing_times_sum.reserve(m_num_jobs);
+
+    for (size_t i = 0; i < m_num_jobs; i++) {
+        size_t sum = 0;
+        for (size_t j = 0; j < m_num_machines; j++) {
+            sum += m_matrix[i][j];
+        }
+        m_processing_times_sum.push_back(sum);
+    }
 }

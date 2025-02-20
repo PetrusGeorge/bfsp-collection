@@ -10,20 +10,9 @@ std::vector<size_t> initial_job_sequence(const Instance &instance, bool jobs_rev
 
     auto p = core::get_reversible_matrix(instance, jobs_reversed);
 
-    std::vector<size_t> optzado;
-    optzado.reserve(instance.num_jobs());
+    const std::vector<size_t> &pts = instance.processing_times_sum();
 
-    for(size_t i = 0; i < instance.num_jobs(); i++){
-        size_t sum = 0;
-        for(size_t j = 0; j < instance.num_machines(); j++){
-            sum += instance.p(i, j);
-        }
-        optzado.push_back(sum);
-    }
-
-    std::sort(sequence.begin(), sequence.end(), [optzado](size_t a, size_t b) {
-        return optzado[a] > optzado[b];
-    });
+    std::sort(sequence.begin(), sequence.end(), [pts](size_t a, size_t b) { return pts[a] > pts[b]; });
 
     return sequence;
 }
@@ -32,5 +21,6 @@ Solution LPT::solve(const Instance &instance, bool jobs_reversed) {
     Solution s;
 
     s.sequence = initial_job_sequence(instance, jobs_reversed);
+    core::recalculate_solution(instance, s);
     return s;
 }

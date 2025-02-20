@@ -1,8 +1,8 @@
 #ifndef LPT_H
 #define LPT_H
 
-#include "Solution.h"
 #include "Instance.h"
+#include "Solution.h"
 
 class LPT {
   public:

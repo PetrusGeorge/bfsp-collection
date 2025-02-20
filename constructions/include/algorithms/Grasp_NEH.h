@@ -7,7 +7,6 @@
 class GraspNeh {
   public:
     static Solution solve(int x, int delta, const Instance &instance);
-    
 };
 
 #endif

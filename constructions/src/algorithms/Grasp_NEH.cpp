@@ -1,7 +1,7 @@
 #include "algorithms/Grasp_NEH.h"
+#include "Core.h"
 #include "Instance.h"
 #include "algorithms/GRASP.h"
-#include "Core.h"
 
 #include <bits/types/cookie_io_functions_t.h>
 #include <cassert>
@@ -9,8 +9,8 @@
 
 Solution GraspNeh::solve(int x, int delta, const Instance &instance) {
 
-    size_t n_jobs = instance.num_jobs();
-    size_t m = instance.num_machines();
+    const size_t n_jobs = instance.num_jobs();
+    const size_t m = instance.num_machines();
 
     // Cria o vetor de índices (0, 1, ..., nJobs-1) e ordena com a regra STPT.
     std::vector<size_t> sorted_jobs(n_jobs);
@@ -39,10 +39,11 @@ Solution GraspNeh::solve(int x, int delta, const Instance &instance) {
 
         // --- Melhoria local: reinserção dos últimos delta jobs ---
         // Se delta for maior que o número de jobs, usa todos.
-        size_t start_index = (delta > static_cast<int>(cand_sol.sequence.size())) ? 0 : cand_sol.sequence.size() - delta;
+        const size_t start_index =
+            (delta > static_cast<int>(cand_sol.sequence.size())) ? 0 : cand_sol.sequence.size() - delta;
         // Para cada posição na região final da sequência:
         for (size_t pos = start_index; pos < cand_sol.sequence.size(); pos++) {
-            size_t job = cand_sol.sequence[pos];
+            const size_t job = cand_sol.sequence[pos];
             // Remove o job da posição pos.
             std::vector<size_t> temp_seq = cand_sol.sequence;
             temp_seq.erase(temp_seq.begin() + (long)pos);
@@ -51,11 +52,11 @@ Solution GraspNeh::solve(int x, int delta, const Instance &instance) {
             std::vector<size_t> best_seq;
             // Testa inserir o job em todas as posições possíveis.
             for (size_t j = 0; j <= temp_seq.size(); j++) {
-                std::vector<size_t>& candidate_seq = temp_seq;
+                std::vector<size_t> &candidate_seq = temp_seq;
                 candidate_seq.insert(candidate_seq.begin() + (long)j, job);
                 // Avalia a sequência: calcula os departure times e o makespan
                 auto d_candidate = core::calculate_departure_times(instance, candidate_seq);
-                size_t candidate_cmax = d_candidate.back()[m]; // makespan é o último valor da última máquina
+                const size_t candidate_cmax = d_candidate.back()[m]; // makespan é o último valor da última máquina
                 if (candidate_cmax < best_cmax) {
                     best_cmax = candidate_cmax;
                     best_seq = candidate_seq;

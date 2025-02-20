@@ -2,8 +2,9 @@
 
 #include "Instance.h"
 #include <algorithm>
+#include <numeric>
 
-std::vector<std::vector<size_t>> 
+std::vector<std::vector<size_t>>
 core::calculate_departure_times(const Instance &instance, const std::vector<size_t> &sequence, bool jobs_reversed) {
     auto departure_times = std::vector(sequence.size(), std::vector<size_t>(instance.num_machines()));
 
@@ -57,69 +58,62 @@ std::vector<size_t> core::stpt_sort(const Instance &instance) {
         optzado.push_back(sum);
     }
 
-    std::sort(seq.begin(),seq.end(),
-              [optzado, instance](size_t a, size_t b) { return optzado[a] < optzado[b]; });
+    std::sort(seq.begin(), seq.end(), [optzado, instance](size_t a, size_t b) { return optzado[a] < optzado[b]; });
 
     return seq;
 }
 
-size_t core::calculate_sigma(
-    const Instance &instance,
-	std::vector<std::vector<size_t>> &d, 
-	std::vector<size_t> &new_departure_time,
-	size_t job,
-	size_t k) {
-	
+size_t core::calculate_sigma(const Instance &instance, std::vector<std::vector<size_t>> &d,
+                             std::vector<size_t> &new_departure_time, size_t job, size_t k) {
 
-	size_t m = instance.num_machines();        // number of machines
+    const size_t m = instance.num_machines(); // number of machines
 
-	auto p = get_reversible_matrix(instance, false);
+    auto p = get_reversible_matrix(instance, false);
 
-	size_t sigma = 0;
+    size_t sigma = 0;
 
-	for (size_t machine = 0; machine < m; machine++) {
-		size_t sum;
+    for (size_t machine = 0; machine < m; machine++) {
+        size_t sum = 0;
 
-		if (k == 0) sum = (new_departure_time[machine] - p(job, machine));
-		else sum = (new_departure_time[machine] - d[ d.size() - 1 ][machine] - p(job, machine));
+        if (k == 0) {
+            sum = (new_departure_time[machine] - p(job, machine));
+        } else {
+            sum = (new_departure_time[machine] - d[d.size() - 1][machine] - p(job, machine));
+        }
 
-		sigma += sum;
+        sigma += sum;
+    }
 
-	}
-
-
-	return sigma;
+    return sigma;
 }
 
-std::vector<size_t> core::calculate_new_departure_time(
-    const Instance &instance, 
-    std::vector<std::vector<size_t>> &d, 
-    size_t node
-    ) {
+std::vector<size_t> core::calculate_new_departure_time(const Instance &instance, std::vector<std::vector<size_t>> &d,
+                                                       size_t node) {
 
-	double m = instance.num_machines();        // number of machines
+    const size_t m = instance.num_machines(); // number of machines
 
-	auto p = core::get_reversible_matrix(instance, false);
+    auto p = core::get_reversible_matrix(instance, false);
 
-	std::vector<size_t> new_departure_time(m);
+    std::vector<size_t> new_departure_time(m);
 
-	const size_t k_job = d.size() - 1;
+    const size_t k_job = d.size() - 1;
 
-	/* Calculating equal how to calculate any departure time */
-	new_departure_time[0] = std::max((d[ k_job ][0]) + p(node, 0), d[ k_job ][1]);
+    /* Calculating equal how to calculate any departure time */
+    new_departure_time[0] = std::max((d[k_job][0]) + p(node, 0), d[k_job][1]);
 
-	for (size_t j = 1; j < m - 1; j++) {
+    for (size_t j = 1; j < m - 1; j++) {
 
-		const size_t current_finish_time = new_departure_time[j - 1] + p(node, j);
+        const size_t current_finish_time = new_departure_time[j - 1] + p(node, j);
 
-		new_departure_time[j] = std::max(current_finish_time, d[ k_job ][j + 1]);
+        new_departure_time[j] = std::max(current_finish_time, d[k_job][j + 1]);
+    }
 
-	}
+    new_departure_time.back() = new_departure_time[m - 2] + p(node, m - 1);
 
-	new_departure_time.back() =
-			new_departure_time[m - 2] + p(node, m - 1);
+    return new_departure_time;
+}
 
-
-	return new_departure_time;
-
+void core::recalculate_solution(const Instance &instance, Solution &s) {
+    s.departure_times = calculate_departure_times(instance, s.sequence);
+    s.cost = s.departure_times.back().back();
 }
