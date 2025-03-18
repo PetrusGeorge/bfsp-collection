@@ -6,14 +6,14 @@
 
 class GRASP {
 
-public:
-  GRASP(Instance &instance);
+  public:
+    GRASP(Instance &instance);
 
-  // construct a solution using the greed GRASP criterion
-  Solution solve(double beta);
+    // construct a solution using the greed GRASP criterion
+    Solution solve(double beta);
 
-private:
-  Instance &m_instance;
+  private:
+    Instance &m_instance;
 };
 
 #endif

@@ -5,8 +5,8 @@
 #include "Solution.h"
 
 class GraspNeh {
-public:
-  static Solution solve(int x, int delta, Instance &instance);
+  public:
+    static Solution solve(int x, int delta, Instance &instance);
 };
 
 #endif

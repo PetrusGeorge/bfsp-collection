@@ -5,8 +5,8 @@
 #include "Solution.h"
 
 class PF {
-public:
-  static Solution solve(const Instance &instance);
+  public:
+    static Solution solve(const Instance &instance);
 };
 
 #endif

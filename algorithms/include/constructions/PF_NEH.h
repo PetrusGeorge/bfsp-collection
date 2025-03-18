@@ -5,8 +5,8 @@
 #include "Solution.h"
 
 class PFNeh {
-public:
-  static Solution solve(int x, int delta, const Instance &instance);
+  public:
+    static Solution solve(int x, int delta, const Instance &instance);
 };
 
 #endif
