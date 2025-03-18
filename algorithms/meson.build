@@ -18,7 +18,7 @@ extra_args = ['-march=native']
 subdir('src')
 
 executable(
-  'constructions',
+  'algorithms',
   sources,
   include_directories: include_directories('include'),
   cpp_args: extra_args,
