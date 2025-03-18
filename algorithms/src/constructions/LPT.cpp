@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <numeric>
 
-std::vector<size_t> initial_job_sequence(const Instance &instance) {
+std::vector<size_t> initial_job_sequence(Instance &instance) {
     std::vector<size_t> sequence(instance.num_jobs());
     std::iota(sequence.begin(), sequence.end(), 0);
 
@@ -15,7 +15,7 @@ std::vector<size_t> initial_job_sequence(const Instance &instance) {
     return sequence;
 }
 
-Solution LPT::solve(const Instance &instance) {
+Solution LPT::solve(Instance &instance) {
     Solution s;
 
     s.sequence = initial_job_sequence(instance);

@@ -13,7 +13,7 @@ project(
 
 argparse_dep = subproject('argparse').get_variable('argparse_dep')
 
-extra_args = ['-march=native']
+extra_args = ['-march=native', '-D_GLIBCXX_ASSERTIONS=1']
 
 subdir('src')
 

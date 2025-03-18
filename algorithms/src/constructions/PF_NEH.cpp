@@ -7,7 +7,7 @@
 #include <cassert>
 #include <numeric>
 
-Solution PFNeh::solve(int x, int delta, const Instance &instance) {
+Solution PFNeh::solve(int x, int delta, Instance &instance) {
 
     const size_t n_jobs = instance.num_jobs();
     const size_t m = instance.num_machines();

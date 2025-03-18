@@ -22,8 +22,7 @@ bool rls(Solution &s, const std::vector<size_t> &ref, Instance &instance) {
             }
         }
 
-        helper.set_taillard_matrices(s.sequence, job);
-        auto [best_index, makespan] = helper.get_best_insertion();
+        auto [best_index, makespan] = helper.taillard_best_insertion(s.sequence, job);
         s.sequence.insert(s.sequence.begin() + (long)best_index, job);
 
         if (makespan < s.cost) {

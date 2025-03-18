@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <numeric>
 
-std::vector<std::vector<size_t>> core::calculate_departure_times(const Instance &instance,
+std::vector<std::vector<size_t>> core::calculate_departure_times(Instance &instance,
                                                                  const std::vector<size_t> &sequence) {
     auto departure_times = std::vector(sequence.size(), std::vector<size_t>(instance.num_machines()));
 
@@ -32,7 +32,35 @@ std::vector<std::vector<size_t>> core::calculate_departure_times(const Instance 
     return departure_times;
 }
 
-std::vector<size_t> core::stpt_sort(const Instance &instance) {
+std::vector<std::vector<size_t>> core::calculate_tail(Instance &instance, const std::vector<size_t> &sequence) {
+
+    auto tail = std::vector(sequence.size(), std::vector<size_t>(instance.num_machines()));
+
+    auto p = [&instance](size_t i, size_t j) { return instance.p(i, j); };
+
+    // Calculate first job
+    tail.back().back() = p(sequence.back(), instance.num_machines() - 1);
+    for (long j = (long)instance.num_machines() - 2; j >= 0; j--) {
+        tail.back()[j] = tail.back()[j + 1] + p(sequence.back(), j);
+    }
+
+    for (long i = ((long)sequence.size()) - 2; i >= 0; i--) {
+        const size_t node = sequence[i];
+        tail[i].back() = std::max(tail[i + 1].back() + p(node, instance.num_machines() - 1),
+                                  tail[i + 1][instance.num_machines() - 2]);
+        for (long j = (long)instance.num_machines() - 2; j >= 1; j--) {
+
+            const size_t current_finish_time = tail[i][j + 1] + p(node, j);
+
+            tail[i][j] = std::max(current_finish_time, tail[i + 1][j - 1]);
+        }
+        tail[i][0] = tail[i][1] + p(node, 0);
+    }
+
+    return tail;
+}
+
+std::vector<size_t> core::stpt_sort(Instance &instance) {
     std::vector<size_t> seq(instance.num_jobs());
     std::iota(seq.begin(), seq.end(), 0);
 
@@ -52,7 +80,7 @@ std::vector<size_t> core::stpt_sort(const Instance &instance) {
     return seq;
 }
 
-size_t core::calculate_sigma(const Instance &instance, std::vector<std::vector<size_t>> &d,
+size_t core::calculate_sigma(Instance &instance, std::vector<std::vector<size_t>> &d,
                              std::vector<size_t> &new_departure_time, size_t job, size_t k) {
 
     const size_t m = instance.num_machines(); // number of machines
@@ -76,7 +104,7 @@ size_t core::calculate_sigma(const Instance &instance, std::vector<std::vector<s
     return sigma;
 }
 
-std::vector<size_t> core::calculate_new_departure_time(const Instance &instance, std::vector<std::vector<size_t>> &d,
+std::vector<size_t> core::calculate_new_departure_time(Instance &instance, std::vector<std::vector<size_t>> &d,
                                                        size_t node) {
 
     const size_t m = instance.num_machines(); // number of machines
@@ -102,7 +130,7 @@ std::vector<size_t> core::calculate_new_departure_time(const Instance &instance,
     return new_departure_time;
 }
 
-void core::recalculate_solution(const Instance &instance, Solution &s) {
+void core::recalculate_solution(Instance &instance, Solution &s) {
     s.departure_times = calculate_departure_times(instance, s.sequence);
     s.cost = s.departure_times.back().back();
 }

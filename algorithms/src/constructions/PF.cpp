@@ -11,7 +11,7 @@
 // the candidate job (among unscheduled jobs) that minimizes the sum of idle and
 // blocking times. (Here we use a measure sigma computed from the difference in
 // departure times.)
-Solution PF::solve(const Instance &instance) {
+Solution PF::solve(Instance &instance) {
     const size_t n = instance.num_jobs();     // número de jobs
     const size_t m = instance.num_machines(); // número de máquinas
 

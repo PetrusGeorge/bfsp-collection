@@ -6,7 +6,7 @@
 
 class PF {
   public:
-    static Solution solve(const Instance &instance);
+    static Solution solve(Instance &instance);
 };
 
 #endif
