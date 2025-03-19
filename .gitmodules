@@ -1,4 +1,0 @@
-[submodule "MFFO/collection"]
-	path = MFFO/collection
-	url = git@github.com:PetrusGeorge/bfsp-collection.git
-	branch = algorithms

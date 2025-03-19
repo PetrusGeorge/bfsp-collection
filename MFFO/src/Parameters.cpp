@@ -16,6 +16,32 @@ void config_argparse(argparse::ArgumentParser &cli) {
         .metavar("RO")
         .default_value(size_t(30))
         .scan<'i', size_t>();
+
+    cli.add_argument("-a", "--alpha")
+        .help("set the alpha parameter")
+        .metavar("ALPHA")
+        .default_value(0.75)
+        .scan<'f', double>();
+
+    cli.add_argument("--pls").help("set the pls parameter").metavar("PLS").default_value(0.6).scan<'f', double>();
+
+    cli.add_argument("--ps")
+        .help("set the population size parameter")
+        .metavar("PS")
+        .default_value(size_t(20))
+        .scan<'i', size_t>();
+
+    cli.add_argument("-t", "--T")
+        .help("set the independently run times parameter")
+        .metavar("T")
+        .default_value(size_t(5))
+        .scan<'i', size_t>();
+
+    cli.add_argument("-d", "--destroy")
+        .help("set the d parameter the number of nodes to remove with in a destroy")
+        .metavar("DESTROY")
+        .default_value(size_t(5))
+        .scan<'i', size_t>();
 }
 } // namespace
 
@@ -39,4 +65,9 @@ Parameters::Parameters(int argc, char **argv) {
     m_verbose = cli.get<bool>("--verbose");
     m_seed = cli.present<size_t>("--seed");
     m_ro = cli.get<size_t>("--ro");
+    m_alpha = cli.get<double>("--alpha");
+    m_d = cli.get<size_t>("--destroy");
+    m_pls = cli.get<double>("--pls");
+    m_ps = cli.get<size_t>("--ps");
+    m_T = cli.get<size_t>("--T");
 }

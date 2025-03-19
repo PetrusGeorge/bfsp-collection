@@ -6,7 +6,7 @@ project(
     'buildtype=release',
     'warning_level=3',
     'b_ndebug=if-release',
-    'b_lto=false',
+    'b_lto=true',
   ],
   license: 'MIT',
 )
@@ -20,7 +20,7 @@ subdir('src')
 executable(
   'mffo',
   sources,
-  include_directories: include_directories('include', 'collection/algorithms/include'),
+  include_directories: include_directories('include'),
   cpp_args: extra_args,
   dependencies: argparse_dep,
 )
