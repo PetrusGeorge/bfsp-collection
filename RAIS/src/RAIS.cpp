@@ -255,7 +255,9 @@ Solution RAIS::solve() {
 
   pop = initial_pop(); 
 
-  std::sort(pop.begin(), pop.end(), [](std::pair<Solution, double> &p1, std::pair<Solution, double> &p2) { return p1.second > p2.second; }); // sorting by affinity (probably exist some best way to do this)
+  auto sort_criteria = [](std::pair<Solution, double> &p1, std::pair<Solution, double> &p2) { return p1.second > p2.second; };
+
+  std::sort(pop.begin(), pop.end(), sort_criteria); // sorting by affinity (probably exist some best way to do this)
   pop.resize(nc); // select 
 
   // double timer_counter = 1;
@@ -267,7 +269,8 @@ Solution RAIS::solve() {
 
     pop_affinity_calculation(clones);
 
-    std::sort(clones.begin(), clones.end(), [](std::pair<Solution, double> &p1, std::pair<Solution, double> &p2) { return p1.second > p2.second; });  
+
+    std::sort(clones.begin(), clones.end(), sort_criteria);  
 
     supression(pop, clones);
 
@@ -285,6 +288,8 @@ Solution RAIS::solve() {
     // }
 
     SA(pop, T);
+
+    std::sort(pop.begin(), pop.end(), sort_criteria);
     
     G++;
 
