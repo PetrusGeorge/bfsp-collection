@@ -248,7 +248,7 @@ Solution RAIS::solve() {
   for(size_t i = 0; i < vec_processing_times_sum.size(); i++) processing_times_sum += vec_processing_times_sum[i];
   double T = 0.6 * static_cast<double>(processing_times_sum) / (n * 10); // initial tempeture
   
-  std::cout << "processing_times_sum: " << processing_times_sum << "; T: " << T << std::endl;
+  // std::cout << "processing_times_sum: " << processing_times_sum << "; T: " << T << std::endl;
 
   Solution best_solution;
   std::vector<std::pair<Solution, double>> pop;
@@ -258,7 +258,7 @@ Solution RAIS::solve() {
   std::sort(pop.begin(), pop.end(), [](std::pair<Solution, double> &p1, std::pair<Solution, double> &p2) { return p1.second > p2.second; }); // sorting by affinity (probably exist some best way to do this)
   pop.resize(nc); // select 
 
-  double timer_counter = 1;
+  // double timer_counter = 1;
   while(true) {
 
     std::vector<std::pair<Solution, double>> clones = clone_antibodies(pop); // cloning the best antibodies
@@ -279,10 +279,10 @@ Solution RAIS::solve() {
     }
 
     if(uptime() > time_limit) break;
-    else if (uptime() > timer_counter * time_limit / 5) {
-        std::cout << timer_counter * time_limit / 5 << " Microsseconds out of " << time_limit << '\n';
-        timer_counter++;
-    }
+    // else if (uptime() > timer_counter * time_limit / 5) {
+    //     std::cout << timer_counter * time_limit / 5 << " Microsseconds out of " << time_limit << '\n';
+    //     timer_counter++;
+    // }
 
     SA(pop, T);
     

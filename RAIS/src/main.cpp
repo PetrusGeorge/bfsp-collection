@@ -19,5 +19,5 @@ int main(int argc, char *argv[]) {
     RAIS rais(std::move(instance), 0.97, 5, 4000, 6);
     const Solution best = rais.solve();
 
-    std::cout << best.cost << '\n';
+    std::cout << "custo: " << best.cost << "\n\n\n";
 }
