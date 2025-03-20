@@ -16,6 +16,7 @@ public:
   size_t Gt() const { return m_Gt; }
   size_t nc() const { return m_nc; }
   double alpha() const { return m_alpha; }
+  std::optional<size_t> time_limit() const { return m_time_limit; }
 
 
 private:
@@ -26,6 +27,8 @@ private:
   size_t m_Gt = 4000;
   size_t m_nc = 6;
   double m_alpha = 0.97;
+  std::optional<size_t> m_time_limit;
+
 };
 
 #endif

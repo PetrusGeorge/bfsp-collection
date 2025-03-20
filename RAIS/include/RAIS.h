@@ -20,17 +20,19 @@ public:
   std::vector<std::pair<Solution, double>> initial_pop();
 
   std::vector<std::pair<Solution, double>>
-  clone_antibodies(std::vector<std::pair<Solution, double>> &pop);
+  clone_antibodies(const std::vector<std::pair<Solution, double>> &pop);
 
   void mutation(std::vector<std::pair<Solution, double>> &pop);
 
   bool nearby_antibody(Solution &s1, Solution &s2);
 
+  void merge_populations(std::vector<std::pair<Solution, double>> &pop, const std::vector<std::pair<Solution, double>> &clones, const std::vector<bool> &pop_eliminated, const std::vector<bool> &clone_eliminated);
+
   void supression(std::vector<std::pair<Solution, double>> &pop,
                   std::vector<std::pair<Solution, double>> &clones);
 
   void update(std::vector<std::pair<Solution, double>> &pop,
-              std::vector<std::pair<Solution, double>> &clones);
+              const std::vector<std::pair<Solution, double>> &clones);
 
   void SA(std::vector<std::pair<Solution, double>> &pop, double T);
 
@@ -39,7 +41,7 @@ public:
 private:
   Instance m_instance;
   Parameters m_params;
-  double time_limit;
+  size_t time_limit;
 };
 
 #endif

@@ -1,135 +1,135 @@
 instances/J100M10
 instances/J100M10/J100M10N1
 Tempo de parada: 100000 us
-custo: 8376
+custo: 7499
 
 
 instances/J100M10/J100M10N10
 Tempo de parada: 100000 us
-custo: 8445
+custo: 7519
 
 
 instances/J100M10/J100M10N2
 Tempo de parada: 100000 us
-custo: 7904
+custo: 7287
 
 
 instances/J100M10/J100M10N3
 Tempo de parada: 100000 us
-custo: 8079
+custo: 7402
 
 
 instances/J100M10/J100M10N4
 Tempo de parada: 100000 us
-custo: 8449
+custo: 7667
 
 
 instances/J100M10/J100M10N5
 Tempo de parada: 100000 us
-custo: 8217
+custo: 7362
 
 
 instances/J100M10/J100M10N6
 Tempo de parada: 100000 us
-custo: 8033
+custo: 7143
 
 
 instances/J100M10/J100M10N7
 Tempo de parada: 100000 us
-custo: 8131
+custo: 7450
 
 
 instances/J100M10/J100M10N8
 Tempo de parada: 100000 us
-custo: 8051
+custo: 7297
 
 
 instances/J100M10/J100M10N9
 Tempo de parada: 100000 us
-custo: 8140
+custo: 7505
 
 
 instances/J100M20
 instances/J100M20/J100M20N1
 Tempo de parada: 200000 us
-custo: 8970
+custo: 8286
 
 
 instances/J100M20/J100M20N10
 Tempo de parada: 200000 us
-custo: 9178
+custo: 8351
 
 
 instances/J100M20/J100M20N2
 Tempo de parada: 200000 us
-custo: 9147
+custo: 8262
 
 
 instances/J100M20/J100M20N3
 Tempo de parada: 200000 us
-custo: 8894
+custo: 8372
 
 
 instances/J100M20/J100M20N4
 Tempo de parada: 200000 us
-custo: 9013
+custo: 8312
 
 
 instances/J100M20/J100M20N5
 Tempo de parada: 200000 us
-custo: 8950
+custo: 8260
 
 
 instances/J100M20/J100M20N6
 Tempo de parada: 200000 us
-custo: 8972
+custo: 8263
 
 
 instances/J100M20/J100M20N7
 Tempo de parada: 200000 us
-custo: 9138
+custo: 8404
 
 
 instances/J100M20/J100M20N8
 Tempo de parada: 200000 us
-custo: 9138
+custo: 8464
 
 
 instances/J100M20/J100M20N9
 Tempo de parada: 200000 us
-custo: 9078
+custo: 8454
 
 
 instances/J100M5
 instances/J100M5/J100M5N1
 Tempo de parada: 50000 us
-custo: 7467
+custo: 6710
 
 
 instances/J100M5/J100M5N10
 Tempo de parada: 50000 us
-custo: 7673
+custo: 6758
 
 
 instances/J100M5/J100M5N2
 Tempo de parada: 50000 us
-custo: 7239
+custo: 6648
 
 
 instances/J100M5/J100M5N3
 Tempo de parada: 50000 us
-custo: 7225
+custo: 6392
 
 
 instances/J100M5/J100M5N4
 Tempo de parada: 50000 us
-custo: 7192
+custo: 6314
 
 
 instances/J100M5/J100M5N5
 instances/J100M5/J100M5N6
 Tempo de parada: 50000 us
-custo: 7229
+custo: 6448
 
 
 instances/J100M5/J100M5N7
@@ -138,160 +138,160 @@ instances/J100M5/J100M5N9
 instances/J200M10
 instances/J200M10/J200M10N1
 Tempo de parada: 200000 us
-custo: 16124
+custo: 14849
 
 
 instances/J200M10/J200M10N10
 Tempo de parada: 200000 us
-custo: 15882
+custo: 14834
 
 
 instances/J200M10/J200M10N2
 Tempo de parada: 200000 us
-custo: 15829
+custo: 14609
 
 
 instances/J200M10/J200M10N3
 Tempo de parada: 200000 us
-custo: 15882
+custo: 14846
 
 
 instances/J200M10/J200M10N4
 Tempo de parada: 200000 us
-custo: 16122
+custo: 14751
 
 
 instances/J200M10/J200M10N5
 Tempo de parada: 200000 us
-custo: 16139
+custo: 14671
 
 
 instances/J200M10/J200M10N6
 Tempo de parada: 200000 us
-custo: 15878
+custo: 14635
 
 
 instances/J200M10/J200M10N7
 Tempo de parada: 200000 us
-custo: 16052
+custo: 15040
 
 
 instances/J200M10/J200M10N8
 Tempo de parada: 200000 us
-custo: 16141
+custo: 15036
 
 
 instances/J200M10/J200M10N9
 Tempo de parada: 200000 us
-custo: 16049
+custo: 14599
 
 
 instances/J200M20
 instances/J200M20/J200M20N1
 Tempo de parada: 400000 us
-custo: 16876
+custo: 15921
 
 
 instances/J200M20/J200M20N10
 Tempo de parada: 400000 us
-custo: 17072
+custo: 16130
 
 
 instances/J200M20/J200M20N2
 Tempo de parada: 400000 us
-custo: 17181
+custo: 16014
 
 
 instances/J200M20/J200M20N3
 Tempo de parada: 400000 us
-custo: 16922
+custo: 16281
 
 
 instances/J200M20/J200M20N4
 Tempo de parada: 400000 us
-custo: 17110
+custo: 16029
 
 
 instances/J200M20/J200M20N5
 Tempo de parada: 400000 us
-custo: 17039
+custo: 16094
 
 
 instances/J200M20/J200M20N6
 Tempo de parada: 400000 us
-custo: 17216
+custo: 16133
 
 
 instances/J200M20/J200M20N7
 Tempo de parada: 400000 us
-custo: 17252
+custo: 16231
 
 
 instances/J200M20/J200M20N8
 Tempo de parada: 400000 us
-custo: 17310
+custo: 16209
 
 
 instances/J200M20/J200M20N9
 Tempo de parada: 400000 us
-custo: 17283
+custo: 16085
 
 
 instances/J200M5
 instances/J200M5/J200M5N1
 Tempo de parada: 100000 us
-custo: 14680
+custo: 13397
 
 
 instances/J200M5/J200M5N10
 Tempo de parada: 100000 us
-custo: 14859
+custo: 13163
 
 
 instances/J200M5/J200M5N2
 Tempo de parada: 100000 us
-custo: 14254
+custo: 13170
 
 
 instances/J200M5/J200M5N3
 Tempo de parada: 100000 us
-custo: 14554
+custo: 13474
 
 
 instances/J200M5/J200M5N4
 Tempo de parada: 100000 us
-custo: 14899
+custo: 13549
 
 
 instances/J200M5/J200M5N5
 Tempo de parada: 100000 us
-custo: 15117
+custo: 13489
 
 
 instances/J200M5/J200M5N6
 Tempo de parada: 100000 us
-custo: 14682
+custo: 13120
 
 
 instances/J200M5/J200M5N7
 Tempo de parada: 100000 us
-custo: 15005
+custo: 13440
 
 
 instances/J200M5/J200M5N8
 Tempo de parada: 100000 us
-custo: 14929
+custo: 13619
 
 
 instances/J200M5/J200M5N9
 Tempo de parada: 100000 us
-custo: 14646
+custo: 13253
 
 
 instances/J20M10
 instances/J20M10/J20M10N1
 Tempo de parada: 20000 us
-custo: 1913
+custo: 1706
 
 
 instances/J20M10/J20M10N10
@@ -307,88 +307,88 @@ instances/J20M20
 instances/J20M20/J20M20N1
 instances/J20M20/J20M20N10
 Tempo de parada: 40000 us
-custo: 2526
+custo: 2368
 
 
 instances/J20M20/J20M20N2
 Tempo de parada: 40000 us
-custo: 2472
+custo: 2279
 
 
 instances/J20M20/J20M20N3
 Tempo de parada: 40000 us
-custo: 2607
+custo: 2520
 
 
 instances/J20M20/J20M20N4
 Tempo de parada: 40000 us
-custo: 2574
+custo: 2477
 
 
 instances/J20M20/J20M20N5
 Tempo de parada: 40000 us
-custo: 2642
+custo: 2498
 
 
 instances/J20M20/J20M20N6
 Tempo de parada: 40000 us
-custo: 2503
+custo: 2449
 
 
 instances/J20M20/J20M20N7
 Tempo de parada: 40000 us
-custo: 2514
+custo: 2469
 
 
 instances/J20M20/J20M20N8
 Tempo de parada: 40000 us
-custo: 2469
+custo: 2328
 
 
 instances/J20M20/J20M20N9
 Tempo de parada: 40000 us
-custo: 2546
+custo: 2394
 
 
 instances/J20M5
 instances/J20M5/J20M5N1
 Tempo de parada: 10000 us
-custo: 1458
+custo: 1447
 
 
 instances/J20M5/J20M5N10
 Tempo de parada: 10000 us
-custo: 1380
+custo: 1315
 
 
 instances/J20M5/J20M5N2
 Tempo de parada: 10000 us
-custo: 1566
+custo: 1454
 
 
 instances/J20M5/J20M5N3
 Tempo de parada: 10000 us
-custo: 1502
+custo: 1323
 
 
 instances/J20M5/J20M5N4
 Tempo de parada: 10000 us
-custo: 1655
+custo: 1480
 
 
 instances/J20M5/J20M5N5
 Tempo de parada: 10000 us
-custo: 1505
+custo: 1394
 
 
 instances/J20M5/J20M5N6
 Tempo de parada: 10000 us
-custo: 1556
+custo: 1403
 
 
 instances/J20M5/J20M5N7
 Tempo de parada: 10000 us
-custo: 1515
+custo: 1432
 
 
 instances/J20M5/J20M5N8
@@ -406,53 +406,53 @@ instances/J500M10/J500M10N8
 instances/J500M10/J500M10N9
 instances/J500M20
 instances/J500M20/J500M20N1
-Tempo de parada: 1e+06 us
-custo: 42043
+Tempo de parada: 1000000 us
+custo: 39799
 
 
 instances/J500M20/J500M20N10
-Tempo de parada: 1e+06 us
-custo: 42022
+Tempo de parada: 1000000 us
+custo: 39802
 
 
 instances/J500M20/J500M20N2
-Tempo de parada: 1e+06 us
-custo: 42314
+Tempo de parada: 1000000 us
+custo: 40033
 
 
 instances/J500M20/J500M20N3
-Tempo de parada: 1e+06 us
-custo: 41518
+Tempo de parada: 1000000 us
+custo: 39614
 
 
 instances/J500M20/J500M20N4
-Tempo de parada: 1e+06 us
-custo: 41646
+Tempo de parada: 1000000 us
+custo: 39867
 
 
 instances/J500M20/J500M20N5
-Tempo de parada: 1e+06 us
-custo: 41643
+Tempo de parada: 1000000 us
+custo: 39657
 
 
 instances/J500M20/J500M20N6
-Tempo de parada: 1e+06 us
-custo: 42272
+Tempo de parada: 1000000 us
+custo: 40107
 
 
 instances/J500M20/J500M20N7
-Tempo de parada: 1e+06 us
-custo: 41116
+Tempo de parada: 1000000 us
+custo: 39817
 
 
 instances/J500M20/J500M20N8
-Tempo de parada: 1e+06 us
-custo: 41518
+Tempo de parada: 1000000 us
+custo: 39768
 
 
 instances/J500M20/J500M20N9
-Tempo de parada: 1e+06 us
-custo: 41136
+Tempo de parada: 1000000 us
+custo: 39638
 
 
 instances/J500M5
@@ -471,7 +471,7 @@ instances/J50M10/J50M10N1
 instances/J50M10/J50M10N10
 instances/J50M10/J50M10N2
 Tempo de parada: 50000 us
-custo: 4015
+custo: 3722
 
 
 instances/J50M10/J50M10N3
@@ -480,7 +480,7 @@ instances/J50M10/J50M10N5
 instances/J50M10/J50M10N6
 instances/J50M10/J50M10N7
 Tempo de parada: 50000 us
-custo: 4395
+custo: 3904
 
 
 instances/J50M10/J50M10N8
@@ -489,12 +489,12 @@ instances/J50M20
 instances/J50M20/J50M20N1
 instances/J50M20/J50M20N10
 Tempo de parada: 100000 us
-custo: 5072
+custo: 4615
 
 
 instances/J50M20/J50M20N11
 Tempo de parada: 100000 us
-custo: 5114
+custo: 4631
 
 
 instances/J50M20/J50M20N12
@@ -504,48 +504,48 @@ instances/J50M20/J50M20N4
 instances/J50M20/J50M20N5
 instances/J50M20/J50M20N6
 Tempo de parada: 100000 us
-custo: 4945
+custo: 4472
 
 
 instances/J50M20/J50M20N7
 Tempo de parada: 100000 us
-custo: 4863
+custo: 4475
 
 
 instances/J50M20/J50M20N8
 Tempo de parada: 100000 us
-custo: 4942
+custo: 4541
 
 
 instances/J50M20/J50M20N9
 Tempo de parada: 100000 us
-custo: 5016
+custo: 4497
 
 
 instances/J50M5
 instances/J50M5/J50M5N1
 Tempo de parada: 25000 us
-custo: 3751
+custo: 3235
 
 
 instances/J50M5/J50M5N10
 instances/J50M5/J50M5N2
 instances/J50M5/J50M5N3
 Tempo de parada: 25000 us
-custo: 3605
+custo: 3233
 
 
 instances/J50M5/J50M5N4
 instances/J50M5/J50M5N5
 Tempo de parada: 25000 us
-custo: 3709
+custo: 3378
 
 
 instances/J50M5/J50M5N6
 instances/J50M5/J50M5N7
 instances/J50M5/J50M5N8
 Tempo de parada: 25000 us
-custo: 3708
+custo: 3215
 
 
 instances/J50M5/J50M5N9

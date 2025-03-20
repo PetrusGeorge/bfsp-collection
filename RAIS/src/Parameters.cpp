@@ -18,6 +18,11 @@ void config_argparse(argparse::ArgumentParser &cli) {
       .default_value(false)
       .flag();
 
+  cli.add_argument("-tl", "--time")
+      .help("set program verbosity")
+      .metavar("TIME LIMIT")
+      .scan<'i', size_t>();
+
   cli.add_argument("-t", "--threshold")
       .help("set the threshold parameter which delimits the time limit of the program")
       .metavar("D_THRESHOLD")
@@ -69,5 +74,6 @@ Parameters::Parameters(int argc, char **argv) {
   m_Gt = cli.get<size_t>("-g");
   m_nc = cli.get<size_t>("-n");
   m_alpha = cli.get<double>("-a");
+  m_time_limit = cli.present<size_t>("--time");
 
 }
