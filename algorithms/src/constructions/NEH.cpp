@@ -37,7 +37,6 @@ std::pair<size_t, size_t> NEH::taillard_best_insertion(const std::vector<size_t>
     // f needs to store all possibilities of insertion so it has sequence.size + 1
     m_f = std::vector(sequence.size() + 1, std::vector<size_t>(m_instance.num_machines()));
 
-
     // Evaluate best insertion
     size_t max_value = 0;
     auto set_f_and_max = [this, &max_value](size_t i, size_t j, size_t value) {

@@ -14,11 +14,17 @@ struct Instance {
     long p(size_t i, size_t j) const { return m_matrix[i][j]; }
     // Reverse matrix
     long rp(size_t i, size_t j) const { return m_matrix[i][m_num_machines - j - 1]; }
+    const std::vector<size_t> &processing_times_sum() const { return m_processing_times_sum; }
+
+    Instance create_reverse_instance();
 
   private:
     size_t m_num_jobs = 0;
     size_t m_num_machines = 0;
     std::vector<std::vector<long>> m_matrix;
+    std::vector<size_t> m_processing_times_sum;
+
+    void calculate_processing_times_sum();
 };
 
 #endif

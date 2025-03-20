@@ -1,5 +1,6 @@
 #include "Instance.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -45,4 +46,17 @@ Instance::Instance(const std::filesystem::path &path) {
     if (m_matrix.size() != m_num_jobs || !file.eof()) {
         throw std::runtime_error("Wrong number of jobs on instance");
     }
+
+    // Used for LPT
+    calculate_processing_times_sum();
+}
+
+Instance Instance::create_reverse_instance() {
+    Instance reverse = *this;
+
+    for (auto &line : reverse.m_matrix) {
+        std::reverse(line.begin(), line.end());
+    }
+
+    return reverse;
 }

@@ -6,7 +6,7 @@
 
 struct Instance {
   public:
-    Instance(const std::filesystem::path &path, bool jobs_reversed = false);
+    Instance(const std::filesystem::path &path);
 
     size_t num_jobs() const { return m_num_jobs; }
     size_t num_machines() const { return m_num_machines; }
@@ -15,6 +15,8 @@ struct Instance {
     long p(size_t i, size_t j) const { return m_matrix[i][j]; }
     // Reverse matrix
     long rp(size_t i, size_t j) const { return m_matrix[i][m_num_machines - j - 1]; }
+
+    Instance create_reverse_instance();
 
   private:
     size_t m_num_jobs = 0;

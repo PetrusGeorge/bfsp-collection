@@ -16,9 +16,13 @@ class RNG {
         return instance;
     }
 
-    std::mt19937 gen() const { return m_gen; }
+    std::mt19937 &gen() { return m_gen; }
     size_t seed() const { return m_seed; }
-    void set_seed(size_t seed) { m_seed = seed; }
+
+    void set_seed(size_t seed) {
+        m_seed = seed;
+        m_gen.seed(m_seed);
+    }
 
     // If any more functions are needed make them here on this class
     template <typename T> T generate(T min, T max) {

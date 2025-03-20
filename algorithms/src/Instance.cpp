@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <string>
 
-Instance::Instance(const std::filesystem::path &path, bool jobs_reversed) {
+Instance::Instance(const std::filesystem::path &path) {
 
     std::ifstream file(path);
 
@@ -37,10 +37,6 @@ Instance::Instance(const std::filesystem::path &path, bool jobs_reversed) {
             temporary.emplace_back(number);
         }
 
-        if (jobs_reversed) {
-            std::reverse(temporary.begin(), temporary.end());
-        }
-
         if (temporary.size() != m_num_machines) {
             throw std::runtime_error("Wrong number of machines on instance");
         }
@@ -55,15 +51,12 @@ Instance::Instance(const std::filesystem::path &path, bool jobs_reversed) {
     calculate_processing_times_sum();
 }
 
-void Instance::calculate_processing_times_sum() {
+Instance Instance::create_reverse_instance() {
+    Instance reverse = *this;
 
-    m_processing_times_sum.reserve(m_num_jobs);
-
-    for (size_t i = 0; i < m_num_jobs; i++) {
-        size_t sum = 0;
-        for (size_t j = 0; j < m_num_machines; j++) {
-            sum += m_matrix[i][j];
-        }
-        m_processing_times_sum.push_back(sum);
+    for (auto &line : reverse.m_matrix) {
+        std::reverse(line.begin(), line.end());
     }
+
+    return reverse;
 }
