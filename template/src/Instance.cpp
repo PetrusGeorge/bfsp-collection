@@ -51,6 +51,17 @@ Instance::Instance(const std::filesystem::path &path) {
     calculate_processing_times_sum();
 }
 
+void Instance::calculate_processing_times_sum() {
+    m_processing_times_sum.reserve(m_num_jobs);
+    for (size_t i = 0; i < m_num_jobs; i++) {
+        size_t sum = 0;
+        for (size_t j = 0; j < m_num_machines; j++) {
+            sum += m_matrix[i][j];
+        }
+        m_processing_times_sum.push_back(sum);
+    }
+}
+
 Instance Instance::create_reverse_instance() {
     Instance reverse = *this;
 
