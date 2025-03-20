@@ -10,9 +10,9 @@
 
 int main(int argc, char *argv[]) {
 
-    Parameters params(argc, argv);
+    const Parameters params(argc, argv);
     try {
-        Instance instance(params.instance_path());
+        const Instance instance(params.instance_path());
     } catch (std::runtime_error &err) {
         std::cerr << err.what() << '\n';
         exit(EXIT_FAILURE);
@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 
     MFFO mffo_instance(Instance(params.instance_path()), params);
 
-    Solution s = MFFO::solve(mffo_instance);
+    const Solution s = MFFO::solve(mffo_instance);
 
     std::cout << s << '\n';
 }

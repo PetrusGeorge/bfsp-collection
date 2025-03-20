@@ -2,24 +2,100 @@
 #include "Instance.h"
 #include "NEH.h"
 #include "Parameters.h"
+#include "RNG.h"
 #include "Solution.h"
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
-#include <functional>
+#include <iostream>
+
+using std::chrono::duration_cast;
+using std::chrono::high_resolution_clock;
 
 Solution MFFO::solve(MFFO &mffo_instance) {
+
+    const size_t n_jobs = mffo_instance.m_instance.num_jobs();
+    const size_t n_machine = mffo_instance.m_instance.num_machines();
+
     // Population initialization
     NEH neh(mffo_instance.m_instance);
     Solution s1 = neh.solve(MFFO::min_max(mffo_instance.m_instance, mffo_instance.m_param, false));
 
     // Smell-based search
-
-
-    // Vision-based search
+    auto start_time = high_resolution_clock::now();
+    const long max_time = 5 * (long)n_jobs * (long)n_machine;
+    while (duration_cast<std::chrono::milliseconds>(high_resolution_clock::now() - start_time).count() < max_time) {
+        for (size_t i = 0; i < mffo_instance.m_param.ps(); i++) {
+            const Solution s2 = MFFO::neighbourhood_search(mffo_instance.m_instance, mffo_instance.m_param, s1);
+            // Vision-based search
+        }
+    }
 
     return s1;
+}
+
+inline void MFFO::neighbourhood_insertion_first(const Instance & /*instance*/, const Parameters & /*param*/, Solution &s) {
+    const int p2 = RNG::instance().generate(1, (int)s.sequence.size() - 1);
+    const int p1 = RNG::instance().generate(0, p2 - 1);
+
+    std::rotate(s.sequence.begin() + p1, s.sequence.begin() + p1 + 1, s.sequence.begin() + p2 + 1);
+}
+
+inline void MFFO::neighbourhood_insertion_back(const Instance & /*instance*/, const Parameters & /*param*/, Solution &s) {
+    const int p2 = RNG::instance().generate(1, (int)s.sequence.size() - 1);
+    const int p1 = RNG::instance().generate(0, p2 - 1);
+
+    std::rotate(s.sequence.begin() + p1, s.sequence.begin() + p2, s.sequence.begin() + p2 + 1);
+}
+
+inline void MFFO::neighbourhood_swap(const Instance & /*instance*/, const Parameters & /*param*/, Solution &s) {
+    const size_t p1 = RNG::instance().generate(0, (int)s.sequence.size() - 1);
+    size_t p2 = RNG::instance().generate(0, (int)s.sequence.size() - 1);
+
+    while (p1 == p2) {
+        p2 = RNG::instance().generate(0, (int)s.sequence.size() - 1);
+    }
+
+    std::swap(s.sequence[p1], s.sequence[p2]);
+}
+
+Solution MFFO::neighbourhood_search(const Instance &instance, const Parameters &param, Solution &s) {
+    switch (RNG::instance().generate(0, 3)) {
+    case 0:
+        if (RNG::instance().generate(0, 1) != 0) {
+            MFFO::neighbourhood_insertion_first(instance, param, s);
+        } else {
+            MFFO::neighbourhood_insertion_back(instance, param, s);
+        }
+        break;
+    case 1:
+        MFFO::neighbourhood_swap(instance, param, s);
+        break;
+    case 2:
+        if (RNG::instance().generate(0, 1) != 0) {
+            MFFO::neighbourhood_insertion_first(instance, param, s);
+            if (RNG::instance().generate(0, 1) != 0) {
+                MFFO::neighbourhood_insertion_first(instance, param, s);
+            } else {
+                MFFO::neighbourhood_insertion_back(instance, param, s);
+            }
+        } else {
+            MFFO::neighbourhood_insertion_back(instance, param, s);
+            if (RNG::instance().generate(0, 1) != 0) {
+                MFFO::neighbourhood_insertion_first(instance, param, s);
+            } else {
+                MFFO::neighbourhood_insertion_back(instance, param, s);
+            }
+        }
+        break;
+    case 3:
+        MFFO::neighbourhood_swap(instance, param, s);
+        MFFO::neighbourhood_swap(instance, param, s);
+        break;
+    }
+    return {};
 }
 
 std::vector<size_t> MFFO::min_max(const Instance &instance, const Parameters &param, bool jobs_reversed) {

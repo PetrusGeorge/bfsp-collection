@@ -15,13 +15,18 @@ class MFFO {
     static Solution solve(MFFO &mffo_instance);
     static std::vector<size_t> min_max(const Instance &instance, const Parameters &param, bool jobs_reversed);
     static std::function<long(size_t, size_t)> get_reversible_matrix(const Instance &instance, bool reversed);
+    static Solution neighbourhood_search(const Instance &instance, const Parameters &param, Solution &s);
+
+    static void neighbourhood_insertion_first(const Instance &instance, const Parameters &param, Solution &s);
+    static void neighbourhood_insertion_back(const Instance &instance, const Parameters &param, Solution &s);
+    static void neighbourhood_swap(const Instance &instance, const Parameters &param, Solution &s);
 
     const Instance &instance() const { return m_instance; }
     const Parameters &param() const { return m_param; }
 
   private:
-    Instance m_instance;
-    Parameters m_param;
+    mutable Instance m_instance;
+    mutable Parameters m_param;
 };
 
 #endif // MFFO_H
