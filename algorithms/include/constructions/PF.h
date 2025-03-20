@@ -6,7 +6,12 @@
 
 class PF {
   public:
-    static Solution solve(Instance &instance);
+    PF(Instance &instance);
+    Solution solve();
+    void pf_insertion_phase(Solution& s, size_t first_job);
+
+  private:
+    Instance& m_instance;
 };
 
 #endif

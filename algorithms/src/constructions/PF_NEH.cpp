@@ -7,7 +7,7 @@
 #include <cassert>
 #include <numeric>
 
-Solution PFNeh::solve(int x, int delta, Instance &instance) {
+Solution PFNeh::solve(size_t x, size_t delta, Instance &instance) {
 
     const size_t n_jobs = instance.num_jobs();
     const size_t m = instance.num_machines();
@@ -24,7 +24,7 @@ Solution PFNeh::solve(int x, int delta, Instance &instance) {
     std::vector<Solution> candidate_solutions;
 
     // Para cada candidato de primeiro job (h = 0 até x-1)
-    for (int h = 0; h < x && h < static_cast<int>(sorted_jobs.size()); h++) {
+    for (size_t h = 0; h < x && h < sorted_jobs.size(); h++) {
         // Cria uma solução candidata: comece com a ordem STPT
         Solution cand_sol;
         cand_sol.sequence = sorted_jobs;

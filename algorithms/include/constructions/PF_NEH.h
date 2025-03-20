@@ -6,7 +6,7 @@
 
 class PFNeh {
   public:
-    static Solution solve(int x, int delta, Instance &instance);
+    static Solution solve(size_t x, size_t delta, Instance &instance);
 };
 
 #endif
