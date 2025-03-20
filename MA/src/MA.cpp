@@ -147,12 +147,22 @@ Solution solve() {
       size_t parent_2 = parent_1;
       while(parent_2 == parent_1) parent_2 = selection(pop);
 
-      double p = rand() / static_cast<double>(RAND_MAX); 
+      double p = RNG::instance().generateDouble();
+
+      size_t offspring1, offspring2;
       if(p < pc) {
         offspring1 = path_relink_swap(parent_1, parent_2);
         offspring2 = path_relink_swap(parent_2, parent_1);
+      } else {
+        offspring1 = parent_1;
+        offspring2 = parent_2;
       }
 
+    }
+
+    p = RNG::instance().generateDouble();
+    if(p < pm) {
+      
     }
 
     if(pop[0].first.cost < best_solution.cost) {
