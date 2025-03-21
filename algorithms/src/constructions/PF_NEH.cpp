@@ -1,85 +1,27 @@
 #include "constructions/PF_NEH.h"
-#include "Core.h"
 #include "Instance.h"
+#include "constructions/NEH.h"
 #include "constructions/PF.h"
 
-#include <bits/types/cookie_io_functions_t.h>
-#include <cassert>
-#include <numeric>
+PF_NEH::PF_NEH(Instance &instance) : m_instance(instance) {};
 
-Solution PFNeh::solve(size_t x, size_t delta, Instance &instance) {
+Solution PF_NEH::solve(size_t lambda) {
 
-    const size_t n_jobs = instance.num_jobs();
-    const size_t m = instance.num_machines();
+    const size_t n = m_instance.num_jobs();
 
-    // Cria o vetor de índices (0, 1, ..., nJobs-1) e ordena com a regra STPT.
-    std::vector<size_t> sorted_jobs(n_jobs);
-    std::iota(sorted_jobs.begin(), sorted_jobs.end(), 0);
-    // Reutiliza sua função STPT_Sort – como ela age sobre uma Solution,
-    // criamos uma solução temporária e a usamos apenas para obter a ordem.
+    PF pf(m_instance);
+    NEH neh(m_instance);
 
-    sorted_jobs = core::stpt_sort(instance);
+    // generate initial solution with PF algorithm
+    Solution s = pf.solve();
 
-    // Vetor para armazenar as soluções candidatas geradas.
-    std::vector<Solution> candidate_solutions;
+    // apply the NEH algorithm with 0 to n - lambda jobs from the PF solution
+    const std::vector<size_t> candidate_jobs = {s.sequence.begin() + (long)(n - lambda + 1), s.sequence.end()};
+    s.sequence = {s.sequence.begin(),
+                  s.sequence.begin() +
+                      (long)(n - lambda + 1)}; // needs to be n - lambda + 1 because [first_pos, last_post)
 
-    // Para cada candidato de primeiro job (h = 0 até x-1)
-    for (size_t h = 0; h < x && h < sorted_jobs.size(); h++) {
-        // Cria uma solução candidata: comece com a ordem STPT
-        Solution cand_sol;
-        cand_sol.sequence = sorted_jobs;
-        // Força que o primeiro job seja o h-ésimo (ou seja, troca o job da posição
-        // 0 com o da posição h)
-        std::swap(cand_sol.sequence[0], cand_sol.sequence[h]);
+    neh.second_step(candidate_jobs, s);
 
-        // Chama PF para gerar a sequência completa.
-        // Como PF verifica se a sequência já não está vazia, ela usará a sequência
-        // que você definiu.
-//        cand_sol = PF::solve(instance);
-
-        // --- Melhoria local: reinserção dos últimos delta jobs ---
-        // Se delta for maior que o número de jobs, usa todos.
-        const size_t start_index =
-            (delta > static_cast<int>(cand_sol.sequence.size())) ? 0 : cand_sol.sequence.size() - delta;
-        // Para cada posição na região final da sequência:
-        for (size_t pos = start_index; pos < cand_sol.sequence.size(); pos++) {
-            const size_t job = cand_sol.sequence[pos];
-            // Remove o job da posição pos.
-            std::vector<size_t> temp_seq = cand_sol.sequence;
-            temp_seq.erase(temp_seq.begin() + (long)pos);
-
-            size_t best_cmax = std::numeric_limits<size_t>::max();
-            std::vector<size_t> best_seq;
-            // Testa inserir o job em todas as posições possíveis.
-            for (size_t j = 0; j <= temp_seq.size(); j++) {
-                std::vector<size_t> &candidate_seq = temp_seq;
-                candidate_seq.insert(candidate_seq.begin() + (long)j, job);
-                // Avalia a sequência: calcula os departure times e o makespan
-                auto d_candidate = core::calculate_departure_times(instance, candidate_seq);
-                const size_t candidate_cmax = d_candidate.back()[m]; // makespan é o último valor da última máquina
-                if (candidate_cmax < best_cmax) {
-                    best_cmax = candidate_cmax;
-                    best_seq = candidate_seq;
-                }
-            }
-            // Atualiza a sequência candidata com a melhor inserção encontrada.
-            cand_sol.sequence = best_seq;
-        }
-        // Recalcula os departure times e o custo (makespan) da solução candidata.
-        auto d_final = core::calculate_departure_times(instance, cand_sol.sequence);
-        cand_sol.departure_times = d_final;
-        cand_sol.cost = d_final.back()[m];
-
-        candidate_solutions.push_back(cand_sol);
-    }
-
-    // Seleciona a melhor solução dentre as candidatas (a de menor makespan).
-    Solution best_solution = candidate_solutions.front();
-    for (const auto &sol_cand : candidate_solutions) {
-        if (sol_cand.cost < best_solution.cost) {
-            best_solution = sol_cand;
-        }
-    }
-
-    return best_solution;
+    return s;
 }

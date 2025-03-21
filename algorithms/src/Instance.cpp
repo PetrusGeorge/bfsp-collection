@@ -27,9 +27,9 @@ Instance::Instance(const std::filesystem::path &path) {
     m_matrix.reserve(m_num_jobs);
     while (getline(file, current_line)) {
 
-        if(current_line.size() <= 1){
+        if (current_line.size() <= 1) {
             continue;
-        }        
+        }
 
         std::istringstream iss(current_line);
 

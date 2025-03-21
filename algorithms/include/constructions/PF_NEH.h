@@ -4,9 +4,14 @@
 #include "Instance.h"
 #include "Solution.h"
 
-class PFNeh {
+class PF_NEH { // NOLINT
   public:
-    static Solution solve(size_t x, size_t delta, Instance &instance);
+    PF_NEH(Instance &instance);
+
+    Solution solve(size_t lambda);
+
+  private:
+    Instance &m_instance;
 };
 
 #endif

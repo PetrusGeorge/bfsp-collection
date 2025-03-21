@@ -13,7 +13,7 @@ Solution NEH::solve(std::vector<size_t> phi) {
     s.sequence = {phi[0]};
     phi.erase(phi.begin());
 
-    neh_second_step(phi, s);
+    second_step(phi, s);
     return s;
 }
 
@@ -66,7 +66,7 @@ std::pair<size_t, size_t> NEH::taillard_best_insertion(const std::vector<size_t>
     return {best_index, best_value};
 }
 
-void NEH::neh_second_step(std::vector<size_t> phi, Solution &s) {
+void NEH::second_step(std::vector<size_t> phi, Solution &s) {
 
     while (!phi.empty()) {
         auto [best_index, makespan] = taillard_best_insertion(s.sequence, phi.front());

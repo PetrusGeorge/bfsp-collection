@@ -103,7 +103,7 @@ double PW::calculate_f(std::vector<std::vector<size_t>> &d, std::vector<size_t> 
     const size_t n = m_instance.num_jobs(); // number of jobs
     const size_t sigma = core::calculate_sigma(m_instance, d, new_departure_time, job, k);
 
-    const double f = ((double)(n - k - 2) * (double)sigma + chi);
+    const double f = (((double)(n - k - 2) * (double)sigma) + chi);
 
     return f;
 }

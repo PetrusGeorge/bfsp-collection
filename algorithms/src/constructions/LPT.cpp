@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <numeric>
 
-std::vector<size_t> initial_job_sequence(Instance &instance) {
+static std::vector<size_t> initial_job_sequence(Instance &instance) {
     std::vector<size_t> sequence(instance.num_jobs());
     std::iota(sequence.begin(), sequence.end(), 0);
 

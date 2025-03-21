@@ -5,7 +5,7 @@
 #include <cassert>
 #include <vector>
 
-PF::PF(Instance& instance) : m_instance(instance) {}
+PF::PF(Instance &instance) : m_instance(instance) {}
 
 //---------------------------------------------------------
 // PF heuristic implementation.
@@ -25,10 +25,9 @@ Solution PF::solve() {
     return sol;
 }
 
-void PF::pf_insertion_phase(Solution& s, size_t first_job){
+void PF::pf_insertion_phase(Solution &s, size_t first_job) {
     const size_t n = m_instance.num_jobs();     // número de jobs
     const size_t m = m_instance.num_machines(); // número de máquinas
-
 
     // selects job with smallest total processing time to be the first one
     std::vector<bool> scheduled(n, false);
@@ -51,12 +50,11 @@ void PF::pf_insertion_phase(Solution& s, size_t first_job){
     // sigma(j,k) represents the sum of idle and blocking times from adding job j to position k+1
     // after computing sigma for all jobs in the unscheduled vector
     // add the job with the lowest sigma to the main sequence
-    for (size_t k = 1; k < n-1; ++k) {
+    for (size_t k = 1; k < n - 1; ++k) {
 
-        
         std::vector<std::vector<size_t>> d_current = core::calculate_departure_times(m_instance, new_seq);
         size_t best_sigma = std::numeric_limits<size_t>::max();
-        size_t best_job = unscheduled.front(); 
+        size_t best_job = unscheduled.front();
 
         for (const size_t candidate : unscheduled) {
             std::vector<size_t> candidate_sequence = new_seq;
@@ -67,7 +65,7 @@ void PF::pf_insertion_phase(Solution& s, size_t first_job){
             const std::vector<size_t> &d_new = d_candidate.back();
 
             size_t sigma = 0;
-            // computing sigma(j,k) criterium  
+            // computing sigma(j,k) criterium
             for (size_t i = 0; i < m; ++i) {
                 sigma += d_new[i] - (d_current.back()[i] + m_instance.p(candidate, i));
             }
@@ -75,16 +73,15 @@ void PF::pf_insertion_phase(Solution& s, size_t first_job){
                 best_sigma = sigma;
                 best_job = candidate;
             }
-        } 
+        }
 
         new_seq.push_back(best_job);
         scheduled[best_job] = true;
         unscheduled.erase(std::remove(unscheduled.begin(), unscheduled.end(), best_job), unscheduled.end());
-    } 
+    }
     new_seq.push_back(unscheduled.front());
 
     s.sequence = new_seq;
     std::vector<std::vector<size_t>> d_final = core::calculate_departure_times(m_instance, new_seq);
-    s.departure_times = d_final;
-    s.cost = d_final.back()[m - 1]; // the makespan is the departure time of the final job at the last machine 
+    s.cost = d_final.back()[m - 1]; // the makespan is the departure time of the final job at the last machine
 }
