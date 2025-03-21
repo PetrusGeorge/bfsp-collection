@@ -3,7 +3,6 @@
 #include <stdexcept>
 
 #include "Instance.h"
-#include "Log.h"
 #include "MFFO.h"
 #include "Parameters.h"
 #include "RNG.h"
@@ -23,11 +22,6 @@ int main(int argc, char *argv[]) {
     }
 
     std::cout << "Seed: " << RNG::instance().seed() << '\n';
-
-    DEBUG << "Showing normal debug macro\n";
-    DEBUG_EXTRA << "Showing extra debug macro\n";
-
-    VERBOSE(params.verbose()) << "Showing verbose macro\n";
 
     MFFO mffo(Instance(params.instance_path()), params);
 

@@ -11,9 +11,9 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
+#include <iostream>
 #include <numeric>
 #include <vector>
-#include <iostream>
 
 using std::chrono::duration_cast;
 using std::chrono::high_resolution_clock;
@@ -22,13 +22,12 @@ using std::chrono::milliseconds;
 Solution MFFO::solve() {
     const size_t n_jobs = m_instance.num_jobs();
     const size_t n_machine = m_instance.num_machines();
-    const size_t population_size = param().ps();
-    std::vector<Solution> population(population_size);
+    std::vector<Solution> population(m_param.ps());
 
     // Population initialization
     NEH neh(m_instance);
     population[0] = neh.solve(MFFO::min_max(m_instance, m_param, false));
-    for (size_t i = 1; i < population_size; i++) {
+    for (size_t i = 1; i < m_param.ps(); i++) {
         population[i].sequence.resize(n_jobs);
         std::iota(population[i].sequence.begin(), population[i].sequence.end(), 0);
         std::shuffle(population[i].sequence.begin(), population[i].sequence.end(), RNG::instance().gen());
@@ -40,14 +39,19 @@ Solution MFFO::solve() {
 
     // Smell-based search
     auto start_time = high_resolution_clock::now();
-    const long max_time = 5 * (long)n_jobs * (long)n_machine;
+    long max_time = 5 * (long)n_jobs * (long)n_machine;
+
+    if (auto time_limit = m_param.time_limit()) {
+        max_time = (long)*time_limit * 1000;
+    }
+
     std::cout << "Max time: " << max_time << "ms\n";
     while (duration_cast<milliseconds>(high_resolution_clock::now() - start_time).count() < max_time) {
         for (size_t i = 0; i < m_param.ps(); i++) {
             Solution s1 = MFFO::neighbourhood_search(best);
 
             // Determine whether to apply RLS based on a probability
-            if ((double)RNG::instance().generate(0, RAND_MAX) / RAND_MAX < param().pls()) {
+            if ((double)RNG::instance().generate(0, RAND_MAX) / RAND_MAX < m_param.pls()) {
                 rls(s1, best.sequence, m_instance);
             }
 

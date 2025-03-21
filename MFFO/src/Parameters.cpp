@@ -9,12 +9,9 @@ void config_argparse(argparse::ArgumentParser &cli) {
 
     cli.add_argument("-s", "--seed").help("set random number generator seed").metavar("SEED").scan<'i', size_t>();
 
-    cli.add_argument("-v", "--verbose").help("set program verbosity").metavar("VERBOSE").default_value(false).flag();
-
-    cli.add_argument("-r", "--ro")
-        .help("set the ro parameter which delimits the time limit of the program")
-        .metavar("RO")
-        .default_value(size_t(30))
+    cli.add_argument("-tl", "--time-limit")
+        .help("set the time limit in seconds")
+        .metavar("TIME LIMIT")
         .scan<'i', size_t>();
 
     cli.add_argument("-a", "--alpha")
@@ -34,12 +31,6 @@ void config_argparse(argparse::ArgumentParser &cli) {
     cli.add_argument("-t", "--T")
         .help("set the independently run times parameter")
         .metavar("T")
-        .default_value(size_t(5))
-        .scan<'i', size_t>();
-
-    cli.add_argument("-d", "--destroy")
-        .help("set the d parameter the number of nodes to remove with in a destroy")
-        .metavar("DESTROY")
         .default_value(size_t(5))
         .scan<'i', size_t>();
 }
@@ -62,12 +53,11 @@ Parameters::Parameters(int argc, char **argv) {
 
     // Set members
     m_instance_path = cli.get<std::string>("instance");
-    m_verbose = cli.get<bool>("--verbose");
     m_seed = cli.present<size_t>("--seed");
-    m_ro = cli.get<size_t>("--ro");
+    m_time_limit = cli.present<size_t>("--time-limit");
     m_alpha = cli.get<double>("--alpha");
-    m_d = cli.get<size_t>("--destroy");
     m_pls = cli.get<double>("--pls");
     m_ps = cli.get<size_t>("--ps");
     m_T = cli.get<size_t>("--T");
+    m_time_limit = cli.present<size_t>("--time-limit");
 }

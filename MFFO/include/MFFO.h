@@ -22,9 +22,6 @@ class MFFO {
     static void neighbourhood_insertion_back(Solution s);
     static void neighbourhood_swap(Solution s);
 
-    Instance &instance() { return m_instance; }
-    Parameters &param() { return m_param; }
-
   private:
     Instance m_instance;
     Parameters m_param;
