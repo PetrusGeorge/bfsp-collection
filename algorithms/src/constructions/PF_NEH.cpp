@@ -35,7 +35,7 @@ Solution PFNeh::solve(size_t x, size_t delta, Instance &instance) {
         // Chama PF para gerar a sequência completa.
         // Como PF verifica se a sequência já não está vazia, ela usará a sequência
         // que você definiu.
-        cand_sol = PF::solve(instance);
+//        cand_sol = PF::solve(instance);
 
         // --- Melhoria local: reinserção dos últimos delta jobs ---
         // Se delta for maior que o número de jobs, usa todos.

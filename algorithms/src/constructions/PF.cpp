@@ -14,78 +14,77 @@ PF::PF(Instance& instance) : m_instance(instance) {}
 // blocking times. (Here we use a measure sigma computed from the difference in
 // departure times.)
 Solution PF::solve() {
+
+    Solution sol;
+
+    // sorting by smallest total processing time
+    std::vector<size_t> stpt = core::stpt_sort(m_instance);
+
+    pf_insertion_phase(sol, stpt.front());
+
+    return sol;
+}
+
+void PF::pf_insertion_phase(Solution& s, size_t first_job){
     const size_t n = m_instance.num_jobs();     // número de jobs
     const size_t m = m_instance.num_machines(); // número de máquinas
 
-    // Passo 1: Ordena os jobs usando a regra STPT.
-    // if (sol.sequence.empty()) {
-    //     PF::stpt_sort(sol, m_instance);
-    // }
 
-    std::vector<size_t> stpt = core::stpt_sort(m_instance);
-
-    // Vetores auxiliares para indicar os jobs já agendados e armazenar a nova
-    // sequência.
-
-    // Passos 2 e 3: Seleciona o primeiro job (o primeiro na ordem STPT).
-    const size_t first_job = stpt.front();
-
+    // selects job with smallest total processing time to be the first one
     std::vector<bool> scheduled(n, false);
     std::vector<size_t> new_seq;
     std::vector<size_t> unscheduled;
     new_seq.push_back(first_job);
     scheduled[first_job] = true;
 
-    // Preenche o conjunto de jobs não agendados.
+    // selecting unscheduled jobs, i.e. all jobs besides the first one
     for (size_t i = 0; i < n; ++i) {
         if (!scheduled[i]) {
             unscheduled.push_back(i);
         }
     }
 
-    // Para cada posição na sequência (exceto a primeira), escolhe o job que
-    // minimiza a medida sigma.
-    for (size_t i = 1; i < n; ++i) {
-        // Calcula os departure times da sequência atual.
+    // general idea:
+    // starts sequence with one job
+    // test the insertion of all unscheduled jobs at the end of the current sequence
+    // to compare the insertions, the sigma(j,k), j is the job, and k the sequence position
+    // sigma(j,k) represents the sum of idle and blocking times from adding job j to position k+1
+    // after computing sigma for all jobs in the unscheduled vector
+    // add the job with the lowest sigma to the main sequence
+    for (size_t k = 1; k < n-1; ++k) {
+
+        
         std::vector<std::vector<size_t>> d_current = core::calculate_departure_times(m_instance, new_seq);
         size_t best_sigma = std::numeric_limits<size_t>::max();
-        size_t best_job = unscheduled.front(); // valor inicial
+        size_t best_job = unscheduled.front(); 
 
-        // Para cada job candidato não agendado:
         for (const size_t candidate : unscheduled) {
             std::vector<size_t> candidate_sequence = new_seq;
             candidate_sequence.push_back(candidate);
 
-            // Calcula os departure times da sequência candidata.
             std::vector<std::vector<size_t>> d_candidate =
                 core::calculate_departure_times(m_instance, candidate_sequence);
             const std::vector<size_t> &d_new = d_candidate.back();
 
-            // Calcula sigma como a soma, para cada máquina k (de 1 a m), de:
-            //    d(candidate, k) - (d(current_last, k) + p(candidate, k))
             size_t sigma = 0;
-            for (size_t k = 1; k <= m; ++k) {
-                sigma += d_new[k] - (d_current.back()[k] + m_instance.p(candidate, k - 1));
+            // computing sigma(j,k) criterium  
+            for (size_t i = 0; i < m; ++i) {
+                sigma += d_new[i] - (d_current.back()[i] + m_instance.p(candidate, i));
             }
             if (sigma < best_sigma) {
                 best_sigma = sigma;
                 best_job = candidate;
             }
-        } // fim do loop para candidatos
+        } 
 
-        // Adiciona o job selecionado à nova sequência.
         new_seq.push_back(best_job);
         scheduled[best_job] = true;
         unscheduled.erase(std::remove(unscheduled.begin(), unscheduled.end(), best_job), unscheduled.end());
-    } // fim do loop principal
+    } 
+    new_seq.push_back(unscheduled.front());
 
-    Solution sol;
-    // Atualiza a solução: sequência, departure_times e custo (makespan)
-    sol.sequence = new_seq;
+    s.sequence = new_seq;
     std::vector<std::vector<size_t>> d_final = core::calculate_departure_times(m_instance, new_seq);
-    sol.departure_times = d_final;
-    sol.cost = d_final.back()[m - 1]; // o makespan é o departure time do último
-                                      // job na última máquina
-
-    return sol;
+    s.departure_times = d_final;
+    s.cost = d_final.back()[m - 1]; // the makespan is the departure time of the final job at the last machine 
 }
