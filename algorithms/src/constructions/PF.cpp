@@ -62,13 +62,10 @@ void PF::pf_insertion_phase(Solution &s, size_t first_job) {
 
             std::vector<std::vector<size_t>> d_candidate =
                 core::calculate_departure_times(m_instance, candidate_sequence);
-            const std::vector<size_t> &d_new = d_candidate.back();
+            std::vector<size_t> &d_new = d_candidate.back();
 
-            size_t sigma = 0;
             // computing sigma(j,k) criterium
-            for (size_t i = 0; i < m; ++i) {
-                sigma += d_new[i] - (d_current.back()[i] + m_instance.p(candidate, i));
-            }
+            size_t sigma = core::calculate_sigma(m_instance, d_current, d_new, candidate, k);
             if (sigma < best_sigma) {
                 best_sigma = sigma;
                 best_job = candidate;

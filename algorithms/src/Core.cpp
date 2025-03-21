@@ -81,15 +81,12 @@ size_t core::calculate_sigma(Instance &instance, std::vector<std::vector<size_t>
     size_t sigma = 0;
 
     for (size_t machine = 0; machine < m; machine++) {
-        size_t sum = 0;
 
         if (k == 0) {
-            sum = (new_departure_time[machine] - p(job, machine));
+            sigma += (new_departure_time[machine] - p(job, machine));
         } else {
-            sum = (new_departure_time[machine] - d[d.size() - 1][machine] - p(job, machine));
+            sigma += (new_departure_time[machine] - d[d.size() - 1][machine] - p(job, machine));
         }
-
-        sigma += sum;
     }
 
     return sigma;
