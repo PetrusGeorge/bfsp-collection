@@ -8,11 +8,17 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <iostream>
 #include <numeric>
+#include <tuple>
 
 P_EDA::P_EDA(Instance &instance) : m_instance(instance) { m_pc.reserve(m_ps); }
 
-Solution P_EDA::solve() { generate_random_individuals(); }
+Solution P_EDA::solve() {
+    Solution s;
+    generate_random_individuals();
+    return s;
+}
 
 size_t P_EDA::calculate_similarity(const std::vector<size_t> &random_sequence, const Solution &individual) {
     assert(random_sequence.size() == m_instance.num_jobs());
@@ -40,12 +46,12 @@ void P_EDA::generate_random_individuals() {
 
         for (auto &ind : m_pc) {
             similarity = calculate_similarity(random_sequence, ind);
-            if (!similarity) {
+            if (similarity == 0) {
                 break;
             }
         }
 
-        if (!similarity) {
+        if (similarity == 0) {
             continue;
         }
 
@@ -59,6 +65,7 @@ void P_EDA::generate_random_individuals() {
 }
 
 void P_EDA::generate_initial_population() {
+    std::cout << "generating population...\n";
     const size_t n = m_instance.num_jobs();
 
     PF pf(m_instance);
@@ -70,7 +77,10 @@ void P_EDA::generate_initial_population() {
 
     size_t l = 0;
 
-    while (m_pc.size() < (size_t)(m_ps * 0.1) && l < n) {
+    size_t pf_neh_individuals = m_ps / 10;
+
+    while (m_pc.size() < pf_neh_individuals && l < n) {
+        std::cout << "pc size: " << m_pc.size() << "\n";
 
         Solution s;
         size_t first_job = sorted_jobs[l];
@@ -86,7 +96,60 @@ void P_EDA::generate_initial_population() {
         neh.second_step(candidate_jobs, s);
 
         m_pc.push_back(s);
+
+        l++;
     }
 
     generate_random_individuals();
+    assert(m_pc.size() == m_ps);
+}
+
+void P_EDA::modified_linear_rank_selection() {
+    std::vector<double> probabilities(m_ps);
+    std::vector<double> sum_probabilities(m_ps);
+
+    size_t l = m_ps - 1;
+    // sorting individuals by descending makespan
+    auto sort_criteria = [](Solution &a, Solution &b) { return a.cost < b.cost; };
+
+    std::sort(m_pc.begin(), m_pc.end(), sort_criteria);
+
+    double sum_of_ranks = m_ps / 2 * (1 + m_ps);
+
+    for (size_t i = 0; i < m_ps; i++) {
+        probabilities[i] = (double)i + 1 / sum_of_ranks;
+
+        if (i == 0) {
+            sum_probabilities[i] = probabilities[i];
+        } else {
+            sum_probabilities[i] = sum_probabilities[i] + probabilities[i];
+        }
+    }
+    std::vector<Solution> new_pc;
+
+    while (new_pc.size() < m_ps) {
+        double lambda1 = RNG::instance().generate_real_number(0, 1);
+        double lambda2 = RNG::instance().generate_real_number(0, 1);
+
+        if (lambda1 < lambda2) {
+            new_pc.push_back(m_pc[l]);
+            l--;
+        } else {
+            double delta = RNG::instance().generate_real_number(0, 1);
+            for (size_t i = 1; i < m_ps; i++) {
+
+                if (sum_probabilities[i - 1] <= delta && delta < sum_probabilities[i]) {
+                    new_pc.push_back(m_pc[i]);
+                }
+            }
+        }
+        m_pc = new_pc;
+    }
+}
+
+void P_EDA::print_pc() {
+    std::cout << "Population: \n";
+    for (size_t i = 0; i < m_pc.size(); i++) {
+        std::cout << "individual " << i << ": \n" << m_pc[i] << "\n";
+    }
 }

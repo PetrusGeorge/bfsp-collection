@@ -14,6 +14,7 @@
 #include "constructions/PF_NEH.h"
 #include "constructions/PW.h"
 #include "constructions/mNEH.h"
+#include "P_EDA.h"
 #include "local-search/RLS.h"
 
 int main(int argc, char *argv[]) {
@@ -51,4 +52,7 @@ int main(int argc, char *argv[]) {
     Solution s_pf_neh = pf_neh.solve(instance.num_jobs());
     std::cout << "\nPF_NEH:" << '\n';
     std::cout << s_pf_neh << '\n';
+
+    P_EDA peda(instance);
+    peda.generate_initial_population();
 }
