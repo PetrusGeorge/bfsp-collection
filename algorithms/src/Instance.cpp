@@ -42,7 +42,6 @@ Instance::Instance(const std::filesystem::path &path) {
             temporary.emplace_back(number);
         }
 
-        std::cerr << temporary.size() << " " << m_num_machines << '\n';
         if (temporary.size() != m_num_machines) {
             throw std::runtime_error("Wrong number of machines on instance");
         }
