@@ -29,9 +29,9 @@ int main(int argc, char *argv[]) {
 
     VERBOSE(params.verbose()) << "Showing verbose macro\n";
 
-    MFFO mffo_instance(Instance(params.instance_path()), params);
+    MFFO mffo(Instance(params.instance_path()), params);
 
-    const Solution s = MFFO::solve(mffo_instance);
+    const Solution s = mffo.solve();
 
     std::cout << s << '\n';
 }

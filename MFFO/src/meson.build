@@ -4,5 +4,6 @@ sources = files(
   'MFFO.cpp',
   'NEH.cpp',
   'Parameters.cpp',
+  'RLS.cpp',
   'main.cpp',
 )
