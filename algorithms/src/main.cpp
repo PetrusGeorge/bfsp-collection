@@ -12,6 +12,7 @@
 #include "constructions/PF.h"
 #include "constructions/PW.h"
 #include "constructions/mNEH.h"
+#include "constructions/MinMax.h"
 #include "local-search/RLS.h"
 
 int main(int argc, char *argv[]) {
@@ -44,4 +45,11 @@ int main(int argc, char *argv[]) {
     rls(s_neh, phi, instance);
     std::cout << "\nRLS:" << '\n';
     std::cout << s_neh << '\n';
+
+    MinMax mm(instance);
+    Solution s_mm = mm.solve();
+
+    std::cout << "\nMM:" << '\n';
+    std::cout << s_mm << '\n';
+    
 }

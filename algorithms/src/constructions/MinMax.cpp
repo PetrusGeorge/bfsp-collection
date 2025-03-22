@@ -1,9 +1,8 @@
 #include "constructions/MinMax.h"
 #include "Core.h"
-#include "Parameters.h"
 #include <functional>
 
-MinMax::MinMax(Instance& instance, Parameters& params, double alpha) : m_instance(instance), m_params(params), m_alpha(alpha){}
+MinMax::MinMax(Instance& instance, double alpha) : m_instance(instance), m_alpha(alpha){}
 
 Solution MinMax::solve(){
 
