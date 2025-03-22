@@ -45,11 +45,5 @@ int main(int argc, char *argv[]) {
     rls(s_neh, phi, instance);
     std::cout << "\nRLS:" << '\n';
     std::cout << s_neh << '\n';
-
-    MinMax mm(instance);
-    Solution s_mm = mm.solve();
-
-    std::cout << "\nMM:" << '\n';
-    std::cout << s_mm << '\n';
     
 }
