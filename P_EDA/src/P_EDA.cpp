@@ -145,39 +145,47 @@ void P_EDA::modified_linear_rank_selection() {
     m_pc = new_pc;
 }
 
-void P_EDA::population_sampling() {}
-std::vector<std::vector<double>> P_EDA::calculate_probabilities() {
+std::vector<std::vector<double>>P_EDA::population_sampling() {
     const size_t n = m_instance.num_jobs();
 
     // matrix that represents the probabilitie of the job j being at position i given the current population
     std::vector<std::vector<double>> prob_pos_i_job_j(n, std::vector<double>(n));
-    auto count = count_in_population();
+    // the p[i][j] represents how many times job j appeared before or in position i give the current population
+    auto p = get_p_vector();
+
     print_pc();
-    print_count(count);
+    print_count(p);
 
     for (size_t i = 0; i < n; i++) {
         for (size_t j = 0; j < n; j++) {
 
-            for (auto &s : m_pc) {
-            }
+            
+
         }
     }
     return prob_pos_i_job_j;
 }
 
-std::vector<std::vector<size_t>> P_EDA::count_in_population() {
+std::vector<std::vector<size_t>> P_EDA::get_p_vector() {
     const size_t n = m_instance.num_jobs();
 
-    std::vector<std::vector<size_t>> count_pos_i_job_j(n, std::vector<size_t>(n, 0));
+    std::vector<std::vector<size_t>> p(n, std::vector<size_t>(n, 0));
     for (auto &s : m_pc) {
         auto &sequence = s.sequence;
 
         for (size_t i = 0; i < n; i++) {
 
-            count_pos_i_job_j[i][sequence[i]]++;
+            p[i][sequence[i]]++;
         }
     }
-    return count_pos_i_job_j;
+
+    for(size_t j = 0; j < n; j++){
+        for(size_t i = 1; i < n; i++){
+            p[i][j] += p[i-1][j];
+            
+        }
+    }
+    return p;
 }
 
 void P_EDA::print_pc() const {
