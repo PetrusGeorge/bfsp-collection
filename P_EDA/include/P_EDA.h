@@ -13,7 +13,11 @@ class P_EDA { // NOLINT
     void generate_initial_population();
     void generate_random_individuals();
     void modified_linear_rank_selection();
-    void print_pc();
+    void population_sampling();
+    std::vector<std::vector<double>> calculate_probabilities();
+    std::vector<std::vector<size_t>> count_in_population();
+    void print_pc() const;
+    void print_count(std::vector<std::vector<size_t>> &count) const;
 
     Instance &m_instance;
 

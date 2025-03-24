@@ -54,5 +54,5 @@ int main(int argc, char *argv[]) {
     std::cout << s_pf_neh << '\n';
 
     P_EDA peda(instance);
-    peda.generate_initial_population();
+    peda.solve();
 }
