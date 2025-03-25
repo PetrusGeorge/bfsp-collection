@@ -4,6 +4,7 @@
 #include <numeric>
 
 #include "Instance.h"
+#include "P_EDA.h"
 #include "Parameters.h"
 #include "RNG.h"
 #include "Solution.h"
@@ -14,7 +15,6 @@
 #include "constructions/PF_NEH.h"
 #include "constructions/PW.h"
 #include "constructions/mNEH.h"
-#include "P_EDA.h"
 #include "local-search/RLS.h"
 
 int main(int argc, char *argv[]) {
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     std::cout << s_neh << '\n';
 
     PF_NEH pf_neh(instance);
-    Solution s_pf_neh = pf_neh.solve(instance.num_jobs());
+    const Solution s_pf_neh = pf_neh.solve(instance.num_jobs());
     std::cout << "\nPF_NEH:" << '\n';
     std::cout << s_pf_neh << '\n';
 

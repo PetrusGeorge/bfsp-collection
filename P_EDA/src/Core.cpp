@@ -87,7 +87,6 @@ size_t core::calculate_sigma(Instance &instance, std::vector<std::vector<size_t>
         } else {
             sigma += (new_departure_time[machine] - d.back()[machine] - p(job, machine));
         }
-
     }
 
     return sigma;
