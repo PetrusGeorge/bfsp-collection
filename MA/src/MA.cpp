@@ -1,183 +1,312 @@
 #include "MA.h"
-#include "Core.h"
-#include "Instance.h"
-#include "Log.h"
-#include "RNG.h"
-#include "Solution.h"
 
 #include <iostream>
-#include <vector>
+#include <algorithm>
 #include <limits>
-#include <bits/stdc++.h>
 #include <chrono>
-#include <ctime>
 
 namespace {
-  double uptime() {
-      static const auto global_start_time = std::chrono::steady_clock::now();
-      auto now = std::chrono::steady_clock::now();
-      auto duration = std::chrono::duration_cast<std::chrono::microseconds>(now - global_start_time);
-      return static_cast<double>(duration.count());
+  size_t uptime() {
+    static const auto global_start_time = std::chrono::steady_clock::now();
+    auto now = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - global_start_time);
+    return duration.count();
 }
 }
 
+MA::MA(Instance instance, Parameters params) 
+  : m_instance(std::move(instance)), m_params(std::move(params)) {
+    this->time_limit = 5 * m_instance.num_jobs() * m_instance.num_machines();
+    std::cout << this->time_limit << std::endl;
+}
 
-std::vector<Solution> initial_pop(size_t ps) {
+
+void MA::generate_initial_pop() {
   
   size_t n = m_instance.num_jobs();
+  size_t lambda = n > LAMBDA_MAX ? LAMBDA_MAX : n; 
 
-  std::vector<Solution> init_pop(ps);
+  pop = std::vector<Solution>(m_params.ps());
 
-  // init_pop[0] = PF_NEH(...);
+  PF_NEH pf_neh(m_instance);  
+  pop[0] = pf_neh.solve(lambda);
+  core::recalculate_solution(m_instance, pop[0]);
 
-  std::vector<size_t> antibody(n);
-  std::iota(antibody.begin(), antibody.end(), 0);
-  for(size_t i = 1; i < ps; i++) {
+  std::vector<size_t> individual(n);
+  std::iota(individual.begin(), individual.end(), 0);
+  for(size_t i = 1; i < m_params.ps(); i++) {
 
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count(); // new seed increase the randomness
-    std::shuffle(antibody.begin(), antibody.end(), std::default_random_engine(seed));
+    std::shuffle(individual.begin(), individual.end(), RNG::instance().gen());
 
-    init_pop[i].first.sequence = antibody;
-    core::recalculate_solution(m_instance, init_pop[i].first);
+    pop[i].sequence = individual;
+    core::recalculate_solution(m_instance, pop[i]);
 
   }
 
-  return init_pop;
+}
+
+
+std::vector<size_t> MA::generate_random_sequence() {
+
+  std::vector<size_t> v(m_instance.num_jobs());
+
+  std::iota(v.begin(), v.end(), 0);
+
+  std::shuffle(v.begin(), v.end(), RNG::instance().gen());
+
+  return v;
 
 }
 
 
-size_t selection(std::vector<Solution> &pop) {
+size_t MA::selection() {
 
-  size_t i = static_cast<size_t>(rand() % n);
+  size_t i = RNG::instance().generate((size_t) 0, pop.size()-1);
   size_t j = i;
 
-  while(i == j) j = static_cast<size_t>(rand() % n);
+  while(i == j) j = RNG::instance().generate((size_t) 0, pop.size()-1);
 
   if(pop[i].cost > pop[j].cost) {
-    // delete pop[i] // really delete???
     return j;
   } else {
-    // delete pop[j] // really delete???
     return i;
   }
 
 }
 
 
-void mutation(std::vector<Solution> &pop, double pm) {
+Solution MA::path_relink_swap(const Solution &individual1, const Solution &individual2) {
 
+  Solution best;
+  Solution current = individual1;
   size_t n = m_instance.num_jobs();
-  double p;
 
-  for(size_t antibody = 0; antibody < pop.size(); antibody++) {
+  size_t difference = 0;
+  for(size_t k = 0; k < n; k++) {
+    if(individual1.sequence[k] != individual2.sequence[k]) {
+      difference++;
+    }
+  }
 
-    p = rand() / static_cast<double>(RAND_MAX);
-
-    if(p > pm) continue;
-      // getting indexes for movements
-    size_t i = static_cast<size_t>(rand() % n);
-    size_t j = i;
-
-    while(i == j) j = static_cast<size_t>(rand() % n);
-
-    pop[antibody].sequence.insert(pop[antibody].sequence.begin()+i, pop[antibody].sequence[j]);
-    
-    if(i > j)
-      pop[antibody].sequence.erase(pop[antibody].sequence.begin()+j); 
-    else 
-      pop[antibody].sequence.erase(pop[antibody].sequence.begin()+j+1); 
-    
-  
-    core::recalculate_solution(m_instance, pop[antibody]);
-
+  if(difference <= 2) {
+    mutation(current);
   } 
-  
+
+  size_t i = 0;
+  for(size_t cnt = 0; cnt < n; cnt++) {
+
+    size_t job = current.sequence[i];
+    for(size_t j = 0; j < n; j++) {
+      
+      if(job != individual2.sequence[j]) {
+        continue;
+      }
+
+      if(i == j) {
+        i++;
+      } else {
+        std::swap(current.sequence[i], current.sequence[j]);
+        core::recalculate_solution(m_instance, current);
+
+        if(current.cost < best.cost) {
+          // std::cout << "current best: " << current.cost << std::endl;
+          best = current;
+        }
+      }
+
+      break;
+    }
+  }
+
+  return best;
+
 }
 
 
-void update(std::vector<std::pair<Solution, double>> &pop, std::vector<std::pair<Solution, double>> &clones) {
-  // Search later:
-  // R. Ruiz, C. Maroto, and J. Alcaraz, “Two new robust genetic algorithms
-  // for the flowshop scheduling problem,” OMEGA, Int. J. Manage. Sci.,
-  // vol. 34, pp. 461–476, 2006.
-  std::vector<Solution> aux(nc);
-  size_t i = 0, j = 0;
+void MA::mutation(Solution &individual) {
 
-  for(size_t k = 0; k < nc; k++) {
+  size_t insertion_position = RNG::instance().generate((size_t) 0, individual.sequence.size()-1);
+  size_t job_position = insertion_position;
 
-    if(pop[i].second > clones[j].second) {
-      aux[k] = pop[i];
-      i++;
+  while(insertion_position == job_position) { 
+    job_position = RNG::instance().generate((size_t) 0, individual.sequence.size()-1);
+  }
+
+  individual.sequence.insert(individual.sequence.begin()+insertion_position, individual.sequence[job_position]);
+
+  if (insertion_position > job_position) {
+    individual.sequence.erase(
+        individual.sequence.begin() + job_position);
+  }
+  else {
+    individual.sequence.erase(
+        individual.sequence.begin() + job_position + 1);
+  }
+
+  core::recalculate_solution(m_instance, individual);
+
+}
+
+
+void MA::restart_population() {
+
+  auto sort_criteria = [](Solution &p1, Solution &p2) {
+    return p1.cost < p2.cost;
+  };
+
+  std::sort(pop.begin(), pop.end(), sort_criteria);
+
+  for(size_t i = 0; i < pop.size(); i++) {
+
+    if(i < pop.size() / 2) {
+      mutation(pop[i]);
+      mutation(pop[i]);
     } else {
-      aux[k] = clones[j];
-      j++;
+      pop[i].sequence = generate_random_sequence();
+      core::recalculate_solution(m_instance, pop[i]);
     }
 
   }
 
-  pop.swap(aux);
+}
+
+
+bool MA::equal_solution(Solution &s1, Solution &s2) {
+
+  if(s1.cost != s2.cost) {
+    return false;
+  }
+
+  for(size_t i = 0; i < s1.sequence.size(); i++) {
+
+    if(s1.sequence[i] != s2.sequence[i]) {
+      return false;
+    }
+
+  }
+
+  return true;
 
 }
 
 
-Solution solve() {
+void MA::population_updating(std::vector<Solution> &offspring_population) {
 
-  srand(time(0));
+  std::vector<bool> replaced_indexes(pop.size(), false);
 
-  size_t n = m_instance.num_jobs();
+  for(size_t i = 0; i < offspring_population.size(); i ++) {
+    
+    bool already_exist = false;
+    int replaced_individual = -1;
+    for(size_t j = 0; j < pop.size(); j ++) {
+
+      if(!equal_solution(offspring_population[i], pop[j]) && replaced_indexes[j]) {
+        already_exist = true;
+        replaced_indexes[j] = true;
+        break;
+      }
+      if(replaced_individual == -1 && offspring_population[i].cost < pop[j].cost) {
+        replaced_individual = j;
+      }
+    }
+
+    if(!already_exist && replaced_individual != -1) {
+      pop[replaced_individual] = offspring_population[i];
+    }
+
+  }
+
+}
+
+
+Solution MA::solve() {
 
   Solution best_solution;
-  std::vector<Solution> pop;
 
-  pop = initial_pop(); 
-
-  std::sort(pop.begin(), pop.end(), [](Solution &p1, Solution &p2) { return p1.cost < p2.cost; }); // sorting by affinity (probably exist some best way to do this)
+  generate_initial_pop(); 
   
+  auto sort_criteria = [](Solution &p1, Solution &p2) {
+    return p1.cost < p2.cost;
+  };
+
+  std::sort(pop.begin(), pop.end(), sort_criteria);
+
   best_solution = pop[0];
 
-  // RLS(best_solution);
+  if(rls(best_solution, best_solution.sequence, m_instance)) {
+    core::recalculate_solution(m_instance, best_solution);
+  }
 
-  // double timer_counter = 1;
+
+  std::cout << best_solution.cost << std::endl;
+
+  size_t count = 0;
   while(true) {
 
-    while(pop.size() < PS) {
+    std::vector<Solution> offspring_population;
 
-      size_t parent_1 = selection(pop);
+    while(offspring_population.size() < m_params.ps()) {
+
+      size_t parent_1 = selection();
       size_t parent_2 = parent_1;
-      while(parent_2 == parent_1) parent_2 = selection(pop);
+      while(parent_2 == parent_1) parent_2 = selection();
 
-      double p = RNG::instance().generateDouble();
-
-      size_t offspring1, offspring2;
-      if(p < pc) {
-        offspring1 = path_relink_swap(parent_1, parent_2);
-        offspring2 = path_relink_swap(parent_2, parent_1);
+      Solution offspring1, offspring2;
+      if(RNG::instance().generate_real_number(0.0, 1.0) < m_params.pc()) {
+        offspring1 = path_relink_swap(pop[parent_1], pop[parent_2]);
+        offspring2 = path_relink_swap(pop[parent_2], pop[parent_1]);
       } else {
-        offspring1 = parent_1;
-        offspring2 = parent_2;
+        offspring1 = pop[parent_1];
+        offspring2 = pop[parent_2];
+      }
+
+      if(RNG::instance().generate_real_number(0.0, 1.0) < m_params.pm()) {
+        mutation(offspring1);
+      }
+      if(RNG::instance().generate_real_number(0.0, 1.0) < m_params.pm()) {
+        mutation(offspring2);
+      }
+      
+      if(!equal_solution(offspring1, pop[parent_1]) && !equal_solution(offspring1, pop[parent_2])) {
+        ref = generate_random_sequence();
+        rls(offspring1, ref, m_instance); 
+        offspring_population.push_back(offspring1);
+      }
+      if(!equal_solution(offspring2, pop[parent_1]) && !equal_solution(offspring2, pop[parent_2])) {
+        ref = generate_random_sequence();
+        rls(offspring2, ref, m_instance); 
+        offspring_population.push_back(offspring2);
       }
 
     }
 
-    p = RNG::instance().generateDouble();
-    if(p < pm) {
-      
+    std::sort(offspring_population.begin(), offspring_population.end(), sort_criteria);
+
+    population_updating(offspring_population);
+
+    std::sort(pop.begin(), pop.end(), sort_criteria);
+    std::cout << count << std::endl;
+
+    count++;
+
+    if(pop[0].cost < best_solution.cost) {
+      best_solution = pop[0];
+      std::cout << best_solution << std::endl;
+      count = 0;
     }
 
-    if(pop[0].first.cost < best_solution.cost) {
-      best_solution = pop[0].first;
-      // std::cout << best_solution << std::endl;
+    if(count >= m_params.gamma()) {
+      count = 0;
+      restart_population();
     }
 
-    if(uptime() > time_limit) break;
-    // else if (uptime() > timer_counter * time_limit / 5) {
-    //     std::cout << timer_counter * time_limit / 5 << " Microsseconds out of " << time_limit << '\n';
-    //     timer_counter++;
-    // }
+    if (uptime() > time_limit) {
+      break;
+    }
 
   }
 
+  pop.clear();
   return best_solution;
 
 }
