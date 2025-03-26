@@ -17,7 +17,7 @@ namespace {
 MA::MA(Instance instance, Parameters params) 
   : m_instance(std::move(instance)), m_params(std::move(params)) {
     this->time_limit = 5 * m_instance.num_jobs() * m_instance.num_machines();
-    std::cout << this->time_limit << std::endl;
+
 }
 
 
@@ -75,15 +75,15 @@ size_t MA::selection() {
 }
 
 
-Solution MA::path_relink_swap(const Solution &individual1, const Solution &individual2) {
+Solution MA::path_relink_swap(const Solution &beta, const Solution &pi) {
 
   Solution best;
-  Solution current = individual1;
+  Solution current = beta;
   size_t n = m_instance.num_jobs();
 
   size_t difference = 0;
   for(size_t k = 0; k < n; k++) {
-    if(individual1.sequence[k] != individual2.sequence[k]) {
+    if(beta.sequence[k] != pi.sequence[k]) {
       difference++;
     }
   }
@@ -98,7 +98,7 @@ Solution MA::path_relink_swap(const Solution &individual1, const Solution &indiv
     size_t job = current.sequence[i];
     for(size_t j = 0; j < n; j++) {
       
-      if(job != individual2.sequence[j]) {
+      if(job != pi.sequence[j]) {
         continue;
       }
 
@@ -109,7 +109,6 @@ Solution MA::path_relink_swap(const Solution &individual1, const Solution &indiv
         core::recalculate_solution(m_instance, current);
 
         if(current.cost < best.cost) {
-          // std::cout << "current best: " << current.cost << std::endl;
           best = current;
         }
       }
@@ -148,6 +147,59 @@ void MA::mutation(Solution &individual) {
 }
 
 
+bool MA::equal_solution(Solution &s1, Solution &s2) {
+
+  if(s1.cost != s2.cost) {
+    return false;
+  }
+
+  for(size_t i = 0; i < s1.sequence.size(); i++) {
+
+    if(s1.sequence[i] != s2.sequence[i]) {
+      return false;
+    }
+
+  }
+
+  return true;
+
+}
+
+
+void MA::population_updating(std::vector<Solution> &offspring_population) {
+
+  const size_t C = 1e7;
+
+  for(size_t i = 0; i < offspring_population.size(); i++) {
+    
+    bool already_exist = false;
+    size_t replaced_individual = C;
+    for(size_t j = 0; j < pop.size(); j++) {
+
+      if(equal_solution(offspring_population[i], pop[j])) {
+        already_exist = true;
+    
+        break;
+      }
+
+      if(offspring_population[i].cost > pop[j].cost || replaced_individual != C) {
+        continue;
+      }
+
+      replaced_individual = j;
+
+    }
+
+
+    if(!already_exist && replaced_individual != C) {
+      pop[replaced_individual] = offspring_population[i];
+    }
+
+  }
+
+}
+
+
 void MA::restart_population() {
 
   auto sort_criteria = [](Solution &p1, Solution &p2) {
@@ -171,57 +223,10 @@ void MA::restart_population() {
 }
 
 
-bool MA::equal_solution(Solution &s1, Solution &s2) {
-
-  if(s1.cost != s2.cost) {
-    return false;
-  }
-
-  for(size_t i = 0; i < s1.sequence.size(); i++) {
-
-    if(s1.sequence[i] != s2.sequence[i]) {
-      return false;
-    }
-
-  }
-
-  return true;
-
-}
-
-
-void MA::population_updating(std::vector<Solution> &offspring_population) {
-
-  std::vector<bool> replaced_indexes(pop.size(), false);
-
-  for(size_t i = 0; i < offspring_population.size(); i ++) {
-    
-    bool already_exist = false;
-    int replaced_individual = -1;
-    for(size_t j = 0; j < pop.size(); j ++) {
-
-      if(!equal_solution(offspring_population[i], pop[j]) && replaced_indexes[j]) {
-        already_exist = true;
-        replaced_indexes[j] = true;
-        break;
-      }
-      if(replaced_individual == -1 && offspring_population[i].cost < pop[j].cost) {
-        replaced_individual = j;
-      }
-    }
-
-    if(!already_exist && replaced_individual != -1) {
-      pop[replaced_individual] = offspring_population[i];
-    }
-
-  }
-
-}
-
-
 Solution MA::solve() {
 
   Solution best_solution;
+  std::vector<size_t> ref;
 
   generate_initial_pop(); 
   
@@ -233,12 +238,12 @@ Solution MA::solve() {
 
   best_solution = pop[0];
 
-  if(rls(best_solution, best_solution.sequence, m_instance)) {
+  ref = best_solution.sequence;
+  if(rls(best_solution, ref, m_instance)) {
     core::recalculate_solution(m_instance, best_solution);
   }
 
 
-  std::cout << best_solution.cost << std::endl;
 
   size_t count = 0;
   while(true) {
@@ -268,13 +273,21 @@ Solution MA::solve() {
       }
       
       if(!equal_solution(offspring1, pop[parent_1]) && !equal_solution(offspring1, pop[parent_2])) {
-        ref = generate_random_sequence();
-        rls(offspring1, ref, m_instance); 
+        ref = offspring1.sequence;
+    
+        if(rls(offspring1, ref, m_instance)) {
+          core::recalculate_solution(m_instance, offspring1);
+        } 
+    
         offspring_population.push_back(offspring1);
       }
       if(!equal_solution(offspring2, pop[parent_1]) && !equal_solution(offspring2, pop[parent_2])) {
-        ref = generate_random_sequence();
-        rls(offspring2, ref, m_instance); 
+        ref = offspring2.sequence;
+    
+        if(rls(offspring2, ref, m_instance)) {
+          core::recalculate_solution(m_instance, offspring2);
+        }
+    
         offspring_population.push_back(offspring2);
       }
 
@@ -285,13 +298,13 @@ Solution MA::solve() {
     population_updating(offspring_population);
 
     std::sort(pop.begin(), pop.end(), sort_criteria);
-    std::cout << count << std::endl;
+
 
     count++;
 
     if(pop[0].cost < best_solution.cost) {
       best_solution = pop[0];
-      std::cout << best_solution << std::endl;
+  
       count = 0;
     }
 
