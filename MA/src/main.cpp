@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
         RNG::instance().set_seed(*seed);
     }
 
-    std::cout << "Seed: " << RNG::instance().seed() << '\n';
+    // std::cout << "Seed: " << RNG::instance().seed() << '\n';
 
     DEBUG << "Showing normal debug macro\n";
     DEBUG_EXTRA << "Showing extra debug macro\n";
