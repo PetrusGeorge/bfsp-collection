@@ -35,8 +35,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Seed: " << RNG::instance().seed() << '\n';
 
-
-    P_EDA peda(instance, params);
+    P_EDA peda(instance, params, 50, 0.75);
     const Solution s_peda = peda.solve();
     std::cout << "\nP_EDA:" << '\n';
     std::cout << s_peda << '\n';

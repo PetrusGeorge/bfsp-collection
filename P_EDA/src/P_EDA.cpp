@@ -14,19 +14,19 @@
 #include <iostream>
 #include <numeric>
 
+#include <atomic>
 #include <chrono>
 #include <future>
-#include <atomic>
 #include <thread>
 
-namespace{
+namespace {
 std::atomic<bool> time_expired(false); // Flag to track time
 
 void timer_thread(size_t duration_seconds) {
     std::this_thread::sleep_for(std::chrono::milliseconds(duration_seconds));
     time_expired = true; // Set flag when time is up
 }
-}
+} // namespace
 
 P_EDA::P_EDA(Instance &instance, Parameters &params, size_t ps, double lambda)
     : m_instance(instance), m_params(params), m_lambda(lambda), m_ps(ps) {
@@ -34,7 +34,7 @@ P_EDA::P_EDA(Instance &instance, Parameters &params, size_t ps, double lambda)
 }
 
 Solution P_EDA::solve() {
-    size_t duration = m_instance.num_machines() * m_instance.num_jobs() * m_params.ro();
+    const size_t duration = m_instance.num_machines() * m_instance.num_jobs() * m_params.ro();
 
     std::cout << "Total running time: " << duration << " ms\n";
 
@@ -49,7 +49,7 @@ Solution P_EDA::solve() {
     // the t[i][j][k] represents how many times job k appeared immideatly after job j in position i
     auto t = get_t();
 
-    while (!time_expired) {
+    while (true) {
 
         Solution alpha;
         alpha.sequence = probabilistic_model(p, t);
@@ -57,17 +57,19 @@ Solution P_EDA::solve() {
         auto min_it = std::min_element(m_pc.begin(), m_pc.end(), [](const Solution &a, const Solution &b) {
             return a.cost < b.cost; // Compare costs
         });
+        std::cout << *min_it;
 
-        Solution best = path_relink_swap(alpha, *min_it);
+        Solution best = path_relink_swap(alpha, *min_it, 0);
+
 
         auto ref = fisher_yates_shuffle();
 
         rls(best, ref, m_instance);
 
         const auto [found_in_population, max_cost_pos] = in_population_and_max_makespan(best.sequence);
-        const auto &max_cost_ind = m_pc[max_cost_pos];
+        const auto &max_cost = m_pc[max_cost_pos].cost;
 
-        if (!found_in_population && best.cost < max_cost_ind.cost) {
+        if (!found_in_population && best.cost < max_cost) {
             m_pc.erase(m_pc.begin() + max_cost_pos);
             m_pc.push_back(best);
 
@@ -77,16 +79,18 @@ Solution P_EDA::solve() {
 
         gen = (gen + 1) % m_ps;
         if (gen == 0) {
-            const auto &diversity = get_diversity();
 
             VERBOSE(m_params.verbose()) << "\ngen = 0...\n";
 
+            const auto &diversity = get_diversity();
+            std::cout << "diversity: " << diversity << ", lambda: " << m_lambda << "\n";
             if (diversity < m_lambda) {
 
                 if (m_params.verbose()) {
-                    std::cout << "diversity: " << diversity << ", lambda: " << m_lambda << "\n";
                     std::cout << "\nregenerating population...\n";
                 }
+                std::cout << "regen";
+                getchar();
                 population_regen();
             }
         }
@@ -96,7 +100,6 @@ Solution P_EDA::solve() {
                 std::cout << j << " ";
             }
             std::cout << "best: " << best.cost << "\n";
-            getchar();
         }
     }
 
@@ -208,6 +211,7 @@ void P_EDA::modified_linear_rank_selection() {
         }
     }
     std::vector<Solution> new_pc;
+    new_pc.reserve(m_ps);
 
     while (new_pc.size() < m_ps) {
         const double lambda1 = RNG::instance().generate_real_number(0, 1);
@@ -332,14 +336,13 @@ std::vector<double> P_EDA::get_probability_vector(const std::vector<size_t> &seq
             const double n_i_j_k =
                 sum_t == 0 ? 1 / (double)candidate_jobs.size() : (double)t[pos][last_job][job] / sum_t;
             probabilities[j] = (double)p[0][job] / sum_p + n_i_j_k;
-            ;
         }
     }
 
     return probabilities;
 }
 
-Solution P_EDA::path_relink_swap(const Solution &alpha, const Solution &beta) {
+Solution P_EDA::path_relink_swap(const Solution &alpha, const Solution &beta, size_t similarity_threshold) {
 
     Solution best;
     Solution current = alpha;
@@ -352,7 +355,7 @@ Solution P_EDA::path_relink_swap(const Solution &alpha, const Solution &beta) {
         }
     }
 
-    if (difference <= 2) {
+    if (difference <= similarity_threshold) {
         mutation(current);
     }
 
@@ -368,13 +371,14 @@ Solution P_EDA::path_relink_swap(const Solution &alpha, const Solution &beta) {
 
             if (i == j) {
                 i++;
-            } else {
-                std::swap(current.sequence[i], current.sequence[j]);
-                core::recalculate_solution(m_instance, current);
+                break;
+            }
 
-                if (current.cost < best.cost) {
-                    best = current;
-                }
+            std::swap(current.sequence[i], current.sequence[j]);
+            core::recalculate_solution(m_instance, current);
+
+            if (current.cost < best.cost) {
+                best = current;
             }
 
             break;
@@ -412,8 +416,7 @@ std::vector<size_t> P_EDA::fisher_yates_shuffle() {
     // Start from the last element and swap with random earlier element
     for (size_t i = sequence.size() - 1; i > 0; i--) {
         // Generate random index from 0 to i
-        std::uniform_int_distribution<int> dist(0, i);
-        int j = dist(RNG::instance().gen());
+        const size_t j = RNG::instance().generate(size_t{0}, i);
 
         // Swap elements at i and j
         std::swap(sequence[i], sequence[j]);
@@ -428,7 +431,7 @@ std::pair<bool, size_t> P_EDA::in_population_and_max_makespan(std::vector<size_t
 
     for (size_t i = 0; i < m_ps; i++) {
         const auto &ind = m_pc[i];
-        size_t current_cost = ind.cost;
+        const size_t current_cost = ind.cost;
         if (current_cost > max_cost) {
             max_cost = current_cost;
             max_cost_pos = i;
@@ -468,9 +471,10 @@ double P_EDA::get_diversity() {
     for (size_t k = 0; k < n; k++) {
         for (size_t alpha = 0; alpha < n; alpha++) {
 
-            diversity += ((double)c[k][alpha] / m_ps) * (1 - (double)c[k][alpha] / m_ps);
+            diversity += ((double)c[k][alpha] / m_ps) * (1 - ((double)c[k][alpha] / m_ps));
         }
     }
+    VERBOSE(m_params.verbose()) << "diversity without div: " << diversity << "\n";
 
     diversity /= (double)n - 1;
 
@@ -483,17 +487,19 @@ void P_EDA::population_regen() {
 
     // removing last 40% jobs of the population
     m_pc = {m_pc.begin(), m_pc.end() - 2 * (m_ps / 5)};
+    std::cout << "phase1";
+    getchar();
 
-    // keep 1/3 of the new population (20% of previous population)
-    for (size_t j = m_ps / 3 + 1; j < m_pc.size(); j++) {
+    // keep 20% of the population and do a random insertion in the 40% intermediates
+    for (size_t j = (m_ps / 5) + 1; j < m_pc.size(); j++) {
         auto &current_individual = m_pc[j];
         auto &current_seq = current_individual.sequence;
 
         // random reinsert
-        auto pos = RNG::instance().generate((size_t)0, m_pc.size());
+        auto pos = RNG::instance().generate((size_t)0, current_seq.size());
         auto job = current_seq[pos];
         current_seq.erase(current_seq.begin() + pos);
-        pos = RNG::instance().generate((size_t)0, m_pc.size());
+        pos = RNG::instance().generate((size_t)0, current_seq.size());
         current_seq.insert(current_seq.begin() + pos, job);
     }
     generate_random_individuals();
