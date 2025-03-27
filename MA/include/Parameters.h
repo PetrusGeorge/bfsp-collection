@@ -17,7 +17,6 @@ class Parameters {
     size_t lambda() const { return m_lambda; }
     double pc() const { return m_pc; }
     double pm() const { return m_pm; }
-    
 
   private:
     std::string m_instance_path;

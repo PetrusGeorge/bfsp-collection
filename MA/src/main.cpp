@@ -4,10 +4,9 @@
 
 #include "Instance.h"
 #include "Log.h"
+#include "MA.h"
 #include "Parameters.h"
 #include "RNG.h"
-#include "MA.h"
-
 
 int main(int argc, char *argv[]) {
 

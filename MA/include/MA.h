@@ -4,11 +4,11 @@
 #include "Core.h"
 #include "Instance.h"
 #include "Log.h"
-#include "Solution.h"
 #include "Parameters.h"
 #include "RNG.h"
-#include "local-search/RLS.h"
+#include "Solution.h"
 #include "constructions/PF_NEH.h"
+#include "local-search/RLS.h"
 
 #include <vector>
 
@@ -38,13 +38,13 @@ class MA {
     // Inserts a randomly chosen job into another position
     void mutation(Solution &individual);
 
-    // Mutate some solution and creates new ones randomly 
+    // Mutate some solution and creates new ones randomly
     void restart_population();
 
     // verify if two solutions are equal
     bool equal_solution(Solution &s1, Solution &s2);
 
-    /* 
+    /*
     substituting some individuals by offsprings.
     This algorithm only accept new solution, with better makespan
     */
@@ -55,8 +55,8 @@ class MA {
   private:
     Instance m_instance;
     Parameters m_params;
-    size_t time_limit;
-    std::vector<Solution> pop;
+    size_t m_time_limit;
+    std::vector<Solution> m_pop;
 };
 
-#endif 
+#endif
