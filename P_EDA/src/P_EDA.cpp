@@ -1,36 +1,109 @@
 #include "P_EDA.h"
 #include "Core.h"
 #include "Instance.h"
+#include "Log.h"
+#include "Parameters.h"
 #include "RNG.h"
 #include "Solution.h"
 #include "constructions/NEH.h"
 #include "constructions/PF.h"
+#include "local-search/RLS.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <iostream>
 #include <numeric>
 
-P_EDA::P_EDA(Instance &instance) : m_instance(instance) { m_pc.reserve(m_ps); }
+#include <chrono>
+#include <future>
+#include <atomic>
+#include <thread>
+
+namespace{
+std::atomic<bool> time_expired(false); // Flag to track time
+
+void timer_thread(size_t duration_seconds) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(duration_seconds));
+    time_expired = true; // Set flag when time is up
+}
+}
+
+P_EDA::P_EDA(Instance &instance, Parameters &params, size_t ps, double lambda)
+    : m_instance(instance), m_params(params), m_lambda(lambda), m_ps(ps) {
+    m_pc.reserve(m_ps);
+}
 
 Solution P_EDA::solve() {
+    size_t duration = m_instance.num_machines() * m_instance.num_jobs() * m_params.ro();
+
+    std::cout << "Total running time: " << duration << " ms\n";
+
+    auto timer_future = std::async(std::launch::async, timer_thread, duration);
+
+    size_t gen = 0;
     generate_initial_population();
     modified_linear_rank_selection();
 
-    print_pc();
-    Solution alpha;
-    alpha.sequence = probabilistic_model();
+    // the p[i][j] represents how many times job j appeared before or in position i give the current population
+    auto p = get_p();
+    // the t[i][j][k] represents how many times job k appeared immideatly after job j in position i
+    auto t = get_t();
+
+    while (!time_expired) {
+
+        Solution alpha;
+        alpha.sequence = probabilistic_model(p, t);
+
+        auto min_it = std::min_element(m_pc.begin(), m_pc.end(), [](const Solution &a, const Solution &b) {
+            return a.cost < b.cost; // Compare costs
+        });
+
+        Solution best = path_relink_swap(alpha, *min_it);
+
+        auto ref = fisher_yates_shuffle();
+
+        rls(best, ref, m_instance);
+
+        const auto [found_in_population, max_cost_pos] = in_population_and_max_makespan(best.sequence);
+        const auto &max_cost_ind = m_pc[max_cost_pos];
+
+        if (!found_in_population && best.cost < max_cost_ind.cost) {
+            m_pc.erase(m_pc.begin() + max_cost_pos);
+            m_pc.push_back(best);
+
+            p = get_p();
+            t = get_t();
+        }
+
+        gen = (gen + 1) % m_ps;
+        if (gen == 0) {
+            const auto &diversity = get_diversity();
+
+            VERBOSE(m_params.verbose()) << "\ngen = 0...\n";
+
+            if (diversity < m_lambda) {
+
+                if (m_params.verbose()) {
+                    std::cout << "diversity: " << diversity << ", lambda: " << m_lambda << "\n";
+                    std::cout << "\nregenerating population...\n";
+                }
+                population_regen();
+            }
+        }
+        if (m_params.verbose()) {
+            std::cout << "best sequence: ";
+            for (auto &j : best.sequence) {
+                std::cout << j << " ";
+            }
+            std::cout << "best: " << best.cost << "\n";
+            getchar();
+        }
+    }
+
     auto min_it = std::min_element(m_pc.begin(), m_pc.end(), [](const Solution &a, const Solution &b) {
         return a.cost < b.cost; // Compare costs
     });
-    Solution best = path_relink_swap(alpha, *min_it);
-    std::cout << "best sequence: ";
-    for (auto &j : best.sequence) {
-        std::cout << j << " ";
-    }
-    std::cout << "best: " << best.cost << "\n";
-
-    return best;
+    return *min_it;
 }
 
 size_t P_EDA::calculate_similarity(const std::vector<size_t> &random_sequence, const Solution &individual) {
@@ -69,14 +142,13 @@ void P_EDA::generate_random_individuals() {
         Solution s;
 
         s.sequence = random_sequence;
-        std::vector<std::vector<size_t>> d_final = core::calculate_departure_times(m_instance, s.sequence);
-        s.cost = d_final.back()[m_instance.num_machines() - 1];
+        core::recalculate_solution(m_instance, s);
         m_pc.push_back(s);
     }
 }
 
 void P_EDA::generate_initial_population() {
-    std::cout << "generating population...\n";
+    VERBOSE(m_params.verbose()) << "generating initial population...\n\n";
     const size_t n = m_instance.num_jobs();
 
     PF pf(m_instance);
@@ -91,7 +163,6 @@ void P_EDA::generate_initial_population() {
     const size_t pf_neh_individuals = m_ps / 10;
 
     while (m_pc.size() < pf_neh_individuals && l < n) {
-        std::cout << "pc size: " << m_pc.size() << "\n";
 
         Solution s;
         const size_t first_job = sorted_jobs[l];
@@ -158,56 +229,32 @@ void P_EDA::modified_linear_rank_selection() {
     m_pc = new_pc;
 }
 
-std::vector<size_t> P_EDA::probabilistic_model() {
+std::vector<size_t> P_EDA::probabilistic_model(const SizeTMatrix &p, const std::vector<SizeTMatrix> &t) {
     const size_t n = m_instance.num_jobs();
-
-    // the p[i][j] represents how many times job j appeared before or in position i give the current population
-    auto p = get_p();
-    // the t[i][j][k] represents how many times job k appeared immideatly after job j in position i
-    auto t = get_t();
 
     std::vector<size_t> candidate_jobs(m_instance.num_jobs());
     std::iota(candidate_jobs.begin(), candidate_jobs.end(), 0);
     std::vector<size_t> final_sequence;
     final_sequence.reserve(n);
 
-    print_count(p);
-    getchar();
-
     while (final_sequence.size() < n) {
         auto probabilities = get_probability_vector(final_sequence, candidate_jobs, p, t);
 
         std::vector<double> roulette_wheel(candidate_jobs.size());
 
-        // VERBOSE(true) << "candidate_jobs: ";
-        // for (const auto &p : candidate_jobs) {
-        //     std::cout << p << " ";
-        // }
-        // std::cout << "\n";
-
         roulette_wheel[0] = probabilities[0];
 
         size_t job_to_insert = candidate_jobs[0];
         const double r = RNG::instance().generate_real_number(0, 1);
-        // std::cout << "r: " << r << "\n";
-        // std::cout << "roulette wheel: ";
 
         for (size_t j = 1; j < roulette_wheel.size(); j++) {
             roulette_wheel[j] = roulette_wheel[j - 1] + probabilities[j];
-            // std::cout << roulette_wheel[j] << " ";
             if (roulette_wheel[j - 1] <= r && r < roulette_wheel[j]) {
                 job_to_insert = candidate_jobs[j];
             }
         }
-        // std::cout << "job chosen: " << job_to_insert << "\n\n";
         final_sequence.push_back(job_to_insert);
         candidate_jobs.erase(std::remove(candidate_jobs.begin(), candidate_jobs.end(), job_to_insert));
-
-        // std::cout << "sequence: ";
-        // for(auto& j : final_sequence){
-        //     std::cout << j << " ";
-        // }
-        // std::cout << "\n";
     }
     return final_sequence;
 }
@@ -355,6 +402,101 @@ void P_EDA::mutation(Solution &individual) {
     }
 
     core::recalculate_solution(m_instance, individual);
+}
+
+std::vector<size_t> P_EDA::fisher_yates_shuffle() {
+
+    std::vector<size_t> sequence(m_instance.num_jobs());
+    std::iota(sequence.begin(), sequence.end(), 0);
+
+    // Start from the last element and swap with random earlier element
+    for (size_t i = sequence.size() - 1; i > 0; i--) {
+        // Generate random index from 0 to i
+        std::uniform_int_distribution<int> dist(0, i);
+        int j = dist(RNG::instance().gen());
+
+        // Swap elements at i and j
+        std::swap(sequence[i], sequence[j]);
+    }
+    return sequence;
+}
+
+std::pair<bool, size_t> P_EDA::in_population_and_max_makespan(std::vector<size_t> &sequence) {
+
+    size_t max_cost = 0;
+    size_t max_cost_pos = 0;
+
+    for (size_t i = 0; i < m_ps; i++) {
+        const auto &ind = m_pc[i];
+        size_t current_cost = ind.cost;
+        if (current_cost > max_cost) {
+            max_cost = current_cost;
+            max_cost_pos = i;
+        }
+
+        bool found = true;
+        const auto &seq = ind.sequence;
+
+        for (size_t j = 0; j < m_instance.num_jobs(); j++) {
+            if (seq[j] != sequence[j]) {
+                found = false;
+            }
+        }
+        if (found) {
+            return {true, max_cost_pos};
+        }
+    }
+
+    return {false, max_cost_pos};
+}
+
+double P_EDA::get_diversity() {
+    const auto n = m_instance.num_jobs();
+    double diversity = 0;
+
+    SizeTMatrix c(n, std::vector<size_t>(n, 0));
+
+    for (const auto &s : m_pc) {
+        const auto &sequence = s.sequence;
+
+        for (size_t i = 0; i < n; i++) {
+
+            c[i][sequence[i]]++;
+        }
+    }
+
+    for (size_t k = 0; k < n; k++) {
+        for (size_t alpha = 0; alpha < n; alpha++) {
+
+            diversity += ((double)c[k][alpha] / m_ps) * (1 - (double)c[k][alpha] / m_ps);
+        }
+    }
+
+    diversity /= (double)n - 1;
+
+    return diversity;
+}
+void P_EDA::population_regen() {
+    auto sort_criteria = [](Solution &a, Solution &b) { return a.cost < b.cost; };
+
+    std::sort(m_pc.begin(), m_pc.end(), sort_criteria);
+
+    // removing last 40% jobs of the population
+    m_pc = {m_pc.begin(), m_pc.end() - 2 * (m_ps / 5)};
+
+    // keep 1/3 of the new population (20% of previous population)
+    for (size_t j = m_ps / 3 + 1; j < m_pc.size(); j++) {
+        auto &current_individual = m_pc[j];
+        auto &current_seq = current_individual.sequence;
+
+        // random reinsert
+        auto pos = RNG::instance().generate((size_t)0, m_pc.size());
+        auto job = current_seq[pos];
+        current_seq.erase(current_seq.begin() + pos);
+        pos = RNG::instance().generate((size_t)0, m_pc.size());
+        current_seq.insert(current_seq.begin() + pos, job);
+    }
+    generate_random_individuals();
 }
 
 void P_EDA::print_pc() const {

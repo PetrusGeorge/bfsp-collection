@@ -19,7 +19,7 @@
 
 int main(int argc, char *argv[]) {
 
-    const Parameters params(argc, argv);
+    Parameters params(argc, argv);
     Instance instance(params.instance_path());
 
     /*try {*/
@@ -35,24 +35,9 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Seed: " << RNG::instance().seed() << '\n';
 
-    std::vector<size_t> phi(instance.num_jobs());
-    std::iota(phi.begin(), phi.end(), 0);
 
-    NEH n(instance); // false -> not reversed jobs);
-    Solution s_neh = n.solve(phi);
-    std::cout << "\nNEH:" << '\n';
-    std::cout << s_neh << '\n';
-
-    std::shuffle(phi.begin(), phi.end(), RNG::instance().gen());
-    rls(s_neh, phi, instance);
-    std::cout << "\nRLS:" << '\n';
-    std::cout << s_neh << '\n';
-
-    PF_NEH pf_neh(instance);
-    const Solution s_pf_neh = pf_neh.solve(instance.num_jobs());
-    std::cout << "\nPF_NEH:" << '\n';
-    std::cout << s_pf_neh << '\n';
-
-    P_EDA peda(instance);
-    peda.solve();
+    P_EDA peda(instance, params);
+    const Solution s_peda = peda.solve();
+    std::cout << "\nP_EDA:" << '\n';
+    std::cout << s_peda << '\n';
 }
