@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstddef>
 #include <cstdlib>
 #include <iostream>
 #include <numeric>
@@ -33,10 +34,18 @@ int main(int argc, char *argv[]) {
         RNG::instance().set_seed(*seed);
     }
 
-    std::cout << "Seed: " << RNG::instance().seed() << '\n';
-
-    P_EDA peda(instance, params, 50, 0.75);
-    const Solution s_peda = peda.solve();
+        P_EDA peda(instance, params, 50, 0.30);
+        const Solution s_peda = peda.solve();
     std::cout << "\nP_EDA:" << '\n';
     std::cout << s_peda << '\n';
+
+   //  double media = 0;
+   // for(size_t i = 1; i <= 10; i++){
+
+   //      P_EDA peda(instance, params, 50, 0.30);
+   //      const Solution s_peda = peda.solve();
+   //      media += s_peda.cost;
+   //  }
+   //  std::cout << "\nP_EDA:" << '\n';
+   //  std::cout << media/10 << '\n';
 }

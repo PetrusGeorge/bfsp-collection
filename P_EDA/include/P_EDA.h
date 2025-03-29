@@ -17,7 +17,7 @@ class P_EDA { // NOLINT
     void generate_random_individuals();
     void modified_linear_rank_selection();
 
-    std::vector<size_t> probabilistic_model(const SizeTMatrix &p, const std::vector<SizeTMatrix> &t);
+    Solution probabilistic_model(const SizeTMatrix &p, const std::vector<SizeTMatrix> &t);
     std::vector<std::vector<size_t>> get_p();
     std::vector<SizeTMatrix> get_t();
     std::vector<double> get_probability_vector(const std::vector<size_t> &sequence,
