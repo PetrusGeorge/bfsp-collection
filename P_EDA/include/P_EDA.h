@@ -12,7 +12,7 @@ class P_EDA { // NOLINT
     Solution solve();
 
   private:
-    size_t calculate_similarity(const std::vector<size_t> &random_sequence, const Solution &individual);
+    static inline bool is_similar(const std::vector<size_t> &a, const std::vector<size_t> &b, size_t similarity_threshold);
     void generate_initial_population();
     void generate_random_individuals();
     void modified_linear_rank_selection();
@@ -21,11 +21,11 @@ class P_EDA { // NOLINT
     std::vector<std::vector<size_t>> get_p();
     std::vector<SizeTMatrix> get_t();
     std::vector<double> get_probability_vector(const std::vector<size_t> &sequence,
-                                               const std::vector<size_t> &candidate_jobs, const SizeTMatrix &p,
+                                               const std::vector<size_t> &unasigned_jobs, const SizeTMatrix &p,
                                                const std::vector<SizeTMatrix> &t);
 
     Solution path_relink_swap(const Solution &alpha, const Solution &beta, size_t similarity_threshold);
-    void mutation(Solution &individual);
+    inline void mutation(Solution &individual);
 
     std::vector<size_t> fisher_yates_shuffle();
     std::pair<bool, size_t> in_population_and_max_makespan(std::vector<size_t> &sequence);

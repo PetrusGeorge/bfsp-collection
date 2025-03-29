@@ -18,6 +18,7 @@
 #include <chrono>
 #include <future>
 #include <thread>
+#include <utility>
 
 namespace {
 std::atomic<bool> time_expired(false); // Flag to track time
@@ -224,31 +225,30 @@ void P_EDA::modified_linear_rank_selection() {
 Solution P_EDA::probabilistic_model(const SizeTMatrix &p, const std::vector<SizeTMatrix> &t) {
     const size_t n = m_instance.num_jobs();
 
-    std::vector<size_t> candidate_jobs(m_instance.num_jobs());
-    std::iota(candidate_jobs.begin(), candidate_jobs.end(), 0);
+    std::vector<size_t> unasigned_jobs(m_instance.num_jobs());
+    std::iota(unasigned_jobs.begin(), unasigned_jobs.end(), 0);
     std::vector<size_t> final_sequence;
     final_sequence.reserve(n);
 
-    while (final_sequence.size() < n-1) {
-        auto probabilities = get_probability_vector(final_sequence, candidate_jobs, p, t);
+    while (final_sequence.size() < n - 1) {
+        auto probabilities = get_probability_vector(final_sequence, unasigned_jobs, p, t);
 
-        std::vector<double> roulette_wheel(candidate_jobs.size());
+        double roulette_wheel = 0;
 
-        roulette_wheel[0] = probabilities[0];
-
-        size_t job_to_insert = candidate_jobs[0];
+        size_t job_to_insert = unasigned_jobs[0];
         const double r = RNG::instance().generate_real_number(0, 1);
 
-        for (size_t j = 1; j < roulette_wheel.size(); j++) {
-            roulette_wheel[j] = roulette_wheel[j - 1] + probabilities[j];
-            if (roulette_wheel[j - 1] <= r && r < roulette_wheel[j]) {
-                job_to_insert = candidate_jobs[j];
+        for (size_t j = 0; j < unasigned_jobs.size(); j++) {
+
+            if (roulette_wheel <= r && r < roulette_wheel + probabilities[j]) {
+                job_to_insert = unasigned_jobs[j];
             }
+            roulette_wheel += probabilities[j];
         }
         final_sequence.push_back(job_to_insert);
-        candidate_jobs.erase(std::remove(candidate_jobs.begin(), candidate_jobs.end(), job_to_insert));
+        unasigned_jobs.erase(std::remove(unasigned_jobs.begin(), unasigned_jobs.end(), job_to_insert));
     }
-    final_sequence.push_back(candidate_jobs.front());
+    final_sequence.push_back(unasigned_jobs.front());
 
     Solution s;
     s.sequence = final_sequence;
@@ -296,42 +296,42 @@ std::vector<SizeTMatrix> P_EDA::get_t() {
 }
 
 std::vector<double> P_EDA::get_probability_vector(const std::vector<size_t> &sequence,
-                                                  const std::vector<size_t> &candidate_jobs, const SizeTMatrix &p,
+                                                  const std::vector<size_t> &unasigned_jobs, const SizeTMatrix &p,
                                                   const std::vector<SizeTMatrix> &t) {
     const size_t n = m_instance.num_jobs();
-    const size_t pos = sequence.size();
+    std::vector<double> probabilities(unasigned_jobs.size());
 
-    std::vector<double> probabilities(candidate_jobs.size());
-    if (pos == 0) {
+    if (sequence.empty()) {
 
         double sum_p = 0;
-        for (const auto &j : candidate_jobs) {
+        for (const auto &j : unasigned_jobs) {
             sum_p += (double)p[0][j];
         }
 
         for (size_t j = 0; j < n; j++) {
-            const size_t job = candidate_jobs[j];
+            const size_t job = unasigned_jobs[j];
             probabilities[j] = (double)p[0][job] / sum_p;
         }
     } else {
 
         const size_t last_job = sequence.back();
+        const size_t pos = sequence.size(); // the position the new job will be inserted
 
         double sum_p = 0;
         double sum_t = 0;
-        for (const auto &j : candidate_jobs) {
+        for (const auto &j : unasigned_jobs) {
             sum_p += (double)p[pos][j];
             sum_t += (double)t[pos][last_job][j];
         }
 
-        for (size_t j = 0; j < candidate_jobs.size(); j++) {
-            const size_t job = candidate_jobs[j];
+        for (size_t j = 0; j < unasigned_jobs.size(); j++) {
+            const size_t job = unasigned_jobs[j];
 
             double n_i_j_k = -1;
 
             if (sum_t == 0) {
-                n_i_j_k = 1 / (double)candidate_jobs.size();
-            }else{
+                n_i_j_k = 1 / (double)unasigned_jobs.size();
+            } else {
                 n_i_j_k = (double)t[pos][last_job][job] / sum_t;
             }
 
@@ -349,47 +349,33 @@ Solution P_EDA::path_relink_swap(const Solution &alpha, const Solution &beta, si
     Solution current = alpha;
     const size_t n = m_instance.num_jobs();
 
-    size_t difference = 0;
-    for (size_t k = 0; k < n; k++) {
-        if (alpha.sequence[k] != beta.sequence[k]) {
-            difference++;
-        }
-    }
+    bool similar = is_similar(current.sequence, beta.sequence, similarity_threshold);
 
-    if (difference <= similarity_threshold) {
+    if (similar) {
         mutation(current);
     }
 
-    size_t i = 0;
-    for (size_t cnt = 0; cnt < n; cnt++) {
+    best = current;
 
-        const size_t job = current.sequence[i];
-        for (size_t j = 0; j < n; j++) {
+    for (size_t k = 0; k < n; k++) {
+        const size_t current_job = beta.sequence[k];
 
-            if (job != beta.sequence[j]) {
-                continue;
-            }
+        auto p = std::find(current.sequence.begin(), current.sequence.end(), current_job);
+        std::swap(current.sequence[k], *p);
 
-            if (i == j) {
-                i++;
-                break;
-            }
-
-            std::swap(current.sequence[i], current.sequence[j]);
-            core::recalculate_solution(m_instance, current);
-
-            if (current.cost < best.cost) {
-                best = current;
-            }
-
+        similar = is_similar(current.sequence, beta.sequence, similarity_threshold);
+        if (similar) {
             break;
+        }
+        if (current.cost < best.cost) {
+            best = current;
         }
     }
 
     return best;
 }
 
-void P_EDA::mutation(Solution &individual) {
+inline void P_EDA::mutation(Solution &individual) {
 
     const size_t insertion_position = RNG::instance().generate((size_t)0, individual.sequence.size() - 1);
     size_t job_position = insertion_position;
@@ -444,6 +430,7 @@ std::pair<bool, size_t> P_EDA::in_population_and_max_makespan(std::vector<size_t
         for (size_t j = 0; j < m_instance.num_jobs(); j++) {
             if (seq[j] != sequence[j]) {
                 found = false;
+                break;
             }
         }
         if (found) {
@@ -505,6 +492,20 @@ void P_EDA::population_regen() {
     generate_random_individuals();
 }
 
+inline bool P_EDA::is_similar(const std::vector<size_t> &a, const std::vector<size_t> &b, size_t similarity_threshold) {
+
+    size_t diference = 0;
+    for (size_t j = 0; j < a.size(); j++) {
+
+        if (a[j] != b[j]) {
+            diference++;
+            if (diference > similarity_threshold) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 void P_EDA::print_pc() const {
     std::cout << "Population: \n";
     for (size_t i = 0; i < m_pc.size(); i++) {
