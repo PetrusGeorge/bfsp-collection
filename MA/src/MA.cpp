@@ -106,22 +106,19 @@ Solution MA::path_relink_swap(const Solution &beta, const Solution &pi) {
         }
 
         size_t job = current.sequence[i];
-        for (size_t j = 0; j < n; j++) {
+        for (size_t j = i+1; j < n; j++) {
 
             if (job != pi.sequence[j]) {
                 continue;
             }
 
-            if (i == j) {
-                i++;
-            } else {
-                std::swap(current.sequence[i], current.sequence[j]);
-                core::recalculate_solution(m_instance, current);
+            std::swap(current.sequence[i], current.sequence[j]);
+            core::recalculate_solution(m_instance, current);
 
-                if (current.cost < best.cost) {
-                    best = current; // new best interdiary solution
-                }
+            if (current.cost < best.cost) {
+                best = current; // new best interdiary solution
             }
+            
 
             break;
         }
