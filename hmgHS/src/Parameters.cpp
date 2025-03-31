@@ -16,6 +16,25 @@ void config_argparse(argparse::ArgumentParser &cli) {
         .metavar("RO")
         .default_value(size_t(30))
         .scan<'i', size_t>();
+
+    cli.add_argument("--ms")
+        .help("set the ro parameter which delimits the memory size of the program")
+        .metavar("MS")
+        .default_value(size_t(5))
+        .scan<'i', size_t>();
+
+
+    cli.add_argument("-c", "--pcr")
+        .help("set the ro parameter which delimits the time limit of the program")
+        .metavar("PCR")
+        .default_value(0.97)
+        .scan<'f', double>();
+
+    cli.add_argument("-a", "--par")
+        .help("set the ro parameter which delimits the time limit of the program")
+        .metavar("PAR")
+        .default_value(0.99)
+        .scan<'f', double>();
 }
 } // namespace
 
@@ -39,4 +58,7 @@ Parameters::Parameters(int argc, char **argv) {
     m_verbose = cli.get<bool>("--verbose");
     m_seed = cli.present<size_t>("--seed");
     m_ro = cli.get<size_t>("--ro");
+    m_ms = cli.get<size_t>("--ms");
+    m_pcr = cli.get<double>("--pcr");
+    m_par = cli.get<double>("--par");
 }

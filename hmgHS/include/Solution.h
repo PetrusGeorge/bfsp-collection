@@ -8,6 +8,7 @@
 struct Solution {
     size_t cost = std::numeric_limits<size_t>::max();
     std::vector<size_t> sequence;
+    std::vector<double> harmony;
     std::vector<std::vector<size_t>> departure_times;
 };
 
