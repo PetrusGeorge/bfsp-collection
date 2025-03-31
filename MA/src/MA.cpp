@@ -70,8 +70,8 @@ Solution MA::path_relink_swap(const Solution &beta, const Solution &pi) {
 
     /*
     Or the difference is 0 (and the solution are equal), or is greater than or equal to 2.
-    If is less than or equal to 2, maybe one swap can make the solutions equal, hence i
-    apply a mutation.
+    If is less than or equal to 2, maybe one swap can make the solutions equal, hence it's
+    applied a mutation.
     */
     size_t difference = 0;
     for (size_t k = 0; k < n; k++) {
@@ -99,6 +99,11 @@ Solution MA::path_relink_swap(const Solution &beta, const Solution &pi) {
     */
     size_t i = 0;
     for (size_t cnt = 0; cnt < n; cnt++) {
+
+        if(current.sequence[i] == pi.sequence[i]) {
+            i++;
+            continue;
+        }
 
         size_t job = current.sequence[i];
         for (size_t j = 0; j < n; j++) {
