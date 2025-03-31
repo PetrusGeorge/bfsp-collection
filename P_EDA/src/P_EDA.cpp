@@ -35,13 +35,14 @@ P_EDA::P_EDA(Instance &instance, Parameters &params, size_t ps, double lambda)
 }
 
 Solution P_EDA::solve() {
+    time_expired = false;
     const size_t duration = m_instance.num_machines() * m_instance.num_jobs() * m_params.ro();
 
     std::cout << "Total running time: " << duration << " ms\n";
 
     auto timer_future = std::async(std::launch::async, timer_thread, duration);
 
-    size_t gen = 0;
+    size_t gen = 1;
     generate_initial_population();
     modified_linear_rank_selection();
 
@@ -51,14 +52,27 @@ Solution P_EDA::solve() {
     auto t = get_t();
 
     while (!time_expired) {
+        const Solution alpha = probabilistic_model(p, t);
 
-        Solution alpha = probabilistic_model(p, t);
-
+        if (m_params.verbose()) {
+            std::cout << "alpha: \n";
+            std::cout << alpha << "\n";
+        }
         auto min_it = std::min_element(m_pc.begin(), m_pc.end(), [](const Solution &a, const Solution &b) {
             return a.cost < b.cost; // Compare costs
         });
 
-        Solution best = path_relink_swap(alpha, *min_it, 0);
+        if (m_params.verbose()) {
+            std::cout << "min: \n";
+            std::cout << *min_it << "\n";
+        }
+
+        Solution best = path_relink_swap(alpha, *min_it);
+
+        if (m_params.verbose()) {
+            std::cout << "path relink: \n";
+            std::cout << best << "\n";
+        }
 
         auto ref = fisher_yates_shuffle();
 
@@ -70,9 +84,6 @@ Solution P_EDA::solve() {
         if (!found_in_population && best.cost < max_cost) {
             m_pc.erase(m_pc.begin() + max_cost_pos);
             m_pc.push_back(best);
-
-            p = get_p();
-            t = get_t();
         }
 
         gen = (gen + 1) % m_ps;
@@ -88,6 +99,8 @@ Solution P_EDA::solve() {
                 }
                 population_regen();
             }
+            p = get_p();
+            t = get_t();
         }
         if (m_params.verbose()) {
             std::cout << "best sequence: ";
@@ -113,22 +126,18 @@ void P_EDA::generate_random_individuals() {
 
         std::shuffle(random_sequence.begin(), random_sequence.end(), RNG::instance().gen());
 
-        size_t similarity = 0;
+        bool similar_individual = false;
 
         for (auto &ind : m_pc) {
 
-            for (size_t i = 0; i < m_instance.num_jobs(); i++) {
-                if (ind.sequence[i] != random_sequence[i]) {
-                    similarity++;
-                }
-            }
+            similar_individual = is_similar(random_sequence, ind.sequence, 0);
 
-            if (similarity == 0) {
+            if (similar_individual) {
                 break;
             }
         }
 
-        if (similarity == 0) {
+        if (similar_individual) {
             continue;
         }
 
@@ -162,14 +171,13 @@ void P_EDA::generate_initial_population() {
 
         pf.pf_insertion_phase(s, first_job);
 
-        const std::vector<size_t> candidate_jobs = {s.sequence.begin() + (long)(n - lambda_pf_neh + 1),
-                                                    s.sequence.end()};
+        std::vector<size_t> candidate_jobs = {s.sequence.begin() + (long)(n - lambda_pf_neh + 1), s.sequence.end()};
 
         s.sequence = {s.sequence.begin(),
                       s.sequence.begin() +
                           (long)(n - lambda_pf_neh + 1)}; // needs to be n - lambda + 1 because [first_pos, last_post)
 
-        neh.second_step(candidate_jobs, s);
+        neh.second_step(std::move(candidate_jobs), s);
 
         m_pc.push_back(s);
 
@@ -189,8 +197,7 @@ void P_EDA::modified_linear_rank_selection() {
 
     std::sort(m_pc.begin(), m_pc.end(), sort_criteria);
 
-    const double sum_of_ranks = m_ps / 2 * (1 + m_ps);
-
+    const double sum_of_ranks = (double)(1 + m_ps) * m_ps / 2;
     sum_probabilities[0] = 0;
 
     for (size_t i = 1; i <= m_ps; i++) {
@@ -335,7 +342,7 @@ std::vector<double> P_EDA::get_probability_vector(const std::vector<size_t> &seq
                 n_i_j_k = (double)t[pos][last_job][job] / sum_t;
             }
 
-            probabilities[j] = (double)p[pos][job] / sum_p + n_i_j_k;
+            probabilities[j] = ((double)p[pos][job] / sum_p) + n_i_j_k;
             probabilities[j] /= 2;
         }
     }
@@ -343,32 +350,63 @@ std::vector<double> P_EDA::get_probability_vector(const std::vector<size_t> &seq
     return probabilities;
 }
 
-Solution P_EDA::path_relink_swap(const Solution &alpha, const Solution &beta, size_t similarity_threshold) {
-
+Solution P_EDA::path_relink_swap(const Solution &alpha, const Solution &beta) {
     Solution best;
     Solution current = alpha;
     const size_t n = m_instance.num_jobs();
 
-    bool similar = is_similar(current.sequence, beta.sequence, similarity_threshold);
+    /*
+    Or the difference is 0 (and the solution are equal), or is greater than or equal to 2.
+    If is less than or equal to 2, maybe one swap can make the solutions equal, hence it's
+    applied a mutation.
+    */
+    size_t difference = 0;
+    for (size_t k = 0; k < n; k++) {
+        if (alpha.sequence[k] != beta.sequence[k]) {
 
-    if (similar) {
+            difference++;
+            if (difference > 2) {
+                break;
+            }
+        }
+    }
+
+    if (difference <= 2) {
         mutation(current);
     }
 
-    best = current;
+    // cnt = number of jobs that are already in the correct position
+    /*
+    This part iterates over solution pi, finding where job i from solution
+    beta is in solution pi. If i = j (j is the index of the job searched for
+    in solution pi), then the jobs are in the same position (hence the correct
+    position) and i = i+1 and we search for the next job. Otherwise, we swap
+    the job at position i with the job at position j in solution beta, and
+    move on to the next iteration.
+    */
+    size_t i = 0;
+    for (size_t cnt = 0; cnt < n; cnt++) {
 
-    for (size_t k = 0; k < n; k++) {
-        const size_t current_job = beta.sequence[k];
-
-        auto p = std::find(current.sequence.begin(), current.sequence.end(), current_job);
-        std::swap(current.sequence[k], *p);
-
-        similar = is_similar(current.sequence, beta.sequence, similarity_threshold);
-        if (similar) {
-            break;
+        if (current.sequence[i] == beta.sequence[i]) {
+            i++;
+            continue;
         }
-        if (current.cost < best.cost) {
-            best = current;
+
+        const size_t job = current.sequence[i];
+        for (size_t j = i + 1; j < n; j++) {
+
+            if (job != beta.sequence[j]) {
+                continue;
+            }
+
+            std::swap(current.sequence[i], current.sequence[j]);
+            core::recalculate_solution(m_instance, current);
+
+            if (current.cost < best.cost) {
+                best = current; // new best interdiary solution
+            }
+
+            break;
         }
     }
 

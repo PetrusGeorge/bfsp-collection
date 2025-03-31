@@ -4,6 +4,7 @@
 #include <iostream>
 #include <numeric>
 
+#include "Core.h"
 #include "Instance.h"
 #include "P_EDA.h"
 #include "Parameters.h"
@@ -34,18 +35,10 @@ int main(int argc, char *argv[]) {
         RNG::instance().set_seed(*seed);
     }
 
-        P_EDA peda(instance, params, 50, 0.30);
-        const Solution s_peda = peda.solve();
+    P_EDA peda(instance, params, 50, 0.30);
+    const Solution s_peda = peda.solve();
     std::cout << "\nP_EDA:" << '\n';
-    std::cout << s_peda << '\n';
+    std::cout << s_peda;
 
-   //  double media = 0;
-   // for(size_t i = 1; i <= 10; i++){
-
-   //      P_EDA peda(instance, params, 50, 0.30);
-   //      const Solution s_peda = peda.solve();
-   //      media += s_peda.cost;
-   //  }
-   //  std::cout << "\nP_EDA:" << '\n';
-   //  std::cout << media/10 << '\n';
+    return 0;
 }
