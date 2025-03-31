@@ -7,6 +7,7 @@
 
 struct Solution {
   size_t cost = std::numeric_limits<size_t>::max();
+  double affinity = 0;
   std::vector<size_t> sequence;
   std::vector<std::vector<size_t>> departure_times;
 };

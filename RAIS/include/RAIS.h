@@ -15,26 +15,25 @@ public:
 
   double affinity_calculation(size_t cost);
 
-  void pop_affinity_calculation(std::vector<std::pair<Solution, double>> &pop);
+  void pop_affinity_calculation(std::vector<Solution> &pop);
 
-  std::vector<std::pair<Solution, double>> initial_pop();
+  std::vector<Solution> initial_pop();
 
-  std::vector<std::pair<Solution, double>>
-  clone_antibodies(const std::vector<std::pair<Solution, double>> &pop);
+  std::vector<Solution> clone_antibodies(const std::vector<Solution> &pop);
 
-  void mutation(std::vector<std::pair<Solution, double>> &pop);
+  void mutation(std::vector<Solution> &pop);
 
   bool nearby_antibody(Solution &s1, Solution &s2);
 
-  void merge_populations(std::vector<std::pair<Solution, double>> &pop, const std::vector<std::pair<Solution, double>> &clones, const std::vector<bool> &pop_eliminated, const std::vector<bool> &clone_eliminated);
+  void merge_populations(std::vector<Solution> &pop, const std::vector<Solution> &clones, const std::vector<bool> &pop_eliminated, const std::vector<bool> &clone_eliminated);
 
-  void supression(std::vector<std::pair<Solution, double>> &pop,
-                  std::vector<std::pair<Solution, double>> &clones);
+  void supression(std::vector<Solution> &pop,
+                  std::vector<Solution> &clones);
 
-  void update(std::vector<std::pair<Solution, double>> &pop,
-              const std::vector<std::pair<Solution, double>> &clones);
+  void update(std::vector<Solution> &pop,
+              const std::vector<Solution> &clones);
 
-  void SA(std::vector<std::pair<Solution, double>> &pop, double T);
+  void SA(std::vector<Solution> &pop, double T);
 
   Solution solve();
 
