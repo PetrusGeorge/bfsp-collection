@@ -1,5 +1,5 @@
 project(
-  'template',
+  'SaDIWO',
   'cpp',
   default_options: [
     'cpp_std=c++17',
@@ -18,7 +18,7 @@ extra_args = ['-march=native']
 subdir('src')
 
 executable(
-  'template',
+  'SaDIWO',
   sources,
   include_directories: include_directories('include'),
   cpp_args: extra_args,
