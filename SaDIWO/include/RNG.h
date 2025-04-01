@@ -32,7 +32,7 @@ class RNG {
 
     // Random seed if no seed is set
     size_t m_seed = std::random_device{}();
-    std::mt19937 m_gen{m_seed};
+    std::mt19937 m_gen{static_cast<uint>(m_seed)};
 };
 
 #endif
