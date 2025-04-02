@@ -14,297 +14,244 @@ size_t uptime() {
 }
 } // namespace
 
-MA::MA(Instance instance, Parameters params) : m_instance(std::move(instance)), m_params(std::move(params)) {
-  if(auto ro = m_params) {
-    this->m_time_limit = m_params.ro() * m_instance.num_jobs() * m_instance.num_machines() / 2;
+hmgHS::hmgHS(Instance instance, Parameters params) : m_instance(std::move(instance)), m_params(std::move(params)) {
+  if(auto ro = m_params.ro()) {
+    this->m_time_limit = ro * m_instance.num_jobs() * m_instance.num_machines() / 2;
   } else {    
     this->m_time_limit = 5 * m_instance.num_jobs() * m_instance.num_machines();
   }
 }
 
-void MA::generate_initial_pop() {
+void hmgHS::generate_initial_pop() {
 
     m_pop = std::vector<Solution>(m_params.ms());
+
+    // for (size_t i = 2; i < m_params.ms(); i++) {  
+    for (size_t i = 1; i < m_params.ms(); i++) {
+
+      m_pop[i].harmony = generate_random_harmony();
+      harmony_to_permutation(m_pop[i]);
+      core::recalculate_solution(m_instance, m_pop[i]);
+
+    }
 
     std::vector<size_t> phi(m_instance.num_jobs());
     std::iota(phi.begin(), phi.end(), 0);
     
     NEH neh(m_instance);
     m_pop[0] = neh.solve(phi);
-
-    std::iota(phi.begin(), phi.end(), 0);
-    NEH_WPT neh_wpt(m_instance);
-    m_pop[0] = neh_wpt.solve(phi);
-
     core::recalculate_solution(m_instance, m_pop[0]);
+    m_pop[0].harmony = std::vector<double>(m_instance.num_jobs(), 0.0);
+    permutation_to_harmony(m_pop[0]);
 
-    for (size_t i = 2; i < m_params.ms(); i++) {
 
-        m_pop[i].sequence = generate_random_sequence();
-        core::recalculate_solution(m_instance, m_pop[i]);
-    }
+    // tqv
+    // std::iota(phi.begin(), phi.end(), 0);
+    // NEH_WPT neh_wpt(m_instance);
+    // m_pop[1] = neh_wpt.solve(phi);
+
+    // core::recalculate_solution(m_instance, m_pop[1]);
 }
 
-std::vector<size_t> MA::generate_random_sequence() {
+std::vector<double> hmgHS::generate_random_harmony() {
+  size_t n = m_instance.num_jobs();
 
-    std::vector<size_t> v(m_instance.num_jobs());
-    std::iota(v.begin(), v.end(), 0);
-    std::shuffle(v.begin(), v.end(), RNG::instance().gen());
+  std::vector<double> harmony(n);
 
-    return v;
+  for(size_t j = 0; j < n; j++) {
+    double r = RNG::instance().generate_real_number(0.0, 1.0);
+    harmony[j] = (2 * r) - 1;
+  }
+
+  return harmony;
+
 }
 
-size_t MA::selection() {
+void hmgHS::permutation_to_harmony(Solution &s) {
+  size_t n = m_instance.num_jobs();
 
-    size_t i = RNG::instance().generate((size_t)0, m_pop.size() - 1);
-    size_t j = i;
+  double min = std::numeric_limits<double>::max(); 
+  double max = std::numeric_limits<double>::lowest();
+  for(size_t i = 0; i < m_params.ms(); i++) {
 
-    while (i == j) {
-        j = RNG::instance().generate((size_t)0, m_pop.size() - 1);
+    auto [s_min, s_max] = std::minmax_element(m_pop[i].harmony.begin(), m_pop[i].harmony.end());  
+    if(*s_min < min) {
+      min = *s_min;
+    } 
+
+    if(*s_max > max) {
+      max = *s_max;
     }
 
-    if (m_pop[i].cost > m_pop[j].cost) {
-        return j;
+  }
+
+  double normalized_delta = (max - min) / (n - 1);
+
+  for(size_t j = 0; j < n; j++) {
+    s.harmony[ s.sequence[j] ] = max - (normalized_delta * j);
+  }
+ 
+}
+
+void hmgHS::harmony_to_permutation(Solution &s) {
+  std::vector<size_t> permutation(m_instance.num_jobs());
+
+  std::iota(permutation.begin(), permutation.end(), 0);
+
+  auto sort_criteria = [&s](size_t i, size_t j) { return s.harmony[i] > s.harmony[j]; };
+
+  std::sort(permutation.begin(), permutation.end(), sort_criteria);
+
+  s.sequence.swap(permutation);
+
+}
+
+std::pair<double, double> hmgHS::get_min_max_of_position(size_t j) {
+  double min = std::numeric_limits<double>::max(); 
+  double max = std::numeric_limits<double>::lowest();
+  for(size_t i = 0; i < m_params.ms(); i++) {
+
+    if(m_pop[i].harmony[j] > max) {
+      max = m_pop[i].harmony[j];
+    }
+
+    if(m_pop[i].harmony[j] < min) {
+      min = m_pop[i].harmony[j];
+    }
+
+  }
+
+  return std::make_pair(min, max);
+
+}
+
+std::vector<double> hmgHS::improvise_new_harmony() {
+  
+  size_t n = m_instance.num_jobs();
+  std::vector<double> new_harmony(n);
+
+  for(size_t j = 0; j < n; j++) {
+
+    double r1 = RNG::instance().generate_real_number(0.0, 1.0);
+    if(r1 < m_params.pcr()) {
+
+      size_t alpha = RNG::instance().generate((size_t) 0, m_params.ms());
+      new_harmony[j] = m_pop[alpha].harmony[j];
+
+      double r2 = RNG::instance().generate_real_number(0.0, 1.0);
+      if(r2 < m_params.par()) {
+        new_harmony[j] = m_pop[0].harmony[j];
+      }
+
     } else {
-        return i;
+
+      auto [min, max] = get_min_max_of_position(j);
+
+      double r3 = RNG::instance().generate_real_number(0.0, 1.0);
+      new_harmony[j] = min + (max - min) * r3;
+
     }
+
+  }
+
+  return new_harmony;
+
 }
 
-Solution MA::path_relink_swap(const Solution &beta, const Solution &pi) {
+void hmgHS::revision(Solution &s) {
+  size_t n = m_instance.num_jobs();
+  std::vector<double> z = s.harmony;
+  std::sort(z.begin(), z.end(), [](double a, double b){ return a > b; });
 
-    Solution best;
-    Solution current = beta;
-    size_t n = m_instance.num_jobs();
-
-    /*
-    Or the difference is 0 (and the solution are equal), or is greater than or equal to 2.
-    If is less than or equal to 2, maybe one swap can make the solutions equal, hence it's
-    applied a mutation.
-    */
-    size_t difference = 0;
-    for (size_t k = 0; k < n; k++) {
-        if (beta.sequence[k] != pi.sequence[k]) {
-
-            difference++;
-            if (difference > 2) {
-                break;
-            }
-        }
-    }
-
-    if (difference <= 2) {
-        mutation(current);
-    }
-
-    // cnt = number of jobs that are already in the correct position
-    /*
-    This part iterates over solution pi, finding where job i from solution
-    beta is in solution pi. If i = j (j is the index of the job searched for
-    in solution pi), then the jobs are in the same position (hence the correct
-    position) and i = i+1 and we search for the next job. Otherwise, we swap
-    the job at position i with the job at position j in solution beta, and
-    move on to the next iteration.
-    */
-    size_t i = 0;
-    for (size_t cnt = 0; cnt < n; cnt++) {
-
-        if(current.sequence[i] == pi.sequence[i]) {
-            i++;
-            continue;
-        }
-
-        size_t job = current.sequence[i];
-        for (size_t j = i+1; j < n; j++) {
-
-            if (job != pi.sequence[j]) {
-                continue;
-            }
-
-            std::swap(current.sequence[i], current.sequence[j]);
-            core::recalculate_solution(m_instance, current);
-
-            if (current.cost < best.cost) {
-                best = current; // new best interdiary solution
-            }
-            
-
-            break;
-        }
-    }
-
-    return best;
-}
-
-void MA::mutation(Solution &individual) {
-
-    size_t insertion_position = RNG::instance().generate((size_t)0, individual.sequence.size() - 1);
-    size_t job_position = insertion_position;
-
-    while (insertion_position == job_position) {
-        job_position = RNG::instance().generate((size_t)0, individual.sequence.size() - 1);
-    }
-
-    individual.sequence.insert(individual.sequence.begin() + insertion_position, individual.sequence[job_position]);
-
-    if (insertion_position > job_position) {
-        individual.sequence.erase(individual.sequence.begin() + job_position);
+  for(size_t j = 1; j < n-1; j++) {
+    if(z[j] == z[j+1]) {
+      z[j] += (z[j-1] - z[j]) / n;
     } else {
-        individual.sequence.erase(individual.sequence.begin() + job_position + 1);
+      z[j] += 0.01;
     }
+  }
 
-    core::recalculate_solution(m_instance, individual);
+  s.harmony.swap(z);
 }
 
-bool MA::equal_solution(Solution &s1, Solution &s2) {
+void hmgHS::sort_permutation(Solution &s) {
 
-    if (s1.cost != s2.cost) {
-        return false;
+  size_t n = m_instance.num_jobs();
+
+  size_t i = 0;
+  for(size_t cnt = 0; cnt < n; cnt++) {
+
+    if(i == s.sequence[i]) { 
+      i++;
+      continue;
     }
+    size_t idx = s.sequence[i];
+    std::swap(s.harmony[i], s.harmony[ idx ]);
+    std::swap(s.sequence[i], s.sequence[ idx ]);
 
-    for (size_t i = 0; i < s1.sequence.size(); i++) {
+  }
 
-        if (s1.sequence[i] != s2.sequence[i]) {
-            return false;
-        }
-    }
-
-    return true;
 }
 
-void MA::population_updating(std::vector<Solution> &offspring_population) {
-
-    const size_t C = 1e7; // arbitrary value (the population won't have 10^7 jobs)
-
-    for (size_t i = 0; i < offspring_population.size(); i++) {
-
-        bool already_exist = false;
-        size_t replaced_individual = C;
-        for (size_t j = 0; j < m_pop.size(); j++) {
-
-            if (equal_solution(offspring_population[i], m_pop[j])) {
-
-                already_exist = true;
-                break;
-            }
-
-            if (offspring_population[i].cost > m_pop[j].cost || replaced_individual != C) {
-                continue;
-            }
-
-            replaced_individual = j;
-        }
-
-        if (!already_exist && replaced_individual != C) {
-            m_pop[replaced_individual] = offspring_population[i];
-        }
+void hmgHS::update(Solution &s) {
+  size_t i = m_params.ms() - 1;
+  while(true) {
+    if(s.cost < m_pop[i].cost) {
+      if(i == 0) {
+        break;
+      }
+      i--;
+    } else {
+      i++;
+      break;
     }
+  }
+
+  if(i < m_params.ms()) {
+    m_pop.insert(m_pop.begin() + i, s);
+    m_pop.erase(m_pop.begin() + m_params.ms());
+  }
+
 }
 
-void MA::restart_population() {
-
-    // half the jobs will mutate twice, and the other half will be generated randomly
-
-    auto sort_criteria = [](Solution &p1, Solution &p2) { return p1.cost < p2.cost; };
-
-    std::sort(m_pop.begin(), m_pop.end(), sort_criteria);
-
-    for (size_t i = 0; i < m_pop.size(); i++) {
-
-        if (i < m_pop.size() / 2) {
-            mutation(m_pop[i]);
-            mutation(m_pop[i]);
-        } else {
-            m_pop[i].sequence = generate_random_sequence();
-            core::recalculate_solution(m_instance, m_pop[i]);
-        }
-    }
-}
-
-Solution MA::solve() {
+Solution hmgHS::solve() {
 
     Solution best_solution;
     std::vector<size_t> ref;
 
     generate_initial_pop();
 
-    auto sort_criteria = [](Solution &p1, Solution &p2) { return p1.cost < p2.cost; };
+    auto population_sort_criteria = [](Solution &s1, Solution &s2) { return s1.cost < s2.cost; };
 
-    std::sort(m_pop.begin(), m_pop.end(), sort_criteria);
+    std::sort(m_pop.begin(), m_pop.end(), population_sort_criteria);
 
     best_solution = m_pop[0];
 
-    ref = best_solution.sequence;
-    if (rls(best_solution, ref, m_instance)) {
-        core::recalculate_solution(m_instance, best_solution);
-    }
-
-    size_t count = 0;
     while (true) {
 
-        std::vector<Solution> offspring_population;
+        Solution new_sol;
+        new_sol.harmony = improvise_new_harmony();
 
-        while (offspring_population.size() < m_params.ps()) {
+        harmony_to_permutation(new_sol);
 
-            size_t parent_1 = selection();
-            size_t parent_2 = parent_1;
-            while (parent_2 == parent_1)
-                parent_2 = selection();
+        std::sort(new_sol.harmony.begin(), new_sol.harmony.end());
 
-            Solution offspring1, offspring2;
-            if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.pc()) {
-                offspring1 = path_relink_swap(m_pop[parent_1], m_pop[parent_2]);
-                offspring2 = path_relink_swap(m_pop[parent_2], m_pop[parent_1]);
-            } else {
-                offspring1 = m_pop[parent_1];
-                offspring2 = m_pop[parent_2];
-            }
+        ref = new_sol.sequence;
+        rls(new_sol, ref, m_instance);
 
-            if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.pm()) {
-                mutation(offspring1);
-            }
-            if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.pm()) {
-                mutation(offspring2);
-            }
+        revision(new_sol);
 
-            if (!equal_solution(offspring1, m_pop[parent_1]) && !equal_solution(offspring1, m_pop[parent_2])) {
-                ref = offspring1.sequence;
+        sort_permutation(new_sol);
 
-                if (rls(offspring1, ref, m_instance)) {
-                    core::recalculate_solution(m_instance, offspring1);
-                }
-
-                offspring_population.push_back(offspring1);
-            }
-            if (!equal_solution(offspring2, m_pop[parent_1]) && !equal_solution(offspring2, m_pop[parent_2])) {
-                ref = offspring2.sequence;
-
-                if (rls(offspring2, ref, m_instance)) {
-                    core::recalculate_solution(m_instance, offspring2);
-                }
-
-                offspring_population.push_back(offspring2);
-            }
-        }
-
-        std::sort(offspring_population.begin(), offspring_population.end(), sort_criteria);
-
-        population_updating(offspring_population);
-
-        count++;
 
         if (m_pop[0].cost < best_solution.cost) {
             best_solution = m_pop[0];
-            count = 0;
         }
 
         if (uptime() > m_time_limit) {
             break;
         }
 
-        if (count >= m_params.gamma()) {
-            count = 0;
-            restart_population();
-        }
     }
 
     m_pop.clear();
