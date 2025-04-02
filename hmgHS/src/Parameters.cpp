@@ -18,20 +18,20 @@ void config_argparse(argparse::ArgumentParser &cli) {
         .scan<'i', size_t>();
 
     cli.add_argument("--ms")
-        .help("set the ro parameter which delimits the memory size of the program")
+        .help("set the MS parameter which determines the memory size")
         .metavar("MS")
         .default_value(size_t(5))
         .scan<'i', size_t>();
 
 
     cli.add_argument("-c", "--pcr")
-        .help("set the ro parameter which delimits the time limit of the program")
+        .help("set the Pcr parameter which determines the probability of one harmony being used to create another")
         .metavar("PCR")
-        .default_value(0.97)
+        .default_value(0.95)
         .scan<'f', double>();
 
     cli.add_argument("-a", "--par")
-        .help("set the ro parameter which delimits the time limit of the program")
+        .help("set the Par parameter which determines the probability of the best harmony being used to create another")
         .metavar("PAR")
         .default_value(0.99)
         .scan<'f', double>();

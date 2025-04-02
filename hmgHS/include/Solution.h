@@ -20,6 +20,12 @@ inline std::ostream &operator<<(std::ostream &os, const Solution &sol) {
     }
     os << "]\n";
 
+    os << "Harmony: [";
+    for (size_t i = 0; i < sol.harmony.size(); ++i) {
+        os << sol.harmony[i] << (i != sol.harmony.size() - 1 ? ", " : "");
+    }
+    os << "]\n";
+
     os << "Departure Times:\n";
     for (const auto &row : sol.departure_times) {
         os << "[";
