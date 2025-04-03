@@ -15,11 +15,7 @@ size_t uptime() {
 } // namespace
 
 hmgHS::hmgHS(Instance instance, Parameters params) : m_instance(std::move(instance)), m_params(std::move(params)) {
-  if(auto ro = m_params.ro()) {
     this->m_time_limit = ro * m_instance.num_jobs() * m_instance.num_machines() / 2;
-  } else {    
-    this->m_time_limit = 5 * m_instance.num_jobs() * m_instance.num_machines();
-  }
 }
 
 void hmgHS::generate_initial_pop() {
