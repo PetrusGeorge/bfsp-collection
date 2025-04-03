@@ -8,6 +8,7 @@
 #include "RNG.h"
 #include "Solution.h"
 #include "constructions/NEH.h"
+#include "constructions/NEH_WPT.h"
 #include "local-search/RLS.h"
 
 #include <vector>
@@ -18,6 +19,8 @@ class hmgHS {
 
     // Generate 2 random sequence using NEH and NEH-WPT (it hasn't been done yet) and other MS-2 randomly
     void generate_initial_pop();
+
+    std::vector<size_t> generate_random_sequence();
 
     // Generate a random harmony (vector of double that can be converted on a job permutation)
     std::vector<double> generate_random_harmony();

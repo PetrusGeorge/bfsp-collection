@@ -25,11 +25,12 @@ hmgHS::hmgHS(Instance instance, Parameters params) : m_instance(std::move(instan
 void hmgHS::generate_initial_pop() {
 
     m_pop = std::vector<Solution>(m_params.ms());
+    Solution s;
+    m_pop[0] = s;
+    m_pop[1] = s;
+  
+    for (size_t i = 2; i < m_params.ms(); i++) {  
 
-    // for (size_t i = 2; i < m_params.ms(); i++) {  
-    for (size_t i = 1; i < m_params.ms(); i++) {
-
-      Solution s;
       s.harmony = generate_random_harmony();
 
       auto sort_criteria = [&s](size_t i, size_t j) { return s.harmony[i] > s.harmony[j]; };
@@ -52,19 +53,29 @@ void hmgHS::generate_initial_pop() {
 
     std::vector<size_t> phi(m_instance.num_jobs());
     std::iota(phi.begin(), phi.end(), 0);
-    
+
     NEH neh(m_instance);
     m_pop[0] = neh.solve(phi);
     core::recalculate_solution(m_instance, m_pop[0]);
     m_pop[0].harmony = std::vector<double>(m_instance.num_jobs(), 0.0);
+    m_pop[1].harmony = std::vector<double>(m_instance.num_jobs(), 0.0);
     permutation_to_harmony(m_pop[0]);
 
-    // tqv
-    // std::iota(phi.begin(), phi.end(), 0);
-    // NEH_WPT neh_wpt(m_instance);
-    // m_pop[1] = neh_wpt.solve(phi);
+    NEH_WPT neh_wpt(m_instance);
+    m_pop[1] = neh_wpt.solve();
+    core::recalculate_solution(m_instance, m_pop[1]);
+    m_pop[1].harmony = std::vector<double>(m_instance.num_jobs(), 0.0);
+    permutation_to_harmony(m_pop[1]);
 
-    // core::recalculate_solution(m_instance, m_pop[1]);
+}
+
+std::vector<size_t> hmgHS::generate_random_sequence() {
+
+  std::vector<size_t> v(m_instance.num_jobs());
+  std::iota(v.begin(), v.end(), 0);
+  std::shuffle(v.begin(), v.end(), RNG::instance().gen());
+
+  return v;
 }
 
 std::vector<double> hmgHS::generate_random_harmony() {
@@ -254,7 +265,7 @@ Solution hmgHS::solve() {
 
         std::sort(new_solution.harmony.begin(), new_solution.harmony.end());
 
-        ref = new_solution.sequence;
+        ref = generate_random_sequence();
         rls(new_solution, ref, m_instance);
 
         core::recalculate_solution(m_instance, new_solution);
