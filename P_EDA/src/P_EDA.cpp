@@ -36,13 +36,18 @@ P_EDA::P_EDA(Instance &instance, Parameters &params, size_t ps, double lambda)
 
 Solution P_EDA::solve() {
     time_expired = false;
+
+    // Shao ran tests with this duration, chaging ro parameter between 30,60,90
     const size_t duration = m_instance.num_machines() * m_instance.num_jobs() * m_params.ro();
 
     std::cout << "Total running time: " << duration << " ms\n";
 
+    // initializing thread to track the duration of the test
     auto timer_future = std::async(std::launch::async, timer_thread, duration);
 
     size_t gen = 1;
+
+    // generating the initial population and applying the modified linear rank selection
     generate_initial_population();
     modified_linear_rank_selection();
 
@@ -58,15 +63,16 @@ Solution P_EDA::solve() {
             std::cout << "alpha: \n";
             std::cout << alpha << "\n";
         }
-        auto min_it = std::min_element(m_pc.begin(), m_pc.end(), [](const Solution &a, const Solution &b) {
-            return a.cost < b.cost; // Compare costs
-        });
+        // getting the individual with the lowest makespan
+        auto min_it = std::min_element(m_pc.begin(), m_pc.end(),
+                                       [](const Solution &a, const Solution &b) { return a.cost < b.cost; });
 
         if (m_params.verbose()) {
             std::cout << "min: \n";
             std::cout << *min_it << "\n";
         }
 
+        // the original individual is alpha and the goal is the lowest makespan individual
         Solution best = path_relink_swap(alpha, *min_it);
 
         if (m_params.verbose()) {
@@ -91,16 +97,19 @@ Solution P_EDA::solve() {
 
             VERBOSE(m_params.verbose()) << "\ngen = 0...\n";
 
+            // idk if this works, the if block is never executed...
             const auto &diversity = get_diversity();
             if (diversity < m_lambda) {
 
                 if (m_params.verbose()) {
                     std::cout << "\nregenerating population...\n";
                 }
+                // it said in the arcticle we only recalculate P and T when we generated PS new individuals
+                // but recalculating P and T only if we regenerate the population proved to generate better solutions
                 population_regen();
+                p = get_p();
+                t = get_t();
             }
-            p = get_p();
-            t = get_t();
         }
         if (m_params.verbose()) {
             std::cout << "best sequence: ";
@@ -150,6 +159,7 @@ void P_EDA::generate_random_individuals() {
 }
 
 void P_EDA::generate_initial_population() {
+    // this procedure will generate 0.1*PS pf-neh individuals, and the other 0.9*PS are randomly generated
     VERBOSE(m_params.verbose()) << "generating initial population...\n\n";
     const size_t n = m_instance.num_jobs();
 
@@ -165,6 +175,12 @@ void P_EDA::generate_initial_population() {
     const size_t pf_neh_individuals = m_ps / 10;
 
     while (m_pc.size() < pf_neh_individuals && l < n) {
+
+        // Taking into account that PF-NEH is a deterministic algorithm
+        // Shao decides to change the first job in the pf heuristic in each individual
+        // he does this by creating a solution with the jobs sorted by smallest total processing time(stpt)
+        // and for each job in this solution, he applies the the pf heuristic with this job (and then NEH ofc)
+        // this will go on until population has 0.1*PS individuals
 
         Solution s;
         const size_t first_job = sorted_jobs[l];
@@ -184,11 +200,17 @@ void P_EDA::generate_initial_population() {
         l++;
     }
 
+    // generating the 0.9*PS remaining individuals randomly
     generate_random_individuals();
     assert(m_pc.size() == m_ps);
 }
 
 void P_EDA::modified_linear_rank_selection() {
+    // this procedure will generate another population (also with PS individuals)
+    // based on the population we just generated.
+    // First it will sort and rank the jobs based on lowest makespan, i.e.,
+    // the job with the lowest makespan has the highest rank
+
     std::vector<double> sum_probabilities(m_ps + 1);
 
     size_t l = m_ps - 1;
@@ -200,6 +222,8 @@ void P_EDA::modified_linear_rank_selection() {
     const double sum_of_ranks = (double)(1 + m_ps) * m_ps / 2;
     sum_probabilities[0] = 0;
 
+    // after sorting, we make a sequence which sums the probabilities from 1 to PS
+    // so the highest ranks have more probabilitie of beign chosen
     for (size_t i = 1; i <= m_ps; i++) {
         sum_probabilities[i] = sum_probabilities[i - 1] + (double)i / sum_of_ranks;
     }
@@ -208,13 +232,20 @@ void P_EDA::modified_linear_rank_selection() {
     new_pc.reserve(m_ps);
 
     while (new_pc.size() < m_ps) {
+        // here we generate 2 numbers so we can choose between 2 procedures
         const double lambda1 = RNG::instance().generate_real_number(0, 1);
         const double lambda2 = RNG::instance().generate_real_number(0, 1);
 
         if (lambda1 < lambda2) {
+            // PROCEDURE 1 --------
+            // adding the best current solution to the new population and going to the next
             new_pc.push_back(m_pc[l]);
             l--;
         } else {
+            // PROCEDURE 2 --------
+            // we generate a random number sigma and we will iterate to the sum of probabilities sequence
+            // and search the range of proabibilities that contains sigma
+            // so if we are lucky we will get good individuals
             const double sigma = RNG::instance().generate_real_number(0, 1);
 
             for (size_t i = 1; i <= m_ps; i++) {
@@ -230,6 +261,9 @@ void P_EDA::modified_linear_rank_selection() {
 }
 
 Solution P_EDA::probabilistic_model(const SizeTMatrix &p, const std::vector<SizeTMatrix> &t) {
+    // in this probabilistic model, the objective is to get an individual that represents
+    // accuratly the current population
+
     const size_t n = m_instance.num_jobs();
 
     std::vector<size_t> unasigned_jobs(m_instance.num_jobs());
@@ -238,11 +272,17 @@ Solution P_EDA::probabilistic_model(const SizeTMatrix &p, const std::vector<Size
     final_sequence.reserve(n);
 
     while (final_sequence.size() < n - 1) {
+        // this probability vector has the size of the unasigned jobs
+        // each element of this vector represents the probability of adding the job in that position
+        // to the current solution
         auto probabilities = get_probability_vector(final_sequence, unasigned_jobs, p, t);
 
         double roulette_wheel = 0;
 
         size_t job_to_insert = unasigned_jobs[0];
+
+        // this roulette wheel works the same way as the sum of probabilities
+        // in the modified linear rank selection
         const double r = RNG::instance().generate_real_number(0, 1);
 
         for (size_t j = 0; j < unasigned_jobs.size(); j++) {
@@ -438,18 +478,17 @@ std::vector<size_t> P_EDA::fisher_yates_shuffle() {
     std::vector<size_t> sequence(m_instance.num_jobs());
     std::iota(sequence.begin(), sequence.end(), 0);
 
-    // Start from the last element and swap with random earlier element
     for (size_t i = sequence.size() - 1; i > 0; i--) {
-        // Generate random index from 0 to i
         const size_t j = RNG::instance().generate(size_t{0}, i);
 
-        // Swap elements at i and j
         std::swap(sequence[i], sequence[j]);
     }
     return sequence;
 }
 
 std::pair<bool, size_t> P_EDA::in_population_and_max_makespan(std::vector<size_t> &sequence) {
+    // returns if the sequence is in the current population and also the position of the individual with the highest
+    // makespan
 
     size_t max_cost = 0;
     size_t max_cost_pos = 0;
@@ -480,6 +519,8 @@ std::pair<bool, size_t> P_EDA::in_population_and_max_makespan(std::vector<size_t
 }
 
 double P_EDA::get_diversity() {
+    // idk if this really works
+
     const auto n = m_instance.num_jobs();
     double diversity = 0;
 
@@ -548,15 +589,5 @@ void P_EDA::print_pc() const {
     std::cout << "Population: \n";
     for (size_t i = 0; i < m_pc.size(); i++) {
         std::cout << "individual " << i << ": \n" << m_pc[i] << "\n";
-    }
-}
-
-void P_EDA::print_count(std::vector<std::vector<size_t>> &count) {
-    std::cout << "\ncount matrix: \n";
-    for (auto &row : count) {
-        for (auto &c : row) {
-            std::cout << c << " ";
-        }
-        std::cout << "\n";
     }
 }
