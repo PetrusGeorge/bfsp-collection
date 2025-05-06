@@ -1,4 +1,4 @@
-#include "constructions/NEH.h"
+#include "NEH.h"
 
 #include "Core.h"
 #include "Instance.h"

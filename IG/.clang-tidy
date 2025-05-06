@@ -58,3 +58,4 @@ CheckOptions:
   - key:             readability-identifier-naming.IgnoreMainLikeFunctions
     value:           1
 FormatStyle:     file 
+
