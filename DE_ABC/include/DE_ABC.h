@@ -49,7 +49,7 @@ class DE_ABC {
     Parameters m_params;
     size_t m_time_limit;
     std::vector<Solution> m_pop;
-    std::vector<bool> unchanged;
+    std::vector<bool> changed;
     std::vector<size_t> BNL;
     std::vector<size_t> NL;
 };

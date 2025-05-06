@@ -21,21 +21,25 @@ DE_ABC::DE_ABC(Instance instance, Parameters params)
     for(size_t i = 0; i < m_params.ps(); i++) {
         NL.push_back(RNG::instance().generate((size_t) 0, (size_t) 3));
     }
+    
+
+    changed = std::vector<bool>(m_params.ps(), false);
 }
 
 bool DE_ABC::new_in_population(std::vector<size_t> &sequence) {
 
     for(size_t i = 0; i < m_pop.size(); i++) {
 
-        bool already_exist = false;
+        bool already_exist = true;
         for(size_t j = 0; j < m_pop[i].sequence.size(); j++) {
 
             if(sequence[j] != m_pop[i].sequence[j]) {
-                already_exist = true;
+                already_exist = false;
                 break;
             }
         }
-        if(!already_exist) {
+
+        if(already_exist) {
             return false;
         }
     }
@@ -45,26 +49,28 @@ bool DE_ABC::new_in_population(std::vector<size_t> &sequence) {
 
 void DE_ABC::generate_initial_pop() {
 
-    m_pop = std::vector<Solution>(m_params.ps());
-
-    MinMax mm = MinMax(m_instance, 0.5); // good alpha?
+    MinMax mm = MinMax(m_instance, m_params.theta());
     NEH neh = NEH(m_instance);
     Solution first_solution = neh.solve(mm.solve().sequence); // MME heuristic
     core::recalculate_solution(m_instance, first_solution);
 
-    m_pop[0] = first_solution;
+    m_pop.push_back(first_solution);
 
     for (size_t i = 1; i < m_params.ps(); i++) {
 
         std::vector<size_t> new_seq = generate_random_sequence();
         
         if(!new_in_population(new_seq)) {
+            i--;
             continue;
         } 
 
-        m_pop[i].sequence.swap(new_seq);
+        Solution s;
+        s.sequence = new_seq;
+        m_pop.push_back(s);
         core::recalculate_solution(m_instance, m_pop[i]);
     }
+
 }
 
 std::vector<size_t> DE_ABC::generate_random_sequence() {
@@ -128,28 +134,35 @@ Solution DE_ABC::crossover(std::vector<size_t> &pi) {
             continue;
         } 
 
-        bool alread_in_pi_temp = false;
+        bool out_pi_temp = true;
         for(size_t j = 0; j < pi_temp.size(); j++) {
             if(pi[i] == pi_temp[j]) {
-                alread_in_pi_temp = true;
+                out_pi_temp = false;
                 break;
             }
         }
 
-        if(!alread_in_pi_temp) {
+        if(out_pi_temp) {
             pi_temp.push_back(pi[i]);
         }
     }
 
     std::vector<size_t> ref = m_pop[ RNG::instance().generate((size_t) 0, m_pop.size()-1) ].sequence;
     std::vector<size_t> deleted;
+    size_t k = 1;
     for(size_t i = ref.size()-1; i < ref.size(); i--) {
-        for(size_t j = pi_temp.size()-1; j < pi_temp.size(); j--) {
+    
+        for(size_t j = pi_temp.size()-k; j < pi_temp.size(); j--) {
             if(ref[i] == pi_temp[j]) {
                 deleted.push_back(i);
-                pi_temp.pop_back();
+                std::swap(pi_temp[j], pi_temp[pi_temp.size()-k]);
+                k++;
                 break;
             }
+        }
+
+        if(pi_temp.size() < k) {
+            break;
         }
     }
 
@@ -212,35 +225,33 @@ void DE_ABC::insertion(Solution &s) {
 void DE_ABC::self_adaptative() {
     size_t idx;
 
-    for(size_t i = 0; i < m_pop.size(); i++) {
+    for(size_t i = 0; i < m_params.ps(); i++) {
         idx = selection(); // individual index
 
-        Solution s = m_pop[i];
+        Solution s = m_pop[idx];
         switch (NL[i]) {
             case 0:
-                insertion(m_pop[idx]);
+                insertion(s);
                 break;
             case 1:
-                swap(m_pop[idx]);
+                swap(s);
                 break;
             case 2:
-                insertion(m_pop[idx]);
-                insertion(m_pop[idx]);
+                insertion(s);
+                insertion(s);
                 break;
             case 3:
-                swap(m_pop[idx]);
-                swap(m_pop[idx]);
-                break;            
+                swap(s);
+                swap(s);        
         }
 
         core::recalculate_solution(m_instance, s);
 
-        if(s.cost < m_pop[i].cost) {
-            m_pop[i] = s;
+        if(s.cost < m_pop[idx].cost) {
+            m_pop[idx] = s;
             BNL.push_back(NL[i]);
-        } else {
-            unchanged[i] = true;
-        }
+            changed[idx] = true;
+        } 
     }
 
     update_neighborhood();
@@ -250,8 +261,10 @@ void DE_ABC::self_adaptative() {
 void DE_ABC::updating_unchanged() {
     size_t n = m_instance.num_jobs();
 
+
     for(size_t i = 0; i < m_pop.size(); i++) {
-        if(!unchanged[i]) {
+        if(changed[i]) {
+            changed[i] = false;
             continue;
         }
 
@@ -259,8 +272,6 @@ void DE_ABC::updating_unchanged() {
         for(size_t j = 0; j < n/4; j++) {
             insertion(m_pop[i]);
         }
-
-        unchanged[i] = false;
     }
 
 }
@@ -281,7 +292,6 @@ void DE_ABC::replace_worst_solution(Solution &s) {
     }
 
     m_pop.pop_back();
-
 }
 
 Solution DE_ABC::solve() {
@@ -310,6 +320,8 @@ Solution DE_ABC::solve() {
         }
 
         replace_worst_solution(s);
+
+        updating_unchanged();
 
         if (m_pop[0].cost < best_solution.cost) {
             best_solution = m_pop[0];

@@ -23,7 +23,7 @@ void config_argparse(argparse::ArgumentParser &cli) {
         .default_value(size_t(20))
         .scan<'i', size_t>();
 
-    cli.add_argument("-mu", "--pmu")
+    cli.add_argument("-m", "--pmu")
         .help("set the pmu parameter ")
         .metavar("PMU")
         .default_value(0.9)
@@ -31,14 +31,20 @@ void config_argparse(argparse::ArgumentParser &cli) {
 
     cli.add_argument("-c", "--pc")
         .help("set the pc parameter")
-        .metavar("PMU")
+        .metavar("PC")
         .default_value(0.1)
         .scan<'f', double>();
 
     cli.add_argument("-ls", "--pls")
         .help("set the pld parameter")
-        .metavar("PMU")
+        .metavar("PLS")
         .default_value(0.2)
+        .scan<'f', double>();
+
+    cli.add_argument("-t", "--theta")
+        .help("set the theta parameter")
+        .metavar("THETA")
+        .default_value(0.75)
         .scan<'f', double>();
         
 }
@@ -68,4 +74,5 @@ Parameters::Parameters(int argc, char **argv) {
     m_pmu = cli.get<double>("--pmu");
     m_pc = cli.get<double>("--pc");
     m_pls = cli.get<double>("--pls");
+    m_theta = cli.get<double>("--theta");
 }

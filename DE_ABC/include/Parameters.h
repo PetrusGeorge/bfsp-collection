@@ -17,6 +17,7 @@ class Parameters {
     double pmu() const { return m_pmu; }
     double pc() const { return m_pc; }
     double pls() const { return m_pls; }
+    double theta() const { return m_theta; }
 
   private:
     std::string m_instance_path;
@@ -27,6 +28,7 @@ class Parameters {
     double m_pmu = 0.9;
     double m_pc = 0.1;
     double m_pls = 0.2;
+    double m_theta = 0.75;
 };
 
 #endif
