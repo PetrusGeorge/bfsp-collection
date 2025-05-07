@@ -94,7 +94,11 @@ bool IG::swap_first_improvement(Solution &s) {
         for (size_t j = i + 1; j < s.sequence.size(); j++) {
             // Apply move
             std::swap(copy.sequence[i], copy.sequence[j]);
-            core::recalculate_solution(m_instance, copy);
+            if ( i > 2 ) {
+                core::partial_recalculate_solution(m_instance, copy, i-1);
+            } else {
+                core::recalculate_solution(m_instance, copy);
+            }
 
             if (copy.cost < s.cost) {
                 s = std::move(copy);
