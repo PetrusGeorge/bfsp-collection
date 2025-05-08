@@ -4,15 +4,55 @@
 #include "Core.h"
 #include "Instance.h"
 #include "Solution.h"
+#include "RNG.h"
 #include <utility>
+#include <cmath>   
 
 SimulatedAnnealing::SimulatedAnnealing(Solution &solution, Instance &instance, double finalTemp, int nIter) : solution(solution), instance(instance), finalTemp(finalTemp), nIter(nIter) {}
 
 Solution SimulatedAnnealing::solve() {
     calculateInitialTemp();
     calculateDecay();
-    std::cout << initialTemp << std::endl;
-    std::cout << decay << std::endl;
+
+    double currentTemp = initialTemp;
+    double referenceCost = solution.cost;
+    double bestCost = solution.cost;
+
+    int nJobs = instance.num_jobs();
+
+    Solution bestSolution = solution;
+    Solution currentSolution = solution;
+
+
+
+    while (currentTemp >= finalTemp) {
+        int node = RNG::instance().generate<int>(0, nJobs);
+        Solution newSol = anneal(currentSolution, node);
+        core::recalculate_solution(instance, newSol);
+        double delta = newSol.cost - currentSolution.cost;
+
+        if (delta <= 0) {
+            currentSolution = newSol;
+            referenceCost = newSol.cost;
+
+            if (referenceCost < bestCost) {
+                bestSolution = newSol;
+                bestCost = referenceCost;
+            }
+        }
+        else {
+            double acceptanceProbability = std::exp(-delta/T);
+            double random = RNG::instance().generate<double>(0, 1);
+
+            if (acceptanceProbability > random) {
+                currentSolution = newSol;
+                referenceCost = newSol.cost;
+            }
+        }
+
+        currentTemp = currentTemp/(1 + (decay * currentTemp));
+
+    }
 
     return solution;
 }
@@ -34,3 +74,9 @@ void SimulatedAnnealing::calculateDecay() {
 
     decay = deltaTemp/((nIter - 1) * initialTemp * finalTemp);
 }
+
+Solution SimulatedAnnealing::anneal(Solution &currentSolution, int nodeToChange) {
+
+}
+
+

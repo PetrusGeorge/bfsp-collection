@@ -22,6 +22,7 @@ class SimulatedAnnealing {
 
     void calculateInitialTemp();
     void calculateDecay();
+    Solution anneal(Solution &currentSolution, int nodeToChange);
 
 };
 
