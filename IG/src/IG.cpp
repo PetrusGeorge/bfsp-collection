@@ -87,35 +87,39 @@ Solution IG::solve() {
     return best;
 }
 
-bool IG::swap_first_improvement(Solution &s) {
-    Solution copy = s;
-
-    for (size_t i = 0; i < s.sequence.size() - 1; i++) {
-        for (size_t j = i + 1; j < s.sequence.size(); j++) {
-            // Apply move
-            std::swap(copy.sequence[i], copy.sequence[j]);
-            if ( i > 2 ) {
-                core::partial_recalculate_solution(m_instance, copy, i-1);
-            } else {
-                core::recalculate_solution(m_instance, copy);
-            }
-
-            if (copy.cost < s.cost) {
-                s = std::move(copy);
-                return true;
-            }
-
-            // Undo move
-            std::swap(copy.sequence[i], copy.sequence[j]);
-        }
-    }
-    return false;
-}
-
 Solution IG::local_search(Solution s) {
-    while (true) {
-        if (!swap_first_improvement(s)) {
-            break;
+    // Set departure times matrix
+    core::recalculate_solution(m_instance, s);
+
+    Solution copy = s;
+    bool improved = true;
+
+    while (improved) {
+        improved = false;
+        // Swap first improvement
+        for (size_t i = 0; i < s.sequence.size() - 1; i++) {
+            for (size_t j = i + 1; j < s.sequence.size(); j++) {
+                // Apply move
+                std::swap(copy.sequence[i], copy.sequence[j]);
+                if ( i == 0 ) {
+                    // If the first job is swapped it needs a full recalculation
+                    core::recalculate_solution(m_instance, copy);
+                } else {
+                    core::partial_recalculate_solution(m_instance, copy, i);
+                }
+
+                if (copy.cost < s.cost) {
+                    s = copy;
+                    improved = true;
+                }
+                else{
+                    // Undo move if it's not better
+                    std::swap(copy.sequence[i], copy.sequence[j]);
+                }
+            }
+            // Fix the departure time that was changed by the recalculations above
+            // Only this line is needes as it's the only changed line that is going to be used
+            copy.departure_times[i] = s.departure_times[i];
         }
     }
     return s;

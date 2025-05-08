@@ -14,10 +14,8 @@ class IG {
     // This is a implementation of the mme2 algorithm, a variation of neh using min max as the first step
     Solution initial_solution();
 
-    // Pretty straight foward local search
+    // Pretty straight foward local search using a first improvement swap
     Solution local_search(Solution s);
-    // The name also implies here
-    bool swap_first_improvement(Solution &s);
 
     // Random destroy solution using the parameter d defined on the params struct
     std::vector<size_t> destroy(Solution &s);

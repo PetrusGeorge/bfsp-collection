@@ -22,7 +22,7 @@ class Parameters {
     std::optional<size_t> m_seed;
     size_t m_ro = 30;
     double m_alpha = 0.6;
-    size_t m_d = 5;
+    size_t m_d = 6;
 };
 
 #endif
