@@ -50,12 +50,12 @@ bool DE_ABC::new_in_population(std::vector<size_t> &sequence) {
 
 void DE_ABC::generate_initial_pop() {
 
+    m_pop = std::vector<Solution>(1);
     MinMax mm = MinMax(m_instance, m_params.theta());
     NEH neh = NEH(m_instance);
-    Solution first_solution = neh.solve(mm.solve().sequence); // MME heuristic for the first solution
-    core::recalculate_solution(m_instance, first_solution);
+    m_pop[0] = neh.solve(mm.solve().sequence); // MME heuristic for the first solution
+    core::recalculate_solution(m_instance, m_pop[0]);
 
-    m_pop.push_back(first_solution);
 
     // generating other random solutions
     for (size_t i = 1; i < m_params.ps(); i++) {
@@ -84,7 +84,7 @@ std::vector<size_t> DE_ABC::generate_random_sequence() {
     return v;
 }
 
-size_t DE_ABC::selection() {
+size_t DE_ABC::tournament() {
 
     size_t i = RNG::instance().generate((size_t) 0, m_pop.size() - 1);
     size_t j = i;
@@ -213,47 +213,25 @@ void DE_ABC::update_neighborhood() {
 
 void DE_ABC::swap(Solution &s) {
     size_t n = m_instance.num_jobs();
-    size_t idx_1 = RNG::instance().generate((size_t) 0, n-3);
-    size_t idx_2 = idx_1;
-
-    while(idx_1 == idx_2) {
-        idx_2 = RNG::instance().generate((size_t) 0, n-1);
-    }
-
-    if(idx_1 > idx_2) {
-        std::swap(idx_1, idx_2);
-    }
+    size_t idx_1 = RNG::instance().generate((size_t) 0, n-2);
+    size_t idx_2 = RNG::instance().generate((size_t) idx_1+1, n-1);
 
     std::swap(s.sequence[idx_1], s.sequence[idx_2]);
-
-    // core::recalculate_solution_from_index(m_instance, s, idx_1);
-
 }
 
 void DE_ABC::insertion(Solution &s) {
     size_t n = m_instance.num_jobs();
     size_t idx_1 = RNG::instance().generate((size_t) 0, n-3);
-    size_t idx_2 = idx_1;
-
-    while(idx_1 == idx_2) {
-        idx_2 = RNG::instance().generate((size_t) 0, n-1);
-    }
-
-    if(idx_1 > idx_2) {
-        std::swap(idx_1, idx_2);
-    }
-
-    std::rotate(s.sequence.begin()+idx_1+1, s.sequence.begin()+idx_2, s.sequence.begin()+idx_2+1);
-
-    // core::recalculate_solution_from_index(m_instance, s, idx_1+1);
+    size_t idx_2 = RNG::instance().generate((size_t) idx_1+2, n-1);
     
+    std::rotate(s.sequence.begin()+idx_1+1, s.sequence.begin()+idx_2, s.sequence.begin()+idx_2+1);
 }
 
 void DE_ABC::self_adaptative() {
     size_t idx;
-
+    
     for(size_t i = 0; i < m_params.ps(); i++) {
-        idx = selection(); 
+        idx = tournament(); 
 
         Solution s = m_pop[idx];
         switch (NL[i]) {
@@ -269,9 +247,10 @@ void DE_ABC::self_adaptative() {
                 break;
             case 3:
                 swap(s);
-                swap(s);        
+                swap(s);
+                break;    
         }
-
+  
         core::recalculate_solution(m_instance, s);
 
         if(s.cost < m_pop[idx].cost) {
@@ -286,7 +265,6 @@ void DE_ABC::self_adaptative() {
 }
 
 void DE_ABC::updating_unchanged() {
-    size_t n = m_instance.num_jobs();
 
     // modifying unchanged solutions
     for(size_t i = 0; i < m_pop.size(); i++) {
@@ -296,67 +274,78 @@ void DE_ABC::updating_unchanged() {
         }
 
         // i don't know how many insertions i have to do
-        for(size_t j = 0; j < n/4; j++) {
+        for(size_t j = 0; j < 5; j++) {
             insertion(m_pop[i]);
         }
+
+        core::recalculate_solution(m_instance, m_pop[i]);
+
     }
 
 }
 
 void DE_ABC::replace_worst_solution(Solution &s) {
-    
-    // finding the best place to put s so that the population is sorted in non-decreasing order of makespan
-    size_t i = m_pop.size()-1;
-    while(i < m_pop.size() && s.cost < m_pop[i].cost) {
-        i--;
+
+    // find the worst solution
+    size_t worst = 0;
+    for(size_t i = 1; i < m_pop.size(); i++) {
+        if(m_pop[i].cost > m_pop[worst].cost) {
+            worst = i;
+        }
     }
 
-    
-    if(i == m_pop.size()-1) {
-        return;
-    } else if(i > m_pop.size()) {
-        m_pop.insert(m_pop.begin(), s);
-    } else {
-        m_pop.insert(m_pop.begin()+i+1, s);
+    // check wether the worst in the population is worst than the new generated 
+    if(m_pop[worst].cost > s.cost) {
+        m_pop[worst] = s;
+    }
+}
+
+size_t DE_ABC::find_best_solution() {
+    size_t best = 0;
+    for(size_t i = 1; i < m_pop.size(); i++) {
+        if(m_pop[i].cost < m_pop[best].cost) {
+            best = i;
+        }
     }
 
-    m_pop.pop_back();
+    return best;
 }
 
 Solution DE_ABC::solve() {
 
     Solution best_solution;
     std::vector<size_t> ref;
+    size_t idx;
 
     generate_initial_pop();
 
-    auto sort_criteria = [](Solution &p1, Solution &p2) { return p1.cost < p2.cost; };
-    std::sort(m_pop.begin(), m_pop.end(), sort_criteria);
+    std::sort(m_pop.begin(), m_pop.end(), [](Solution &p1, Solution &p2) { return p1.cost < p2.cost; });
 
     best_solution = m_pop[0];
 
     while (true) {
         Solution s = generate_new_solution();
 
+        replace_worst_solution(s);
+
         self_adaptative();
 
         if(RNG::instance().generate_real_number(0, 1) < m_params.pls()) {
+            idx = tournament();
             ref = generate_random_sequence();
-            rls(s, ref, m_instance);
+            rls(m_pop[idx], ref, m_instance);
         }
-
-        replace_worst_solution(s);
-
-        updating_unchanged();
-
-        if (m_pop[0].cost < best_solution.cost) {
-            best_solution = m_pop[0];
+        
+        idx = find_best_solution();
+        if (m_pop[idx].cost < best_solution.cost) {
+            best_solution = m_pop[idx];
         }
 
         if (uptime() > m_time_limit) {
             break;
         }
 
+        updating_unchanged();
     }
 
     m_pop.clear();
