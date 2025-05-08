@@ -59,7 +59,14 @@ Solution IG::solve() {
     VERBOSE(m_params.verbose()) << "Initial solution finished, solution obtained:\n";
     VERBOSE(m_params.verbose()) << current;
 
-    const size_t time_limit = (m_params.ro() * m_instance.num_jobs() * m_instance.num_machines())/1000;
+    // Set time limit to parameter or a default calculation
+    size_t time_limit = 0;
+    if (auto tl = m_params.tl()) {
+        time_limit = *tl;
+    } else {
+        time_limit = (m_params.ro() * m_instance.num_jobs() * m_instance.num_machines()) / 1000;
+    }
+
     std::cout << "Time limit: " << time_limit << "s\n";
     NEH neh(m_instance);
 
@@ -101,7 +108,7 @@ Solution IG::local_search(Solution s) {
             for (size_t j = i + 1; j < s.sequence.size(); j++) {
                 // Apply move
                 std::swap(copy.sequence[i], copy.sequence[j]);
-                if ( i == 0 ) {
+                if (i == 0) {
                     // If the first job is swapped it needs a full recalculation
                     core::recalculate_solution(m_instance, copy);
                 } else {
@@ -111,8 +118,7 @@ Solution IG::local_search(Solution s) {
                 if (copy.cost < s.cost) {
                     s = copy;
                     improved = true;
-                }
-                else{
+                } else {
                     // Undo move if it's not better
                     std::swap(copy.sequence[i], copy.sequence[j]);
                 }

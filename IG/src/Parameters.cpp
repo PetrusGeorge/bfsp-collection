@@ -8,6 +8,10 @@ void config_argparse(argparse::ArgumentParser &cli) {
     cli.add_argument("instance").help("instance path");
 
     cli.add_argument("-s", "--seed").help("set random number generator seed").metavar("SEED").scan<'i', size_t>();
+    cli.add_argument("-t", "--time")
+        .help("set the time limit for the program")
+        .metavar("TIME_LIMIT")
+        .scan<'i', size_t>();
 
     cli.add_argument("-v", "--verbose").help("set program verbosity").metavar("VERBOSE").default_value(false).flag();
 
@@ -50,6 +54,7 @@ Parameters::Parameters(int argc, char **argv) {
     m_instance_path = cli.get<std::string>("instance");
     m_verbose = cli.get<bool>("--verbose");
     m_seed = cli.present<size_t>("--seed");
+    m_tl = cli.present<size_t>("--time");
     m_ro = cli.get<size_t>("--ro");
     m_alpha = cli.get<double>("--alpha");
     m_d = cli.get<size_t>("--destroy");
