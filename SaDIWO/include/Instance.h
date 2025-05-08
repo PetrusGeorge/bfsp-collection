@@ -15,6 +15,8 @@ struct Instance {
     // Reverse matrix
     long rp(size_t i, size_t j) const { return m_matrix[i][m_num_machines - j - 1]; }
 
+    inline long psum(size_t i) const { return std::reduce(m_matrix[i].begin(), m_matrix[i].end()); }
+
   private:
     size_t m_num_jobs = 0;
     size_t m_num_machines = 0;
