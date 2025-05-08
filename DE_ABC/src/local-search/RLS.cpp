@@ -6,16 +6,17 @@
 #include <cassert>
 #include <vector>
 
-bool rls(Solution &s, const std::vector<size_t> &ref, Instance &instance) {
+// the common rls of bfsp collection is not being used
+bool rls(Solution &s, Instance &instance) { // the original receive a ref
 
     bool improved = false;
-    size_t j = 0;
+    // size_t j = 0;
     size_t cnt = 0;
     NEH helper(instance);
     while (cnt < instance.num_jobs()) {
-        j = (j + 1) % instance.num_jobs();
+        // j = (j + 1) % instance.num_jobs();
 
-        const size_t job = ref[j];
+        const size_t job = cnt; // ref[j]
         for (size_t i = 0; i < s.sequence.size(); i++) {
             if (s.sequence[i] == job) {
                 s.sequence.erase(s.sequence.begin() + (long)i);
@@ -26,7 +27,7 @@ bool rls(Solution &s, const std::vector<size_t> &ref, Instance &instance) {
         s.sequence.insert(s.sequence.begin() + (long)best_index, job);
 
         if (makespan < s.cost) {
-            cnt = 0;
+            // cnt = 0;
             s.cost = makespan;
             improved = true;
             continue;

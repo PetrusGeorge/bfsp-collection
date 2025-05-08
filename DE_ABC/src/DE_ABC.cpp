@@ -156,22 +156,20 @@ Solution DE_ABC::crossover(std::vector<size_t> &pi) {
     // getting any solution from population as a reference
     std::vector<size_t> ref = m_pop[ RNG::instance().generate((size_t) 0, m_pop.size()-1) ].sequence;
     
-    std::vector<size_t> deleted;
-    size_t k = 1;
-    
     // finding the position of pi_temp jobs jobs within ref
-    for(size_t i = ref.size()-1; i < ref.size(); i--) {
+    std::vector<size_t> deleted;
+    size_t k = 0;
+    for(size_t i = ref.size()-1; i < ref.size(); --i) {
     
-        for(size_t j = pi_temp.size()-k; j < pi_temp.size(); j--) {
+        for(size_t j = 0; j < pi_temp.size(); ++j) {
             if(ref[i] == pi_temp[j]) {
                 deleted.push_back(i);
-                std::swap(pi_temp[j], pi_temp[pi_temp.size()-k]);
                 k++;
                 break;
             }
         }
 
-        if(pi_temp.size() < k) {
+        if(pi_temp.size() == deleted.size()) {
             break;
         }
     }
@@ -257,14 +255,16 @@ void DE_ABC::self_adaptative() {
             m_pop[idx] = s;
             BNL.push_back(NL[i]); // saving the good neighbors to use them more
             changed[idx] = true;
-        } 
+        } else {
+            changed[idx] = false;
+        }
     }
 
     update_neighborhood();
 
 }
 
-void DE_ABC::updating_unchanged() {
+void DE_ABC::replace_unchanged() {
 
     // modifying unchanged solutions
     for(size_t i = 0; i < m_pop.size(); i++) {
@@ -274,7 +274,7 @@ void DE_ABC::updating_unchanged() {
         }
 
         // i don't know how many insertions i have to do
-        for(size_t j = 0; j < 5; j++) {
+        for(size_t j = 0; j < m_instance.num_jobs(); j++) {
             insertion(m_pop[i]);
         }
 
@@ -311,17 +311,30 @@ size_t DE_ABC::find_best_solution() {
     return best;
 }
 
+void DE_ABC::local_search() {
+    size_t idx;
+    for(size_t i = 0; i < m_instance.num_jobs(); i++) {
+        if(RNG::instance().generate_real_number(0, 1) < m_params.pls()) {
+            idx = tournament();
+            if(rls(m_pop[idx], m_instance)) {
+                changed[idx] = true;
+            } else {
+                changed[idx] = false;
+            }
+        }
+    }
+}
+
 Solution DE_ABC::solve() {
 
     Solution best_solution;
-    std::vector<size_t> ref;
     size_t idx;
 
     generate_initial_pop();
 
-    std::sort(m_pop.begin(), m_pop.end(), [](Solution &p1, Solution &p2) { return p1.cost < p2.cost; });
+    idx = find_best_solution();
 
-    best_solution = m_pop[0];
+    best_solution = m_pop[idx];
 
     while (true) {
         Solution s = generate_new_solution();
@@ -330,11 +343,7 @@ Solution DE_ABC::solve() {
 
         self_adaptative();
 
-        if(RNG::instance().generate_real_number(0, 1) < m_params.pls()) {
-            idx = tournament();
-            ref = generate_random_sequence();
-            rls(m_pop[idx], ref, m_instance);
-        }
+        local_search();
         
         idx = find_best_solution();
         if (m_pop[idx].cost < best_solution.cost) {
@@ -345,7 +354,7 @@ Solution DE_ABC::solve() {
             break;
         }
 
-        updating_unchanged();
+        replace_unchanged();
     }
 
     m_pop.clear();

@@ -53,13 +53,16 @@ class DE_ABC {
     void self_adaptative();
 
     // apply several insertions to solutions that have not been modified by self-adaptative process
-    void updating_unchanged();
+    void replace_unchanged();
 
     // replace the worst solution by the new one generated, if this make sense
     void replace_worst_solution(Solution &s);
 
     // find the best solution
     size_t find_best_solution();
+
+    // Do several RLS
+    void local_search();
 
     Solution solve();
 
