@@ -8,11 +8,11 @@
 #include "RNG.h"
 #include "constructions/GRASP.h"
 #include "constructions/LPT.h"
+#include "constructions/MinMax.h"
 #include "constructions/NEH.h"
 #include "constructions/PF.h"
 #include "constructions/PW.h"
 #include "constructions/mNEH.h"
-#include "constructions/MinMax.h"
 #include "local-search/RLS.h"
 
 int main(int argc, char *argv[]) {
@@ -45,5 +45,4 @@ int main(int argc, char *argv[]) {
     rls(s_neh, phi, instance);
     std::cout << "\nRLS:" << '\n';
     std::cout << s_neh << '\n';
-    
 }

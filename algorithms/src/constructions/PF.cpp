@@ -65,7 +65,7 @@ void PF::pf_insertion_phase(Solution &s, size_t first_job) {
             std::vector<size_t> &d_new = d_candidate.back();
 
             // computing sigma(j,k) criterium
-            size_t sigma = core::calculate_sigma(m_instance, d_current, d_new, candidate, k);
+            const size_t sigma = core::calculate_sigma(m_instance, d_current, d_new, candidate, k);
             if (sigma < best_sigma) {
                 best_sigma = sigma;
                 best_job = candidate;
