@@ -209,47 +209,49 @@ void DE_ABC::update_neighborhood() {
     }
 }
 
-void DE_ABC::swap(Solution &s) {
+size_t DE_ABC::swap(Solution &s) {
     size_t n = m_instance.num_jobs();
     size_t idx_1 = RNG::instance().generate((size_t) 0, n-2);
     size_t idx_2 = RNG::instance().generate((size_t) idx_1+1, n-1);
 
     std::swap(s.sequence[idx_1], s.sequence[idx_2]);
+
+    return idx_1;
 }
 
-void DE_ABC::insertion(Solution &s) {
+size_t DE_ABC::insertion(Solution &s) {
     size_t n = m_instance.num_jobs();
     size_t idx_1 = RNG::instance().generate((size_t) 0, n-3);
     size_t idx_2 = RNG::instance().generate((size_t) idx_1+2, n-1);
     
     std::rotate(s.sequence.begin()+idx_1+1, s.sequence.begin()+idx_2, s.sequence.begin()+idx_2+1);
+    
+    return idx_1;
 }
 
 void DE_ABC::self_adaptative() {
     size_t idx;
-    
+    size_t idx_to_recalculate;
     for(size_t i = 0; i < m_params.ps(); i++) {
         idx = tournament(); 
 
         Solution s = m_pop[idx];
+  
         switch (NL[i]) {
             case 0:
-                insertion(s);
+                idx_to_recalculate = insertion(s);
                 break;
             case 1:
-                swap(s);
+                idx_to_recalculate = swap(s);
                 break;
             case 2:
-                insertion(s);
-                insertion(s);
+                idx_to_recalculate = std::min(insertion(s), insertion(s));
                 break;
             case 3:
-                swap(s);
-                swap(s);
-                break;    
+                idx_to_recalculate = std::min(swap(s), swap(s));
         }
-  
-        core::recalculate_solution(m_instance, s);
+
+        core::recalculate_solution_from_idx(m_instance, s, idx_to_recalculate);
 
         if(s.cost < m_pop[idx].cost) {
             m_pop[idx] = s;
@@ -265,6 +267,7 @@ void DE_ABC::self_adaptative() {
 }
 
 void DE_ABC::replace_unchanged() {
+    size_t n = m_instance.num_jobs();
 
     // modifying unchanged solutions
     for(size_t i = 0; i < m_pop.size(); i++) {
@@ -273,12 +276,13 @@ void DE_ABC::replace_unchanged() {
             continue;
         }
 
+        size_t idx_to_recalculate = std::numeric_limits<size_t>::max();
         // i don't know how many insertions i have to do
-        for(size_t j = 0; j < m_instance.num_jobs(); j++) {
-            insertion(m_pop[i]);
+        for(size_t j = 0; j < n/4; j++) {
+            idx_to_recalculate = std::min(insertion(m_pop[i]), idx_to_recalculate);
         }
 
-        core::recalculate_solution(m_instance, m_pop[i]);
+        core::recalculate_solution_from_idx(m_instance, m_pop[i], idx_to_recalculate);
 
     }
 
@@ -317,6 +321,7 @@ void DE_ABC::local_search() {
         if(RNG::instance().generate_real_number(0, 1) < m_params.pls()) {
             idx = tournament();
             if(rls(m_pop[idx], m_instance)) {
+                core::recalculate_solution(m_instance, m_pop[idx]);
                 changed[idx] = true;
             } else {
                 changed[idx] = false;

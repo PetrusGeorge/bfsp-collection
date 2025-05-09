@@ -19,6 +19,8 @@ size_t calculate_sigma(Instance &instance, std::vector<std::vector<size_t>> &d, 
 
 void recalculate_solution(Instance &instance, Solution &s);
 
+void recalculate_solution_from_idx(Instance &instance, Solution &s, size_t idx);
+
 } // namespace core
 
 #endif // !CORE_H

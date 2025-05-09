@@ -44,10 +44,10 @@ class DE_ABC {
     void update_neighborhood();
 
     // choose two random index and swap their jobs
-    void swap(Solution &s);
+    size_t swap(Solution &s);
 
     // choose two random index, p1 and p2, and insert the job in p2 on the position p1 
-    void insertion(Solution &s);
+    size_t insertion(Solution &s);
 
     // apply swaps or insertion in some solutions, trying to improve them
     void self_adaptative();

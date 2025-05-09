@@ -33,6 +33,35 @@ std::vector<std::vector<size_t>> core::calculate_departure_times(Instance &insta
     return departure_times;
 }
 
+void core::recalculate_solution_from_idx(Instance &instance, Solution &s, size_t idx)  {
+
+    auto p = [&instance](size_t i, size_t j) { return instance.p(i, j); };
+
+    // Calculate first job
+    if(idx == 0) {
+        s.departure_times[0][0] = p(s.sequence[0], 0);
+        for (size_t j = 1; j < instance.num_machines(); j++) {
+            s.departure_times[0][j] = s.departure_times[0][j - 1] + p(s.sequence[0], j);
+        }
+        idx = 1;
+    }
+
+    for (size_t i = idx; i < s.sequence.size(); i++) {
+        const size_t node = s.sequence[i];
+        s.departure_times[i][0] = std::max(s.departure_times[i - 1][0] + p(node, 0), s.departure_times[i - 1][1]);
+        for (size_t j = 1; j < instance.num_machines() - 1; j++) {
+
+            const size_t current_finish_time = s.departure_times[i][j - 1] + p(node, j);
+
+            s.departure_times[i][j] = std::max(current_finish_time, s.departure_times[i - 1][j + 1]);
+        }
+        s.departure_times[i].back() =
+            s.departure_times[i][instance.num_machines() - 2] + p(node, instance.num_machines() - 1);
+    }
+
+    s.cost = s.departure_times.back().back();
+}
+
 std::vector<std::vector<size_t>> core::calculate_tail(Instance &instance, const std::vector<size_t> &sequence) {
 
     auto tail = std::vector(sequence.size(), std::vector<size_t>(instance.num_machines()));
