@@ -16,6 +16,9 @@ void config_argparse(argparse::ArgumentParser &cli) {
         .metavar("RO")
         .default_value(size_t(30))
         .scan<'i', size_t>();
+
+    cli.add_argument("-a", "--alpha").help("set alpha").metavar("alpha").scan<'g', double>();
+    cli.add_argument("-b", "--b").help("set beta").metavar("beta").scan<'g', double>();
 }
 } // namespace
 
@@ -39,4 +42,6 @@ Parameters::Parameters(int argc, char **argv) {
     m_verbose = cli.get<bool>("--verbose");
     m_seed = cli.present<size_t>("--seed");
     m_ro = cli.get<size_t>("--ro");
+    m_alpha = cli.get<double>("--alpha");
+    m_beta = cli.get<double>("--beta");
 }
