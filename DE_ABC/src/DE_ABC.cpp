@@ -251,7 +251,7 @@ void DE_ABC::self_adaptative() {
                 idx_to_recalculate = std::min(swap(s), swap(s));
         }
 
-        core::recalculate_solution_from_idx(m_instance, s, idx_to_recalculate);
+        core::partial_recalculate_solution(m_instance, s, idx_to_recalculate);
 
         if(s.cost < m_pop[idx].cost) {
             m_pop[idx] = s;
@@ -282,7 +282,7 @@ void DE_ABC::replace_unchanged() {
             idx_to_recalculate = std::min(insertion(m_pop[i]), idx_to_recalculate);
         }
 
-        core::recalculate_solution_from_idx(m_instance, m_pop[i], idx_to_recalculate);
+        core::partial_recalculate_solution(m_instance, m_pop[i], idx_to_recalculate);
 
     }
 
