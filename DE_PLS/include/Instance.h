@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <vector>
+#include <numeric>
 
 struct Instance {
   public:
@@ -17,6 +18,14 @@ struct Instance {
     long rp(size_t i, size_t j) const { return m_matrix[i][m_num_machines - j - 1]; }
 
     Instance create_reverse_instance();
+
+    size_t total_processing_time() const {
+        return std::accumulate(
+            m_processing_times_sum.begin(),
+            m_processing_times_sum.end(),
+            size_t(0)
+        );
+    }
 
   private:
     size_t m_num_jobs = 0;

@@ -1,3 +1,4 @@
+#include <iostream>
 #include "constructions/Grasp_NEH.h"
 #include "Core.h"
 #include "Instance.h"
@@ -7,7 +8,9 @@
 #include <cassert>
 #include <numeric>
 
-Solution GraspNeh::solve(int x, int delta, Instance &instance) {
+Solution GraspNeh::solve(int x, double beta, Instance &instance) {
+
+    const size_t delta = 20;
 
     const size_t n_jobs = instance.num_jobs();
     const size_t m = instance.num_machines();
@@ -37,41 +40,36 @@ Solution GraspNeh::solve(int x, int delta, Instance &instance) {
         // Chama GRASP para gerar a sequência completa.
         // Como GRASP verifica se a sequência já não está vazia, ela usará a
         // sequência que você definiu.
-        cand_sol = grasp.solve(delta);
+        cand_sol = grasp.solve(beta, cand_sol.sequence);
 
         // --- Melhoria local: reinserção dos últimos delta jobs ---
         // Se delta for maior que o número de jobs, usa todos.
-        const size_t start_index =
-            (delta > static_cast<int>(cand_sol.sequence.size())) ? 0 : cand_sol.sequence.size() - delta;
+        const size_t start_index = (delta >= cand_sol.sequence.size()) ? 0 : cand_sol.sequence.size() - delta;
         // Para cada posição na região final da sequência:
-        for (size_t pos = start_index; pos < cand_sol.sequence.size(); pos++) {
+        for (int pos = static_cast<int>(cand_sol.sequence.size()) - 1; pos >= static_cast<int>(start_index); pos--) {
             const size_t job = cand_sol.sequence[pos];
-            // Remove o job da posição pos.
             std::vector<size_t> temp_seq = cand_sol.sequence;
-            temp_seq.erase(temp_seq.begin() + (long)pos);
+            temp_seq.erase(temp_seq.begin() + pos);
 
             size_t best_cmax = std::numeric_limits<size_t>::max();
             std::vector<size_t> best_seq;
-            // Testa inserir o job em todas as posições possíveis.
+
             for (size_t j = 0; j <= temp_seq.size(); j++) {
-                std::vector<size_t> &candidate_seq = temp_seq;
-                candidate_seq.insert(candidate_seq.begin() + (long)j, job);
-                // Avalia a sequência: calcula os departure times e o makespan
+                std::vector<size_t> candidate_seq = temp_seq; // Cópia explícita
+                candidate_seq.insert(candidate_seq.begin() + j, job);
                 auto d_candidate = core::calculate_departure_times(instance, candidate_seq);
-                const size_t candidate_cmax = d_candidate.back()[m]; // makespan é o último valor da última máquina
+                const size_t candidate_cmax = d_candidate.back()[m - 1]; // Correção 2: m-1
                 if (candidate_cmax < best_cmax) {
                     best_cmax = candidate_cmax;
                     best_seq = candidate_seq;
                 }
             }
-            // Atualiza a sequência candidata com a melhor inserção encontrada.
-            cand_sol.sequence = best_seq;
+            cand_sol.sequence = best_seq; // Atualiza apenas se melhor
         }
-        // Recalcula os departure times e o custo (makespan) da solução candidata.
+
         auto d_final = core::calculate_departure_times(instance, cand_sol.sequence);
         cand_sol.departure_times = d_final;
-        cand_sol.cost = d_final.back()[m];
-
+        cand_sol.cost = d_final.back()[m - 1]; // Correção 2: m-1
         candidate_solutions.push_back(cand_sol);
     }
 
