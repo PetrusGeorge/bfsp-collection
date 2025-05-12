@@ -4,11 +4,15 @@
 #include <random>
 
 #include "Clock.h"
+#include "Core.h"
 #include "Instance.h"
 #include "SaDIWO.h"
+#include "NEH.h"
 #include "Solution.h"
+#include "PF_NEH.h"
 
-static const double EPSILON = 1e-15; // Assumes that the double type is IEEE 754 compliant
+// static const double EPSILON = 1e-15; // Assumes that the double type is IEEE 754 compliant
+static const double EPSILON = std::numeric_limits<double>::min();
 
 void Population::add_solution(const Solution &solution) {
     solutions.push_back(solution);
@@ -44,7 +48,7 @@ bool Population::has_solution(const Solution &solution) const {
         }
     }
 
-    return true;
+    return false;
 }
 
 void Population::calculate_seeds(const SaDIWOParams &params) {
@@ -61,18 +65,18 @@ void Population::calculate_seeds(const SaDIWOParams &params) {
     }
 }
 
-void SaDIWO::update_departure_times(std::vector<long> &departures, const size_t curr_job) const {
-    long prev_departure = departures[0];
-    for (size_t j = 0; j < m_instance.num_machines() - 1; ++j) {
-        const long tmp = departures[j];
-        departures[j] = std::max(prev_departure + m_instance.p(curr_job, j), departures[j + 1]);
-        prev_departure = tmp;
-    }
-    const size_t last_j = m_instance.num_machines() - 1;
-    departures[last_j] = departures[last_j - 1] + m_instance.p(curr_job, last_j);
-}
+// void SaDIWO::update_departure_times(std::vector<long> &departures, const size_t curr_job) {
+//     long prev_departure = departures[0];
+//     for (size_t j = 0; j < m_instance.num_machines() - 1; ++j) {
+//         const long tmp = departures[j];
+//         departures[j] = std::max(prev_departure + m_instance.p(curr_job, j), departures[j + 1]);
+//         prev_departure = tmp;
+//     }
+//     const size_t last_j = m_instance.num_machines() - 1;
+//     departures[last_j] = departures[last_j - 1] + m_instance.p(curr_job, last_j);
+// }
 
-long SaDIWO::get_idle_block_sum(const std::vector<long> &departures, const size_t curr_job) const {
+long SaDIWO::get_idle_block_sum(const std::vector<long> &departures, const size_t curr_job) {
     long sum = 0;
     long prev_dept = departures[0];
 
@@ -87,146 +91,14 @@ long SaDIWO::get_idle_block_sum(const std::vector<long> &departures, const size_
     return sum;
 }
 
-std::vector<size_t> SaDIWO::pf(const std::vector<size_t> &init_seq, const size_t pos) const {
-    std::vector<size_t> seq(m_instance.num_jobs(), 0);
-
-    size_t unscheduled_size = m_instance.num_jobs();
-    std::vector<size_t> unscheduled(unscheduled_size);
-    std::iota(unscheduled.begin(), unscheduled.end(), 0);
-
-    seq[0] = init_seq[pos];
-    std::swap(unscheduled[--unscheduled_size], unscheduled[pos]);
-
-    std::vector<long> departures(m_instance.num_machines(), 0);
-
-    for (size_t idx = 0; idx < m_instance.num_jobs() - 1; ++idx) {
-        const size_t curr_job = seq[idx];
-        update_departure_times(departures, curr_job);
-
-        size_t selected = 0;
-        long best_idle_block_sum = std::numeric_limits<long>::max();
-        for (size_t j = 0; j < unscheduled_size; ++j) {
-            const long curr_idle_block_sum = get_idle_block_sum(departures, unscheduled[j]);
-
-            if (curr_idle_block_sum < best_idle_block_sum) {
-                best_idle_block_sum = curr_idle_block_sum;
-                selected = j;
-            }
-        }
-
-        seq[idx + 1] = unscheduled[selected];
-        std::swap(unscheduled[--unscheduled_size], unscheduled[selected]);
-    }
-
-    seq[m_instance.num_jobs() - 1] = unscheduled[0];
-
-    return seq;
-}
-
-std::vector<std::vector<long>> SaDIWO::compute_tail(const std::vector<size_t> &pi, const size_t q) const {
-    if (q == 0) {
-        return {};
-    }
-
-    std::vector<std::vector<long>> tail(q, std::vector<long>(m_instance.num_machines(), 0));
-
-    for (size_t i = q - 1; i >= 0; --i) {
-        for (size_t j = 0; j < m_instance.num_machines() - 1; ++j) {
-            tail[i][j] = std::max(tail[i][j + 1], tail[i + 1][j]) + m_instance.p(pi[i], j);
-        }
-        const size_t m = m_instance.num_machines() - 1;
-        tail[i][m] = tail[i + 1][m] + m_instance.p(pi[i], m);
-    }
-
-    return tail;
-}
-
-std::vector<std::vector<long>> SaDIWO::compute_completion_times(const std::vector<size_t> &pi, const size_t q) const {
-    if (q == 0) {
-        return {};
-    }
-
-    std::vector<std::vector<long>> completion(q, std::vector<long>(m_instance.num_jobs(), 0));
-
-    completion[0][0] = m_instance.p(pi[0], 0);
-    for (size_t j = 1; j < m_instance.num_machines(); ++j) {
-        completion[0][j] = completion[0][j - 1] + m_instance.p(pi[0], j);
-    }
-
-    for (size_t i = 1; i < q; ++i) {
-        completion[i][0] = completion[i - 1][0] + m_instance.p(pi[i], 0);
-
-        for (size_t j = 1; j < m_instance.num_machines(); ++j) {
-            completion[i][j] = std::max(completion[i - 1][j], completion[i][j - 1]) + m_instance.p(pi[i], j);
-        }
-    }
-
-    return completion;
-}
-
-void SaDIWO::taillard_best_insert(Solution &final_sol, const size_t q, const size_t curr_job) const {
-    const auto tail = compute_tail(final_sol.sequence, q);
-    const auto completion = compute_completion_times(final_sol.sequence, q);
-
-    std::vector<std::vector<long>> rel_completion(q, std::vector<long>(m_instance.num_machines(), 0));
-
-    const long t = m_instance.p(curr_job, 0);
-
-    // First job and first machine
-    rel_completion[0][0] = t;
-
-    long best_partial_makespan = rel_completion[0][0];
-
-    for (size_t j = 1; j < m_instance.num_machines(); ++j) {
-        rel_completion[0][j] = rel_completion[0][j - 1] + t;
-
-        best_partial_makespan = std::max(rel_completion[0][j] + tail[0][j], best_partial_makespan);
-    }
-
-    size_t best_index = 0;
-    for (size_t i = 1; i < q + 1; ++i) {
-        rel_completion[i][0] = completion[i - 1][0] + t;
-
-        long partial_makespan = rel_completion[i][0];
-        for (size_t j = 1; j < m_instance.num_machines(); ++j) {
-            rel_completion[i][j] = std::max(rel_completion[i][j - 1], completion[i - 1][j]) + t;
-
-            partial_makespan = std::max(rel_completion[i][j] + tail[i][j], partial_makespan);
-        }
-
-        if (partial_makespan < best_partial_makespan) {
-            best_partial_makespan = partial_makespan;
-            best_index = i;
-        }
-    }
-
-    final_sol.sequence.insert(final_sol.sequence.begin() + static_cast<long>(best_index), curr_job);
-    final_sol.cost = best_partial_makespan;
-}
-
-Solution SaDIWO::neh(const std::vector<size_t> &seq) const {
-    const size_t lambda = m_instance.num_jobs() >= 25 ? 25 : m_instance.num_jobs();
-
-    Solution final_sol;
-    final_sol.cost = 0;
-    final_sol.sequence.reserve(m_instance.num_jobs());
-    final_sol.sequence.assign(seq.cbegin(), seq.cend() - static_cast<long>(lambda));
-
-    for (size_t q = m_instance.num_jobs() - lambda; q < m_instance.num_jobs(); ++q) {
-        taillard_best_insert(final_sol, q, seq[q]);
-    }
-
-    return final_sol;
-}
-
-std::vector<size_t> SaDIWO::sort_inc_proc_time() const {
+std::vector<size_t> SaDIWO::sort_inc_proc_time() {
     std::vector<size_t> sequence(m_instance.num_jobs());
     std::iota(sequence.begin(), sequence.end(), 0);
 
-    std::vector<long> processing_times;
+    std::vector<size_t> processing_times;
     processing_times.reserve(m_instance.num_jobs());
     for (size_t i = 0; i < m_instance.num_jobs(); ++i) {
-        processing_times.push_back(m_instance.psum(i));
+        processing_times.push_back(m_instance.processing_times_sum()[i]);
     }
 
     std::sort(sequence.begin(), sequence.end(),
@@ -235,7 +107,7 @@ std::vector<size_t> SaDIWO::sort_inc_proc_time() const {
     return sequence;
 }
 
-Population SaDIWO::population_init() const {
+Population SaDIWO::population_init() {
     const auto init_seq = sort_inc_proc_time();
 
     Solution best;
@@ -243,8 +115,10 @@ Population SaDIWO::population_init() const {
     // PF-NEH
     const int x = 5;
     for (size_t k = 0; k < x; ++k) {
-        const auto seq = pf(init_seq, k);
-        const auto sol = neh(seq);
+        PF_NEH pf_neh(m_instance);
+        // const auto seq = pf(init_seq, k);
+        const size_t lambda = m_instance.num_jobs() >= 25 ? 25 : m_instance.num_jobs();
+        const auto sol = pf_neh.solve(lambda);
 
         if (sol.cost < best.cost) {
             best = sol;
@@ -252,23 +126,20 @@ Population SaDIWO::population_init() const {
     }
 
     // Calling it to set the departure times
-    set_solution_cost(m_instance, best);
+    core::recalculate_solution(m_instance, best);
 
     Population pop;
     pop.add_solution(best);
-
-    std::random_device rd;
-    std::mt19937 g(rd());
 
     Solution tmp;
     tmp.sequence = best.sequence;
 
     // N_0 is P_max
     while (pop.solutions.size() < m_params.p_max) {
-        std::shuffle(tmp.sequence.begin(), tmp.sequence.end(), g);
+        std::shuffle(tmp.sequence.begin(), tmp.sequence.end(), m_rng);
 
         if (!pop.has_solution(tmp)) {
-            set_solution_cost(m_instance, tmp);
+            core::recalculate_solution(m_instance, tmp);
             pop.add_solution(tmp);
         }
     }
@@ -294,6 +165,7 @@ size_t SaDIWO::get_solution_d(const Population &pop, const size_t solution_cost)
 
 void SaDIWO::spatial_dispersal(const Population &pop, Population &new_pop) {
     new_pop.solutions.clear();
+    NEH helper(m_instance);
     for (size_t i = 0; i < pop.solutions.size(); ++i) {
         const auto &sol = pop.solutions[i];
         for (size_t j = 0; j < static_cast<size_t>(pop.seeds[i]); ++j) {
@@ -322,7 +194,9 @@ void SaDIWO::spatial_dispersal(const Population &pop, Population &new_pop) {
                 sol_copy.sequence.pop_back();
 
                 // TODO: check if it works
-                taillard_best_insert(sol_copy, m_instance.num_jobs() - d + k, curr_job);
+                // taillard_best_insert(sol_copy, m_instance.num_jobs() - d + k, curr_job);
+                helper.taillard_best_insertion(sol_copy.sequence, curr_job);
+
             }
 
             new_pop.add_solution(sol_copy);
@@ -330,13 +204,13 @@ void SaDIWO::spatial_dispersal(const Population &pop, Population &new_pop) {
     }
 }
 
-void ls1(Solution &sol) const {}
+void SaDIWO::ls1(Solution &sol) {}
 
-void ls2(Solution &sol) const {}
+void SaDIWO::ls2(Solution &sol) {}
 
-void ls3(Solution &sol) const {}
+void SaDIWO::ls3(Solution &sol) {}
 
-void SaDIWO::local_search(Population &pop) const {
+void SaDIWO::local_search(Population &pop) {
     for (auto &sol : pop.solutions) {
         bool improved = true;
         size_t previous_cost = sol.cost;
