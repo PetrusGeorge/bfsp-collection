@@ -1,6 +1,5 @@
 #include "SVNS_D.h"
 
-#include "../include/RNG.h"
 #include "Core.h"
 #include "Solution.h"
 #include "constructions/NEH.h"
@@ -9,10 +8,8 @@
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
-#include <iterator>
 #include <numeric>
 #include <optional>
-#include <random>
 #include <vector>
 
 namespace {
@@ -57,13 +54,15 @@ Solution SVNS_D::PW_PWE2() {
 }
 
 bool SVNS_D::LS1_D_swap(Solution &solution, std::vector<size_t> &reference) {
-    Solution best_solution = solution;
-    size_t best_cost = solution.cost;
-    bool improve = false;
+    size_t original_cost = solution.cost;
 
     for (size_t i = 0; i < solution.sequence.size() - 1; i++) {
+        // Set correct departure times matrix to use partial recalculate solution
+        core::recalculate_solution(m_instance, solution);
+
         size_t index = reference[i];
         size_t best_j = 0;
+        size_t best_cost = solution.cost;
 
         for (size_t j = index + 1; j < solution.sequence.size(); j++) {
             // Apply move
@@ -75,35 +74,30 @@ bool SVNS_D::LS1_D_swap(Solution &solution, std::vector<size_t> &reference) {
             } else {
                 core::partial_recalculate_solution(m_instance, solution, index);
             }
-            if (solution.cost < best_cost) {
+
+            if (solution.cost <= best_cost) {
                 best_cost = solution.cost;
                 best_j = j;
             }
             std::swap(solution.sequence[index], solution.sequence[j]);
         }
-        if (best_cost < best_solution.cost) {
-            best_solution = solution;
-            improve = true;
-        } else if (best_cost == best_solution.cost) {
-            best_solution = solution;
-        } else {
-            Solution copy = solution;
+        if (best_j != 0) {
+            std::swap(solution.sequence[index], solution.sequence[best_j]);
+            solution.cost = best_cost;
+            // If a swap happens it'll make the departure times matrix inconsistent
+            // make sure that you recalculate it if needed after the usage of this function
         }
-        // Fix the departure time that was changed by the recalculations above
-        // Only this line is needes as it's the only changed line that is going to be used
-        /*solution.departure_times[i] = best_solution.departure_times[i];*/
     }
-    return improve;
+
+    return solution.cost < original_cost;
 }
 
 void SVNS_D::LS1_D(Solution &solution) { // NOLINT
-    core::recalculate_solution(m_instance, solution);
-
     std::vector<size_t> reference(m_instance.num_jobs());
     std::iota(reference.begin(), reference.end(), 1);
 
     while (true) {
-        std::shuffle(reference.begin(), reference.end(), RNG::instance().gen());
+        std::shuffle(reference.begin(), reference.end(), m_rng);
 
         LS1_D_swap(solution, reference);
     }
@@ -124,7 +118,7 @@ Solution SVNS_D::solve() {
         size_t nml1 = 0;
         size_t sampled_local_search = 0;
 
-        if (RNG::instance().generate<double>(0, 1) < m_parameters.beta()) {
+        if (m_rng.generate<double>(0, 1) < m_parameters.beta()) {
             sampled_local_search = 0;
         } else {
             sampled_local_search = 1;
@@ -150,7 +144,7 @@ Solution SVNS_D::solve() {
         if (local_best.cost < global_best.cost) {
             global_best = local_best;
         }
-        if (global_best.cost < local_best.cost and RNG::instance().generate<double>(0, 1) < m_parameters.alpha()) {
+        if (global_best.cost < local_best.cost and m_rng.generate<double>(0, 1) < m_parameters.alpha()) {
             local_best = global_best;
         }
         /*Solution desconstructed = desconstruct(local_best);*/

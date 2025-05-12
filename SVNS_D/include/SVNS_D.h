@@ -17,7 +17,7 @@ class SVNS_D { // NOLINT
 
     Solution PW_PWE2(); // NOLINT
 
-    void LS1_D_swap(Solution &solution, std::vector<size_t> &reference); // NOLINT
+    bool LS1_D_swap(Solution &solution, std::vector<size_t> &reference); // NOLINT
     void LS1_D(Solution &solution);                                      // NOLINT
 
   public:
