@@ -16,7 +16,6 @@ class Parameters {
     size_t ms() const { return m_ms; }
     double pcr() const { return m_pcr; }
     double par() const { return m_par; }
-    
 
   private:
     std::string m_instance_path;

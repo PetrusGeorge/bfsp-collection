@@ -2,33 +2,33 @@
 #include "Core.h"
 #include "Instance.h"
 #include "Solution.h"
-#include <utility>
-#include <iostream>
-#include <vector>
-#include <numeric>
 #include <algorithm>
+#include <iostream>
+#include <numeric>
+#include <utility>
+#include <vector>
 
 NEH_WPT::NEH_WPT(Instance &instance) : m_instance(instance) {}
 
 std::vector<size_t> NEH_WPT::initial_job_sequence(Instance &instance) {
-  std::vector<size_t> sequence(instance.num_jobs());
-  std::iota(sequence.begin(), sequence.end(), 0);
+    std::vector<size_t> sequence(instance.num_jobs());
+    std::iota(sequence.begin(), sequence.end(), 0);
 
-  const std::vector<size_t> &pts = instance.processing_times_sum();
+    const std::vector<size_t> &pts = instance.processing_times_sum();
 
-  std::sort(sequence.begin(), sequence.end(), [pts](size_t a, size_t b) { return pts[a] < pts[b]; });
+    std::sort(sequence.begin(), sequence.end(), [pts](size_t a, size_t b) { return pts[a] < pts[b]; });
 
-  return sequence;
+    return sequence;
 }
 
 Solution NEH_WPT::solve() {
-    
+
     std::vector<size_t> phi = initial_job_sequence(m_instance);
 
     Solution s;
     s.sequence.reserve(m_instance.num_jobs());
     s.sequence = {phi[0], phi[1]};
-    phi.erase(phi.begin(), phi.begin()+2);
+    phi.erase(phi.begin(), phi.begin() + 2);
 
     second_step(phi, s);
     return s;

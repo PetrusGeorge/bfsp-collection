@@ -5,7 +5,7 @@
 #include "Solution.h"
 
 class NEH_WPT {
-  
+
   public:
     // Given a sequence phi, this function applies the NEH algorithm and returns a
     // Solution object
@@ -20,14 +20,13 @@ class NEH_WPT {
 
     std::vector<size_t> initial_job_sequence(Instance &instance);
 
-  private: 
+  private:
     Instance &m_instance;
 
     // TaillarDS (TDS) matrices
     std::vector<std::vector<size_t>> m_e; // Departure time
     std::vector<std::vector<size_t>> m_q; // Tail duration
     std::vector<std::vector<size_t>> m_f;
-
-  };
+};
 
 #endif

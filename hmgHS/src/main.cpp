@@ -8,7 +8,6 @@
 #include "RNG.h"
 #include "hmgHS.h"
 
-
 int main(int argc, char *argv[]) {
 
     const Parameters params(argc, argv);
@@ -30,5 +29,4 @@ int main(int argc, char *argv[]) {
     hmgHS hmgHS_solver = hmgHS(std::move(instance), std::move(params));
     const Solution best = hmgHS_solver.solve();
     std::cout << "cost: " << best.cost << "\n\n\n";
-     
 }

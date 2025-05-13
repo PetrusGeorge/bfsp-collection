@@ -23,7 +23,6 @@ void config_argparse(argparse::ArgumentParser &cli) {
         .default_value(size_t(5))
         .scan<'i', size_t>();
 
-
     cli.add_argument("-c", "--pcr")
         .help("set the Pcr parameter which determines the probability of one harmony being used to create another")
         .metavar("PCR")
