@@ -14,8 +14,33 @@ void config_argparse(argparse::ArgumentParser &cli) {
     cli.add_argument("-r", "--ro")
         .help("set the ro parameter which delimits the time limit of the program")
         .metavar("RO")
-        .default_value(size_t(30))
+        .default_value(size_t(5))
         .scan<'i', size_t>();
+
+    cli.add_argument("-s", "--ps")
+        .help("set the ps parameter which delimits the size of the population")
+        .metavar("PS")
+        .default_value(size_t(20))
+        .scan<'i', size_t>();
+
+    cli.add_argument("-m", "--z")
+        .help("set the z parameter ")
+        .metavar("Z")
+        .default_value(0.2)
+        .scan<'f', double>();
+
+    cli.add_argument("-c", "--cr")
+        .help("set the cr parameter")
+        .metavar("CR")
+        .default_value(0.2)
+        .scan<'f', double>();
+
+    cli.add_argument("-ls", "--pl")
+        .help("set the pld parameter")
+        .metavar("PL")
+        .default_value(0.2)
+        .scan<'f', double>();
+
 }
 } // namespace
 
@@ -39,4 +64,8 @@ Parameters::Parameters(int argc, char **argv) {
     m_verbose = cli.get<bool>("--verbose");
     m_seed = cli.present<size_t>("--seed");
     m_ro = cli.get<size_t>("--ro");
+    m_ps = cli.get<size_t>("--ps");
+    m_z = cli.get<double>("--z");
+    m_cr = cli.get<double>("--cr");
+    m_pl = cli.get<double>("--pl");
 }

@@ -18,7 +18,7 @@ extra_args = ['-march=native', '-D_GLIBCXX_ASSERTIONS=1']
 subdir('src')
 
 executable(
-  'algorithms',
+  'hdde',
   sources,
   include_directories: include_directories('include'),
   cpp_args: extra_args,
