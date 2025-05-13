@@ -29,11 +29,7 @@ void config_argparse(argparse::ArgumentParser &cli) {
         .default_value(0.9)
         .scan<'f', double>();
 
-    cli.add_argument("-c", "--pc")
-        .help("set the pc parameter")
-        .metavar("PC")
-        .default_value(0.1)
-        .scan<'f', double>();
+    cli.add_argument("-c", "--pc").help("set the pc parameter").metavar("PC").default_value(0.1).scan<'f', double>();
 
     cli.add_argument("-ls", "--pls")
         .help("set the pld parameter")
@@ -46,7 +42,6 @@ void config_argparse(argparse::ArgumentParser &cli) {
         .metavar("THETA")
         .default_value(0.75)
         .scan<'f', double>();
-        
 }
 } // namespace
 
