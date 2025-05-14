@@ -49,8 +49,13 @@ int main(int argc, char *argv[]) {
 
     SVNS_D svns_d(instance, params);
 
-    Solution solution_svns_d = svns_d.solve();
+    Solution pwe2_solution = svns_d.PW_PWE2();
+    std::cout << "\nPWE2: " << '\n';
+    std::cout << pwe2_solution << '\n';
 
-    std::cout << "\nSVNS_D: " << '\n';
-    std::cout << solution_svns_d << '\n';
+    svns_d.LS2_D(pwe2_solution);
+    std::cout << "\nPWE2-LS2_D: " << '\n';
+    std::cout << pwe2_solution << '\n';
+
+    /*Solution solution_svns_d = svns_d.solve();*/
 }

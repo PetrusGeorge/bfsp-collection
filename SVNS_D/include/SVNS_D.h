@@ -13,14 +13,17 @@ class SVNS_D { // NOLINT
     Instance &m_instance;
     Parameters &m_parameters;
 
-    RNG &m_rng = RNG::instance();
-
-    Solution PW_PWE2(); // NOLINT
-
-    bool LS1_D_swap(Solution &solution, std::vector<size_t> &reference); // NOLINT
-    void LS1_D(Solution &solution);                                      // NOLINT
+    void apply_insertion(Solution &solution, long from, long to);
 
   public:
+    Solution PW_PWE2(); // NOLINT
+
+    void LS1_D_swap(Solution &solution, std::vector<size_t> &reference); // NOLINT
+    void LS1_D(Solution &solution);                                      // NOLINT
+
+    void LS2_D_insertion(Solution &solution, std::vector<size_t> &reference); // NOLINT
+    void LS2_D(Solution &solution);                                           // NOLINT
+
     SVNS_D(Instance &instance, Parameters &params);
 
     Solution solve();
