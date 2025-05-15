@@ -17,7 +17,7 @@ def process_iteration(binary_path, instance_name, instance_size, iteration):
 
 def main(binary_path):
     num_threads = 10  # Defina o número de threads no pool
-    instances_sizes = ["J20M5", "J20M10", "J20M20", "J50M10", "J50M20", "J100M5", "J100M10", "J100M20", "J200M5", "J200M20", "J500M5", "J500M10", "J500M20",]
+    instances_sizes = ["J20M5", "J20M10", "J20M20", "J50M5", "J50M10", "J50M20", "J100M5", "J100M10", "J100M20", "J200M5", "J200M10", "J200M20", "J500M5", "J500M10", "J500M20",]
     os.makedirs("results", exist_ok=True)
     with open("results/.gitignore", "w") as gitignore:
         gitignore.write("*")
@@ -33,7 +33,7 @@ def main(binary_path):
  
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("AAAAAAA")
+        print(f"run with: python {sys.argv[0]} /path/to/binary")
         exit(1)
     main(sys.argv[1])
 
