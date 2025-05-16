@@ -76,6 +76,7 @@ Parameters::Parameters(int argc, char **argv) {
   m_instance_path = cli.get<std::string>("instance");
   m_verbose = cli.get<bool>("--verbose");
   m_seed = cli.present<size_t>("--seed");
+  m_p = cli.get<size_t>("--P");
   m_d_threshold = cli.get<size_t>("-t");
   m_Gt = cli.get<size_t>("-g");
   m_nc = cli.get<size_t>("-n");
