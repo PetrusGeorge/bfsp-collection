@@ -18,8 +18,8 @@ public:
 
   std::mt19937 &gen() { return m_gen; }
   size_t seed() const { return m_seed; }
-  void set_seed(size_t seed) { 
-    m_seed = seed; 
+  void set_seed(size_t seed) {
+    m_seed = seed;
     m_gen.seed(seed);
   }
 
@@ -34,7 +34,6 @@ public:
     std::uniform_real_distribution<double> dis(min, max);
     return dis(m_gen);
   }
-
 
 private:
   RNG() = default;

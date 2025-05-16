@@ -15,20 +15,20 @@ public:
   size_t d_threshold() const { return m_d_threshold; }
   size_t Gt() const { return m_Gt; }
   size_t nc() const { return m_nc; }
+  size_t p() const { return m_p; }
   double alpha() const { return m_alpha; }
   std::optional<size_t> time_limit() const { return m_time_limit; }
-
 
 private:
   std::string m_instance_path;
   bool m_verbose = false;
   std::optional<size_t> m_seed;
+  size_t m_p = 30;
   size_t m_d_threshold = 5;
   size_t m_Gt = 4000;
   size_t m_nc = 6;
   double m_alpha = 0.97;
   std::optional<size_t> m_time_limit;
-
 };
 
 #endif

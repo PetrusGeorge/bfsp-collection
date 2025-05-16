@@ -6,7 +6,7 @@
 
 // std::vector<std::vector<size_t>>
 size_t core::calculate_departure_times(const Instance &instance,
-                                const std::vector<size_t> &sequence) {
+                                       const std::vector<size_t> &sequence) {
   auto departure_times = std::vector(
       sequence.size(), std::vector<size_t>(instance.num_machines()));
 

@@ -23,8 +23,15 @@ void config_argparse(argparse::ArgumentParser &cli) {
       .metavar("TIME LIMIT")
       .scan<'i', size_t>();
 
+  cli.add_argument("-p", "--P")
+      .help("set the adjust for time limit")
+      .metavar("P")
+      .default_value(size_t(30))
+      .scan<'i', size_t>();
+
   cli.add_argument("-t", "--threshold")
-      .help("set the threshold parameter which delimits the time limit of the program")
+      .help("set the threshold parameter which delimits the time limit of the "
+            "program")
       .metavar("D_THRESHOLD")
       .default_value(size_t(5))
       .scan<'i', size_t>();
@@ -46,7 +53,6 @@ void config_argparse(argparse::ArgumentParser &cli) {
       .metavar("ALPHA")
       .default_value(0.97)
       .scan<'f', double>();
-
 }
 } // namespace
 
@@ -75,5 +81,4 @@ Parameters::Parameters(int argc, char **argv) {
   m_nc = cli.get<size_t>("-n");
   m_alpha = cli.get<double>("-a");
   m_time_limit = cli.present<size_t>("--time");
-
 }
