@@ -10,7 +10,7 @@ namespace {
 double uptime() {
   static const auto global_start_time = std::chrono::steady_clock::now();
   auto now = std::chrono::steady_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
       now - global_start_time);
   return static_cast<double>(duration.count());
 }
@@ -38,7 +38,7 @@ void RAIS::pop_affinity_calculation(
 
 }
 
-std::vector<Solution> RAIS::initial_pop() {
+std::vector<Solution> RAIS::initialization() {
 
   size_t n = m_instance.num_jobs();
   size_t npop = (m_params.nc() * (m_params.nc() + 1) / 2);
@@ -54,9 +54,8 @@ std::vector<Solution> RAIS::initial_pop() {
 
     init_pop[i].sequence = antibody;
     core::recalculate_solution(m_instance, init_pop[i]);
+    init_pop[i].affinity = affinity_calculation(init_pop[i].cost);
   }
-
-  pop_affinity_calculation(init_pop);
 
   return init_pop;
 }
@@ -69,7 +68,7 @@ RAIS::clone_antibodies(const std::vector<Solution> &pop) {
   for (size_t i = 0; i < m_params.nc(); i++) {
 
     for (size_t j = 0; j < m_params.nc() - i; j++) {
-      clones[k].sequence = pop[i].sequence;
+      clones[k] = pop[i];
       k++;
     }
   }
@@ -85,12 +84,8 @@ void RAIS::mutation(std::vector<Solution> &pop) {
   for (size_t antibody = 0; antibody < pop.size(); antibody++) {
 
     // getting indexes for movements
-    size_t i = RNG::instance().generate((size_t) 0, n-1);
-    size_t j = i;
-
-    while (i == j) {
-      j = RNG::instance().generate((size_t) 0, n-1);
-    }
+    size_t i = RNG::instance().generate((size_t) 0, n-2);
+    size_t j = RNG::instance().generate((size_t) i+1, n-1);
 
     // choosing a movement
     p = RNG::instance().generate_real_number(0.0, 1.0);
@@ -104,19 +99,7 @@ void RAIS::mutation(std::vector<Solution> &pop) {
     }
     // Insertion
     else {
-
-      pop[antibody].sequence.insert(pop[antibody].sequence.begin() +
-                                              i,
-                                          pop[antibody].sequence[j]);
-
-      if (i > j) {
-        pop[antibody].sequence.erase(
-            pop[antibody].sequence.begin() + j);
-      }
-      else {
-        pop[antibody].sequence.erase(
-            pop[antibody].sequence.begin() + j + 1);
-      }
+      std::rotate(pop[antibody].sequence.begin()+i, pop[antibody].sequence.begin()+j, pop[antibody].sequence.begin()+j+1);
     }
 
     core::recalculate_solution(m_instance, pop[antibody]);
@@ -131,110 +114,49 @@ bool RAIS::nearby_antibody(Solution &s1, Solution &s2) {
     if (s1.sequence[i] == s2.sequence[i]) {
       d++;
       if (d >= m_params.d_threshold()) {
-        return false;
+        return true;
       }
     }
 
   }
 
-  return true;
+  return false;
 }
 
-void RAIS::merge_populations(std::vector<Solution> &pop,
-  const std::vector<Solution> &clones,
-  const std::vector<bool> &pop_eliminated,
-  const std::vector<bool> &clone_eliminated) {
-
-  // taking the nc remaining antibodies
-  std::vector<Solution> aux(m_params.nc());
-
-  size_t i = 0;
-  size_t j = 0;
-  for (size_t k = 0; k < m_params.nc(); k++) {
-
-    // searching for the next valid antibody in the population
-    while (i < pop_eliminated.size() && pop_eliminated[i]) {
-      i++;
-    }
-
-    // searching for the next valid antibody in the clone set
-    while (j < clone_eliminated.size() && clone_eliminated[j]) {
-      j++;
-    }
-
-    /* 
-    in this conditional statement, it's checked which antibody is
-    is better. First check if the antibody in the population is valid,
-    after if the antibody in the clones set is valid, then chose the better 
-    */
-    if (i >= pop.size()) {
-      aux[k] = clones[j];
-    } else if (j >= clones.size()) {
-      aux[k] = pop[i];
-    } else if (pop[i].affinity > clones[j].affinity) {
-      aux[k] = pop[i];
-    } else {
-      aux[k] = clones[j];
-    }
-  }
-
-  pop.swap(aux);
-
-}
-
-
-void RAIS::supression(std::vector<Solution> &pop,
-                      std::vector<Solution> &clones) {
+void RAIS::supression(std::vector<Solution> &pop) {
   
-  // Hsieh YC, You PS, Liou CD. A note of using effective immune based approach
-  // for the ﬂow shop scheduling with buffers. Applied Mathematic Computation
-  // 2009;215(5):1984–9
 
-  std::vector<bool> pop_eliminated(pop.size(), false);
-  std::vector<bool> clone_eliminated(clones.size(), false);
+  std::vector<bool> eliminated(pop.size(), false);
   for (size_t i = 0; i < pop.size(); i++) {
+    
+    if (eliminated[i]) {
+      continue;
+    }
 
-    for (size_t j = 0; j < clones.size(); j++) {
-
-      if (clone_eliminated[j]) {
+    for (size_t j = i+1; j < pop.size(); j++) {
+      
+      if (!nearby_antibody(pop[i], pop[j])) {
         continue;
       }
 
-      if (nearby_antibody(pop[i], clones[j])) {
+      eliminated[j] = true;
+    }
+  }
 
-        if (pop[i].affinity > clones[j].affinity) {
-          clone_eliminated[j] = true;
-        } else {
-          pop_eliminated[i] = true;
-          break;
-        }
-      }
+  for (size_t i = eliminated.size()-1; i < eliminated.size(); i--) {
+    if (eliminated[i]) {
+      pop.erase(pop.begin()+i);
       
+      if (pop.size() == m_params.nc()) {
+        return;
+      }
     }
   }
 
-  merge_populations(pop, clones, pop_eliminated, clone_eliminated);
-  
-}
-
-void RAIS::update(std::vector<Solution> &pop,
-                  const std::vector<Solution> &clones) {
-
-  std::vector<Solution> aux(m_params.nc());
-  size_t i = 0, j = 0;
-
-  for (size_t k = 0; k < m_params.nc(); k++) {
-
-    if (pop[i].affinity > clones[j].affinity) {
-      aux[k] = pop[i];
-      i++;
-    } else {
-      aux[k] = clones[j];
-      j++;
-    }
+  while(pop.size() > m_params.nc()) {
+    pop.pop_back();
   }
 
-  pop.swap(aux);
 }
 
 void RAIS::SA(std::vector<Solution> &pop, double T) {
@@ -246,9 +168,8 @@ void RAIS::SA(std::vector<Solution> &pop, double T) {
 
     if (cp_pop[a].cost <= pop[a].cost) {
       pop[a] = cp_pop[a];
-    }
-
-    else {
+      pop[a].affinity = affinity_calculation(pop[a].cost);
+    } else {
 
       size_t delta = cp_pop[a].cost - pop[a].cost;
       double r = RNG::instance().generate_real_number(0.0, 1.0);
@@ -256,12 +177,31 @@ void RAIS::SA(std::vector<Solution> &pop, double T) {
 
       if (r < p) {
         pop[a] = cp_pop[a];
+        pop[a].affinity = affinity_calculation(pop[a].cost);
       }
 
     }
   }
 
-  pop_affinity_calculation(pop);
+}
+
+void RAIS::select_nc_best(std::vector<Solution> &pop) {
+  std::vector<Solution> aux(m_params.nc());
+
+  for(size_t i = 0; i < m_params.nc(); i++) {
+    
+    size_t best_idx = i;
+    for(size_t j = i+1; j < pop.size(); j++) {
+      if(pop[j].affinity > pop[best_idx].affinity) {
+        best_idx = j;
+      }
+    }
+
+    aux[i] = pop[best_idx];
+    std::swap(pop[best_idx], pop[i]);
+  }
+
+  pop.swap(aux);
 
 }
 
@@ -288,20 +228,16 @@ Solution RAIS::solve() {
   Solution best_solution;
   std::vector<Solution> pop;
 
-  pop = initial_pop();
+  pop = initialization();
 
   auto sort_criteria = [](Solution &p1,
                           Solution &p2) {
     return p1.affinity > p2.affinity;
   };
 
-  std::sort(pop.begin(), pop.end(),
-            sort_criteria); 
-
-  pop.resize(m_params.nc());           // select
-
   // double timer_counter = 1;
   while (true) {
+    select_nc_best(pop);
 
     std::vector<Solution> clones =
         clone_antibodies(pop); // cloning the best antibodies
@@ -310,15 +246,17 @@ Solution RAIS::solve() {
 
     pop_affinity_calculation(clones);
 
-    std::sort(clones.begin(), clones.end(), sort_criteria);
+    pop.insert(pop.end(), clones.begin(), clones.end());
 
-    supression(pop, clones);
+    std::sort(pop.begin(), pop.end(), sort_criteria);
 
-    update(pop, clones);
+    supression(pop);
 
     if (pop[0].cost < best_solution.cost) {
       best_solution = pop[0];
     }
+
+    SA(pop, T);
 
     if (uptime() > time_limit) {
       break;
@@ -328,15 +266,11 @@ Solution RAIS::solve() {
     //     " << time_limit << '\n'; timer_counter++;
     // }
 
-    SA(pop, T);
-
-    std::sort(pop.begin(), pop.end(), sort_criteria);
-
     G++;
 
-    if (G == m_params.Gt()) {
+    if (G >= m_params.Gt()) {
       T *= m_params.alpha();
-      G = 0;
+      G = 1;
     }
   }
 

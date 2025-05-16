@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <numeric>
 
-std::vector<std::vector<size_t>>
-core::calculate_departure_times(const Instance &instance,
+// std::vector<std::vector<size_t>>
+size_t core::calculate_departure_times(const Instance &instance,
                                 const std::vector<size_t> &sequence) {
   auto departure_times = std::vector(
       sequence.size(), std::vector<size_t>(instance.num_machines()));
@@ -34,7 +34,8 @@ core::calculate_departure_times(const Instance &instance,
         p(node, instance.num_machines() - 1);
   }
 
-  return departure_times;
+  // return departure_times;
+  return departure_times.back().back();
 }
 
 std::vector<size_t> core::stpt_sort(const Instance &instance) {
@@ -115,6 +116,7 @@ core::calculate_new_departure_time(const Instance &instance,
 }
 
 void core::recalculate_solution(const Instance &instance, Solution &s) {
-  s.departure_times = calculate_departure_times(instance, s.sequence);
-  s.cost = s.departure_times.back().back();
+  // auto departure_times = calculate_departure_times(instance, s.sequence);
+  // s.cost = departure_times.back().back();
+  s.cost = calculate_departure_times(instance, s.sequence);
 }

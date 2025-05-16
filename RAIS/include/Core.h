@@ -6,8 +6,8 @@
 
 namespace core {
 
-std::vector<std::vector<size_t>>
-calculate_departure_times(const Instance &instance,
+// std::vector<std::vector<size_t>>
+size_t calculate_departure_times(const Instance &instance,
                           const std::vector<size_t> &sequence);
 
 std::vector<size_t> stpt_sort(const Instance &instance);

@@ -17,7 +17,7 @@ public:
 
   void pop_affinity_calculation(std::vector<Solution> &pop);
 
-  std::vector<Solution> initial_pop();
+  std::vector<Solution> initialization();
 
   std::vector<Solution> clone_antibodies(const std::vector<Solution> &pop);
 
@@ -25,15 +25,11 @@ public:
 
   bool nearby_antibody(Solution &s1, Solution &s2);
 
-  void merge_populations(std::vector<Solution> &pop, const std::vector<Solution> &clones, const std::vector<bool> &pop_eliminated, const std::vector<bool> &clone_eliminated);
-
-  void supression(std::vector<Solution> &pop,
-                  std::vector<Solution> &clones);
-
-  void update(std::vector<Solution> &pop,
-              const std::vector<Solution> &clones);
+  void supression(std::vector<Solution> &pop);
 
   void SA(std::vector<Solution> &pop, double T);
+
+  void select_nc_best(std::vector<Solution> &pop);
 
   Solution solve();
 
