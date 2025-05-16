@@ -1,5 +1,5 @@
 project(
-  'template',
+  'HVNS',
   'cpp',
   default_options: [
     'cpp_std=c++17',
@@ -18,7 +18,7 @@ extra_args = ['-march=native', '-D_GLIBCXX_ASSERTIONS=1']
 subdir('src')
 
 executable(
-  'algorithms',
+  'hvns',
   sources,
   include_directories: include_directories('include'),
   cpp_args: extra_args,
