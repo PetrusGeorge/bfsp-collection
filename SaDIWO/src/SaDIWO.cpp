@@ -6,10 +6,10 @@
 #include "Clock.h"
 #include "Core.h"
 #include "Instance.h"
-#include "SaDIWO.h"
 #include "NEH.h"
-#include "Solution.h"
 #include "PF_NEH.h"
+#include "SaDIWO.h"
+#include "Solution.h"
 
 // static const double EPSILON = 1e-15; // Assumes that the double type is IEEE 754 compliant
 static const double EPSILON = std::numeric_limits<double>::min();
@@ -157,7 +157,7 @@ size_t SaDIWO::get_solution_d(const Population &pop, const size_t solution_cost)
 
     // floor is indicated in the accepted manuscript but in the published paper there is only the absolute value
     // since d needs to be an integer, floor is used
-    size_t d = std::floor(std::abs(std::normal_distribution{0.0, std::pow(deviation, 2)}(m_rng)));
+    const size_t d = std::floor(std::abs(std::normal_distribution{0.0, std::pow(deviation, 2)}(m_rng)));
 
     // limiting it to the number of jobs for convenience
     return std::max(m_instance.num_jobs(), d);
@@ -196,7 +196,6 @@ void SaDIWO::spatial_dispersal(const Population &pop, Population &new_pop) {
                 // TODO: check if it works
                 // taillard_best_insert(sol_copy, m_instance.num_jobs() - d + k, curr_job);
                 helper.taillard_best_insertion(sol_copy.sequence, curr_job);
-
             }
 
             new_pop.add_solution(sol_copy);

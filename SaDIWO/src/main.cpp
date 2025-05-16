@@ -9,9 +9,9 @@
 
 int main(int argc, char *argv[]) {
 
-    Parameters params(argc, argv);
+    const Parameters params(argc, argv);
     try {
-        Instance instance(params.instance_path());
+        const Instance instance(params.instance_path());
     } catch (std::runtime_error &err) {
         std::cerr << err.what() << '\n';
         exit(EXIT_FAILURE);

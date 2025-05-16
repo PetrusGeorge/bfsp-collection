@@ -2,9 +2,9 @@
 #define SADIWO_H
 
 #include "Instance.h"
+#include "RNG.h"
 #include "Solution.h"
 #include <random>
-#include "RNG.h"
 
 // See end of section 5.4 on the SaDIWO paper
 struct SaDIWOParams {
@@ -31,8 +31,7 @@ class Population {
 
 class SaDIWO {
   public:
-    SaDIWO(Instance instance, SaDIWOParams params)
-        : m_instance(std::move(instance)), m_params(params) {}
+    SaDIWO(Instance instance, SaDIWOParams params) : m_instance(std::move(instance)), m_params(params) {}
 
     Solution solve();
 
