@@ -252,7 +252,7 @@ void RAIS::SA(std::vector<Solution> &pop, double T) {
 
       size_t delta = cp_pop[a].cost - pop[a].cost;
       double r = RNG::instance().generate_real_number(0.0, 1.0);
-      double p = 1 / exp((static_cast<double>(delta) * T));
+      double p = 1 / exp((static_cast<double>(delta) / T));
 
       if (r < p) {
         pop[a] = cp_pop[a];
@@ -323,10 +323,10 @@ Solution RAIS::solve() {
     if (uptime() > time_limit) {
       break;
     }
-    else if (uptime() > timer_counter * time_limit / 5) {
-        std::cout << timer_counter * time_limit / 5 << " Microsseconds out of
-        " << time_limit << '\n'; timer_counter++;
-    }
+    // else if (uptime() > timer_counter * time_limit / 5) {
+    //     std::cout << timer_counter * time_limit / 5 << " Microsseconds out of
+    //     " << time_limit << '\n'; timer_counter++;
+    // }
 
     SA(pop, T);
 
