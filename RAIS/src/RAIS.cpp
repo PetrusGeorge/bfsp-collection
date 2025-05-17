@@ -19,9 +19,9 @@ double uptime() {
 RAIS::RAIS(Instance instance, Parameters params)
     : m_instance(std::move(instance)), m_params(std::move(params)) {
   if (auto tl = params.time_limit()) {
-    this->time_limit = *tl;
+    this->m_time_limit = *tl;
   } else {
-    this->time_limit =
+    this->m_time_limit =
         m_instance.num_jobs() * m_instance.num_machines() * m_params.ro() / 1000;
   }
 
@@ -33,7 +33,7 @@ RAIS::RAIS(Instance instance, Parameters params)
     processing_times_sum += vec_processing_times_sum[i];
   }
 
-  this->T = 0.6 * static_cast<double>(processing_times_sum) / (m_instance.num_jobs() * 10);
+  this->m_T = 0.6 * static_cast<double>(processing_times_sum) / (m_instance.num_jobs() * 10);
 }
 
 double RAIS::affinity_calculation(size_t cost) {
@@ -47,12 +47,11 @@ void RAIS::pop_affinity_calculation(std::vector<Solution> &set) {
   }
 }
 
-std::vector<Solution> RAIS::initialization() {
+void RAIS::initialization() {
 
   size_t n = m_instance.num_jobs();
   size_t npop = (m_params.nc() * (m_params.nc() + 1) / 2);
-
-  std::vector<Solution> init_pop(npop);
+  m_pop = std::vector<Solution>(npop);
 
   std::vector<size_t> antibody(n);
   std::iota(antibody.begin(), antibody.end(), 0);
@@ -61,12 +60,11 @@ std::vector<Solution> RAIS::initialization() {
 
     std::shuffle(antibody.begin(), antibody.end(), RNG::instance().gen());
 
-    init_pop[i].sequence = antibody;
-    core::recalculate_solution(m_instance, init_pop[i]);
-    init_pop[i].affinity = affinity_calculation(init_pop[i].cost);
+    m_pop[i].sequence = antibody;
+    core::recalculate_solution(m_instance, m_pop[i]);
+    m_pop[i].affinity = affinity_calculation(m_pop[i].cost);
   }
 
-  return init_pop;
 }
 
 std::vector<Solution> RAIS::clone_antibodies(std::vector<Solution> &clones) {
@@ -75,7 +73,7 @@ std::vector<Solution> RAIS::clone_antibodies(std::vector<Solution> &clones) {
   for (size_t i = 0; i < m_params.nc(); i++) {
 
     for (size_t j = 0; j < m_params.nc() - i; j++) {
-      clones[k] = pop[i];
+      clones[k] = m_pop[i];
       k++;
     }
   }
@@ -132,16 +130,16 @@ bool RAIS::nearby_antibody(Solution &s1, Solution &s2) {
 
 void RAIS::supression() {
 
-  std::vector<bool> eliminated(pop.size(), false);
-  for (size_t i = 0; i < pop.size(); i++) {
+  std::vector<bool> eliminated(m_pop.size(), false);
+  for (size_t i = 0; i < m_pop.size(); i++) {
 
     if (eliminated[i]) {
       continue;
     }
 
-    for (size_t j = i + 1; j < pop.size(); j++) {
+    for (size_t j = i + 1; j < m_pop.size(); j++) {
 
-      if (!nearby_antibody(pop[i], pop[j])) {
+      if (!nearby_antibody(m_pop[i], m_pop[j])) {
         continue;
       }
 
@@ -151,38 +149,38 @@ void RAIS::supression() {
 
   for (size_t i = eliminated.size() - 1; i < eliminated.size(); i--) {
     if (eliminated[i]) {
-      pop.erase(pop.begin() + i);
+      m_pop.erase(m_pop.begin() + i);
 
-      if (pop.size() == m_params.nc()) {
+      if (m_pop.size() == m_params.nc()) {
         return;
       }
     }
   }
 
-  while (pop.size() > m_params.nc()) {
-    pop.pop_back();
+  while (m_pop.size() > m_params.nc()) {
+    m_pop.pop_back();
   }
 }
 
 void RAIS::SA() {
 
-  std::vector<Solution> cp_pop = pop;
+  std::vector<Solution> cp_pop = m_pop;
   mutation(cp_pop);
 
-  for (size_t a = 0; a < pop.size(); a++) {
+  for (size_t a = 0; a < m_pop.size(); a++) {
 
-    if (cp_pop[a].cost <= pop[a].cost) {
-      pop[a] = cp_pop[a];
-      pop[a].affinity = affinity_calculation(pop[a].cost);
+    if (cp_pop[a].cost <= m_pop[a].cost) {
+      m_pop[a] = cp_pop[a];
+      m_pop[a].affinity = affinity_calculation(m_pop[a].cost);
     } else {
 
-      size_t delta = cp_pop[a].cost - pop[a].cost;
+      size_t delta = cp_pop[a].cost - m_pop[a].cost;
       double r = RNG::instance().generate_real_number(0.0, 1.0);
-      double p = 1 / exp((static_cast<double>(delta) / T));
+      double p = 1 / exp((static_cast<double>(delta) / m_T));
 
       if (r < p) {
-        pop[a] = cp_pop[a];
-        pop[a].affinity = affinity_calculation(pop[a].cost);
+        m_pop[a] = cp_pop[a];
+        m_pop[a].affinity = affinity_calculation(m_pop[a].cost);
       }
     }
   }
@@ -194,17 +192,17 @@ void RAIS::select_nc_best() {
   for (size_t i = 0; i < m_params.nc(); i++) {
 
     size_t best_idx = i;
-    for (size_t j = i + 1; j < pop.size(); j++) {
-      if (pop[j].affinity > pop[best_idx].affinity) {
+    for (size_t j = i + 1; j < m_pop.size(); j++) {
+      if (m_pop[j].affinity > m_pop[best_idx].affinity) {
         best_idx = j;
       }
     }
 
-    aux[i] = pop[best_idx];
-    std::swap(pop[best_idx], pop[i]);
+    aux[i] = m_pop[best_idx];
+    std::swap(m_pop[best_idx], m_pop[i]);
   }
 
-  pop.swap(aux);
+  m_pop.swap(aux);
 }
 
 Solution RAIS::solve() {
@@ -212,7 +210,6 @@ Solution RAIS::solve() {
   size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
   std::vector<size_t> ro;
   if (m_params.benchmark()){
-    time_limit = (100 * mxn) / 1000; // RO == 100
     ro = {90, 60, 30};
   }
 
@@ -222,7 +219,7 @@ Solution RAIS::solve() {
 
   Solution best_solution;
 
-  pop = initialization();
+  initialization();
 
   auto sort_criteria = [](Solution &p1, Solution &p2) {
     return p1.affinity > p2.affinity;
@@ -238,9 +235,9 @@ Solution RAIS::solve() {
 
     pop_affinity_calculation(clones);
 
-    pop.insert(pop.end(), clones.begin(), clones.end());
+    m_pop.insert(m_pop.end(), clones.begin(), clones.end());
 
-    std::sort(pop.begin(), pop.end(), sort_criteria);
+    std::sort(m_pop.begin(), m_pop.end(), sort_criteria);
 
     supression();
 
@@ -250,22 +247,22 @@ Solution RAIS::solve() {
       ro.pop_back();
     }
 
-    if (uptime() > time_limit) {
+    if (uptime() > m_time_limit) {
       break;
     }
 
-    if (pop[0].cost < best_solution.cost) {
-      best_solution = pop[0];
+    if (m_pop[0].cost < best_solution.cost) {
+      best_solution = m_pop[0];
     }
 
     SA();
 
-    std::sort(pop.begin(), pop.end(), sort_criteria);
+    std::sort(m_pop.begin(), m_pop.end(), sort_criteria);
 
     G++;
 
     if (G == m_params.Gt()) {
-      T *= m_params.alpha();
+      m_T *= m_params.alpha();
       G = 1;
     }
   }

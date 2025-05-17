@@ -17,7 +17,7 @@ public:
 
   void pop_affinity_calculation(std::vector<Solution> &set);
 
-  std::vector<Solution> initialization();
+  void initialization();
 
   std::vector<Solution> clone_antibodies(std::vector<Solution> &clones);
 
@@ -36,9 +36,9 @@ public:
 private:
   Instance m_instance;
   Parameters m_params;
-  size_t time_limit;
-  std::vector<Solution> pop;
-  double T;
+  size_t m_time_limit;
+  std::vector<Solution> m_pop;
+  double m_T;
 };
 
 #endif
