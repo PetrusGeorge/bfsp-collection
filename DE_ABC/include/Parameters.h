@@ -12,6 +12,8 @@ class Parameters {
     const std::string &instance_path() const { return m_instance_path; }
     bool verbose() const { return m_verbose; }
     std::optional<size_t> seed() const { return m_seed; }
+    bool benchmark() const { return m_benchmark; }
+    std::optional<size_t> tl() const { return m_tl; }
     size_t ro() const { return m_ro; }
     size_t ps() const { return m_ps; }
     double pmu() const { return m_pmu; }
@@ -23,7 +25,9 @@ class Parameters {
     std::string m_instance_path;
     bool m_verbose = false;
     std::optional<size_t> m_seed;
-    size_t m_ro = 5;
+    std::optional<size_t> m_tl;
+    bool m_benchmark = false;
+    size_t m_ro = 100;
     size_t m_ps = 20;
     double m_pmu = 0.9;
     double m_pc = 0.1;
