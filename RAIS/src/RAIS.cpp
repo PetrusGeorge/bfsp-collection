@@ -10,7 +10,7 @@ namespace {
 double uptime() {
   static const auto global_start_time = std::chrono::steady_clock::now();
   auto now = std::chrono::steady_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+  auto duration = std::chrono::duration_cast<std::chrono::seconds>(
       now - global_start_time);
   return static_cast<double>(duration.count());
 }
@@ -22,8 +22,18 @@ RAIS::RAIS(Instance instance, Parameters params)
     this->time_limit = *tl;
   } else {
     this->time_limit =
-        m_instance.num_jobs() * m_instance.num_machines() * m_params.p();
+        m_instance.num_jobs() * m_instance.num_machines() * m_params.ro() / 1000;
   }
+
+  size_t processing_times_sum = 0;
+  std::vector<size_t> vec_processing_times_sum =
+      m_instance.processing_times_sum();
+
+  for (size_t i = 0; i < vec_processing_times_sum.size(); i++) {
+    processing_times_sum += vec_processing_times_sum[i];
+  }
+
+  this->T = 0.6 * static_cast<double>(processing_times_sum) / (m_instance.num_jobs() * 10);
 }
 
 double RAIS::affinity_calculation(size_t cost) {
@@ -154,7 +164,7 @@ void RAIS::supression() {
   }
 }
 
-void RAIS::SA(double T) {
+void RAIS::SA() {
 
   std::vector<Solution> cp_pop = pop;
   mutation(cp_pop);
@@ -199,22 +209,16 @@ void RAIS::select_nc_best() {
 
 Solution RAIS::solve() {
 
-  std::cout << "Tempo de parada: " << time_limit << " ms" << std::endl;
-
-  size_t n = m_instance.num_jobs();
-  std::vector<Solution> clones(m_params.nc() * (m_params.nc() + 1) / 2);
-  size_t G = 1;
-
-  size_t processing_times_sum = 0;
-  std::vector<size_t> vec_processing_times_sum =
-      m_instance.processing_times_sum();
-
-  for (size_t i = 0; i < vec_processing_times_sum.size(); i++) {
-    processing_times_sum += vec_processing_times_sum[i];
+  size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
+  std::vector<size_t> ro;
+  if (m_params.benchmark()){
+    time_limit = (100 * mxn) / 1000; // RO == 100
+    ro = {90, 60, 30};
   }
 
-  // initial tempeture
-  double T = 0.6 * static_cast<double>(processing_times_sum) / (n * 10);
+  std::vector<Solution> clones(m_params.nc() * (m_params.nc() + 1) / 2);
+  
+  size_t G = 1;
 
   Solution best_solution;
 
@@ -224,8 +228,8 @@ Solution RAIS::solve() {
     return p1.affinity > p2.affinity;
   };
 
-  // double timer_counter = 1;
   select_nc_best();
+
   while (true) {
 
     clone_antibodies(clones); // cloning the best antibodies
@@ -240,21 +244,23 @@ Solution RAIS::solve() {
 
     supression();
 
-    if (pop[0].cost < best_solution.cost) {
-      best_solution = pop[0];
+    if (!ro.empty() && uptime() >= (ro.back()*mxn) / 1000){
+           
+      std::cout << best_solution.cost << '\n';
+      ro.pop_back();
     }
-
-    SA(T);
-
-    std::sort(pop.begin(), pop.end(), sort_criteria);
 
     if (uptime() > time_limit) {
       break;
     }
-    // else if (uptime() > timer_counter * time_limit / 5) {
-    //     std::cout << timer_counter * time_limit / 5 << " Microsseconds out of
-    //     " << time_limit << '\n'; timer_counter++;
-    // }
+
+    if (pop[0].cost < best_solution.cost) {
+      best_solution = pop[0];
+    }
+
+    SA();
+
+    std::sort(pop.begin(), pop.end(), sort_criteria);
 
     G++;
 

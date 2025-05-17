@@ -27,7 +27,7 @@ public:
 
   void supression();
 
-  void SA(double T);
+  void SA();
 
   void select_nc_best();
 
@@ -38,6 +38,7 @@ private:
   Parameters m_params;
   size_t time_limit;
   std::vector<Solution> pop;
+  double T;
 };
 
 #endif
