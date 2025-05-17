@@ -1,6 +1,8 @@
 #ifndef IG_H
 #define IG_H
 
+#include "constructions/PF_NEH.h"
+#include "local-search/RLS.h"
 #include "Instance.h"
 #include "Parameters.h"
 #include "Solution.h"
@@ -11,12 +13,6 @@ class IG {
     Solution solve();
 
   private:
-    // This is a implementation of the mme2 algorithm, a variation of neh using min max as the first step
-    Solution initial_solution();
-
-    // Pretty straight foward local search using a first improvement swap
-    Solution local_search(Solution s);
-
     // Random destroy solution using the parameter d defined on the params struct
     std::vector<size_t> destroy(Solution &s);
 
