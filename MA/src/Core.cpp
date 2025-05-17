@@ -130,6 +130,32 @@ std::vector<size_t> core::calculate_new_departure_time(Instance &instance, std::
     return new_departure_time;
 }
 
+void core::partial_recalculate_solution(Instance &instance, Solution &s, size_t start) {
+
+    if (start == 0) {
+        recalculate_solution(instance, s);
+        return;
+    }
+
+    auto p = [&instance](size_t i, size_t j) { return instance.p(i, j); };
+
+    // Recalculate departure times from start index to the end
+    for (size_t i = start; i < s.sequence.size(); i++) {
+        const size_t node = s.sequence[i];
+        s.departure_times[i][0] = std::max(s.departure_times[i - 1][0] + p(node, 0), s.departure_times[i - 1][1]);
+        for (size_t j = 1; j < instance.num_machines() - 1; j++) {
+
+            const size_t current_finish_time = s.departure_times[i][j - 1] + p(node, j);
+
+            s.departure_times[i][j] = std::max(current_finish_time, s.departure_times[i - 1][j + 1]);
+        }
+        s.departure_times[i].back() =
+            s.departure_times[i][instance.num_machines() - 2] + p(node, instance.num_machines() - 1);
+    }
+
+    s.cost = s.departure_times.back().back();
+}
+
 void core::recalculate_solution(Instance &instance, Solution &s) {
     s.departure_times = calculate_departure_times(instance, s.sequence);
     s.cost = s.departure_times.back().back();

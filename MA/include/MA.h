@@ -20,7 +20,7 @@ class MA {
     MA(Instance instance, Parameters params);
 
     // Generate a random sequence using PF-NEH and other PS-1 randomly
-    void generate_initial_pop();
+    void initialize_population();
 
     // Generate a random permutation of jobs
     std::vector<size_t> generate_random_sequence();

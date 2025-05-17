@@ -15,10 +15,14 @@ size_t uptime() {
 } // namespace
 
 MA::MA(Instance instance, Parameters params) : m_instance(std::move(instance)), m_params(std::move(params)) {
-    this->m_time_limit = 5 * m_instance.num_jobs() * m_instance.num_machines();
+    if (auto tl = m_params.time_limit()) {
+        m_time_limit = *tl;
+    } else {
+        this->m_time_limit = m_params.p() * m_instance.num_jobs() * m_instance.num_machines();
+    }
 }
 
-void MA::generate_initial_pop() {
+void MA::initialize_population() {
 
     size_t n = m_instance.num_jobs();
     size_t lambda = n > LAMBDA_MAX ? LAMBDA_MAX : n; // setting PF-NEH parameter
@@ -86,6 +90,8 @@ Solution MA::path_relink_swap(const Solution &beta, const Solution &pi) {
 
     if (difference <= 2) {
         mutation(current);
+        core::recalculate_solution(m_instance, current);
+        return current;
     }
 
     // cnt = number of jobs that are already in the correct position
@@ -113,7 +119,7 @@ Solution MA::path_relink_swap(const Solution &beta, const Solution &pi) {
             }
 
             std::swap(current.sequence[i], current.sequence[j]);
-            core::recalculate_solution(m_instance, current);
+            core::partial_recalculate_solution(m_instance, current, i);
 
             if (current.cost < best.cost) {
                 best = current; // new best interdiary solution
@@ -143,8 +149,6 @@ void MA::mutation(Solution &individual) {
     } else {
         individual.sequence.erase(individual.sequence.begin() + job_position + 1);
     }
-
-    core::recalculate_solution(m_instance, individual);
 }
 
 bool MA::equal_solution(Solution &s1, Solution &s2) {
@@ -165,7 +169,7 @@ bool MA::equal_solution(Solution &s1, Solution &s2) {
 
 void MA::population_updating(std::vector<Solution> &offspring_population) {
 
-    const size_t C = 1e7; // arbitrary value (the population won't have 10^7 jobs)
+    const size_t C = std::numeric_limits<size_t>::max(); 
 
     for (size_t i = 0; i < offspring_population.size(); i++) {
 
@@ -187,7 +191,8 @@ void MA::population_updating(std::vector<Solution> &offspring_population) {
         }
 
         if (!already_exist && replaced_individual != C) {
-            m_pop[replaced_individual] = offspring_population[i];
+            m_pop.insert(m_pop.begin()+replaced_individual, offspring_population[i]);
+            m_pop.pop_back();
         }
     }
 }
@@ -205,6 +210,7 @@ void MA::restart_population() {
         if (i < m_pop.size() / 2) {
             mutation(m_pop[i]);
             mutation(m_pop[i]);
+            core::recalculate_solution(m_instance, m_pop[i]);
         } else {
             m_pop[i].sequence = generate_random_sequence();
             core::recalculate_solution(m_instance, m_pop[i]);
@@ -217,7 +223,7 @@ Solution MA::solve() {
     Solution best_solution;
     std::vector<size_t> ref;
 
-    generate_initial_pop();
+    initialize_population();
 
     auto sort_criteria = [](Solution &p1, Solution &p2) { return p1.cost < p2.cost; };
 
@@ -239,8 +245,9 @@ Solution MA::solve() {
 
             size_t parent_1 = selection();
             size_t parent_2 = parent_1;
-            while (parent_2 == parent_1)
+            while (parent_2 == parent_1) {
                 parent_2 = selection();
+            }
 
             Solution offspring1, offspring2;
             if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.pc()) {
@@ -253,9 +260,11 @@ Solution MA::solve() {
 
             if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.pm()) {
                 mutation(offspring1);
+                core::recalculate_solution(m_instance, offspring1);
             }
             if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.pm()) {
                 mutation(offspring2);
+                core::recalculate_solution(m_instance, offspring2);
             }
 
             if (!equal_solution(offspring1, m_pop[parent_1]) && !equal_solution(offspring1, m_pop[parent_2])) {

@@ -17,6 +17,8 @@ std::vector<size_t> calculate_new_departure_time(Instance &instance, std::vector
 size_t calculate_sigma(Instance &instance, std::vector<std::vector<size_t>> &d, std::vector<size_t> &new_departure_time,
                        size_t job, size_t k);
 
+void partial_recalculate_solution(Instance &instance, Solution &s, size_t start);
+
 void recalculate_solution(Instance &instance, Solution &s);
 
 } // namespace core

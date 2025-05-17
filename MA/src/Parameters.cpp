@@ -11,6 +11,17 @@ void config_argparse(argparse::ArgumentParser &cli) {
 
     cli.add_argument("-v", "--verbose").help("set program verbosity").metavar("VERBOSE").default_value(false).flag();
 
+    cli.add_argument("-tl", "--time")
+      .help("set the time limit")
+      .metavar("TIME LIMIT")
+      .scan<'i', size_t>();
+
+    cli.add_argument("-ro", "--P")
+        .help("Adjuste dynamically the time limit")
+        .metavar("PS")
+        .default_value(size_t(5))
+        .scan<'i', size_t>();
+    
     cli.add_argument("-p", "--ps")
         .help("set the parameter ps that is the maximum size population")
         .metavar("PS")
@@ -62,6 +73,8 @@ Parameters::Parameters(int argc, char **argv) {
     m_instance_path = cli.get<std::string>("instance");
     m_verbose = cli.get<bool>("--verbose");
     m_seed = cli.present<size_t>("--seed");
+    m_time_limit = cli.present<size_t>("--time");
+    m_p = cli.get<size_t>("--P");
     m_ps = cli.get<size_t>("--ps");
     m_gamma = cli.get<size_t>("--gamma");
     m_lambda = cli.get<size_t>("--lambda");
