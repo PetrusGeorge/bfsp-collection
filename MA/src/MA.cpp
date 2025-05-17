@@ -9,7 +9,7 @@ namespace {
 size_t uptime() {
     static const auto global_start_time = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - global_start_time);
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - global_start_time);
     return duration.count();
 }
 } // namespace
@@ -18,7 +18,7 @@ MA::MA(Instance instance, Parameters params) : m_instance(std::move(instance)), 
     if (auto tl = m_params.time_limit()) {
         m_time_limit = *tl;
     } else {
-        this->m_time_limit = m_params.p() * m_instance.num_jobs() * m_instance.num_machines();
+        this->m_time_limit = m_params.ro() * m_instance.num_jobs() * m_instance.num_machines() / 1000;
     }
 }
 
@@ -222,6 +222,11 @@ Solution MA::solve() {
 
     Solution best_solution;
     std::vector<size_t> ref;
+    size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
+    std::vector<size_t> ro;
+    if (m_params.benchmark()){
+        ro = {90, 60, 30};
+    }
 
     initialize_population();
 
@@ -293,13 +298,19 @@ Solution MA::solve() {
 
         count++;
 
+        if (!ro.empty() && uptime() >= (ro.back()*mxn) / 1000){
+            
+            std::cout << best_solution.cost << '\n';
+            ro.pop_back();
+        }
+        
+        if (uptime() > m_time_limit) {
+            break;
+        }
+
         if (m_pop[0].cost < best_solution.cost) {
             best_solution = m_pop[0];
             count = 0;
-        }
-
-        if (uptime() > m_time_limit) {
-            break;
         }
 
         if (count >= m_params.gamma()) {

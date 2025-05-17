@@ -12,8 +12,9 @@ class Parameters {
     const std::string &instance_path() const { return m_instance_path; }
     bool verbose() const { return m_verbose; }
     std::optional<size_t> seed() const { return m_seed; }
+    bool benchmark() const { return m_benchmark; }
     std::optional<size_t> time_limit() const { return m_time_limit; }
-    size_t p() const { return m_p; }
+    size_t ro() const { return m_ro; }
     size_t ps() const { return m_ps; }
     size_t gamma() const { return m_gamma; }
     size_t lambda() const { return m_lambda; }
@@ -24,8 +25,9 @@ class Parameters {
     std::string m_instance_path;
     bool m_verbose = false;
     std::optional<size_t> m_seed;
+    bool m_benchmark = false;
     std::optional<size_t> m_time_limit;
-    size_t m_p = 5;
+    size_t m_ro = 100;
     size_t m_ps = 10;
     size_t m_gamma = 20;
     size_t m_lambda = 20;
