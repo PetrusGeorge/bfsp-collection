@@ -9,19 +9,25 @@ namespace {
 size_t uptime() {
     static const auto global_start_time = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - global_start_time);
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - global_start_time);
     return duration.count();
 }
 } // namespace
 
 hmgHS::hmgHS(Instance instance, Parameters params) : m_instance(std::move(instance)), m_params(std::move(params)) {
-    this->m_time_limit = ro * m_instance.num_jobs() * m_instance.num_machines() / 2;
+    if (auto tl = m_params.tl()) {
+        this->m_time_limit = *tl;
+    } else {
+        this->m_time_limit = m_params.ro() * m_instance.num_jobs() * m_instance.num_machines() / 1000;
+    }
 }
 
 void hmgHS::generate_initial_pop() {
 
     m_pop = std::vector<Solution>(m_params.ms());
     Solution s;
+    auto sort_criteria = [&s](size_t i, size_t j) { return s.harmony[i] > s.harmony[j]; };
+
     m_pop[0] = s;
     m_pop[1] = s;
 
@@ -29,7 +35,6 @@ void hmgHS::generate_initial_pop() {
 
         s.harmony = generate_random_harmony();
 
-        auto sort_criteria = [&s](size_t i, size_t j) { return s.harmony[i] > s.harmony[j]; };
         std::vector<size_t> phi(m_instance.num_jobs());
         std::iota(phi.begin(), phi.end(), 0);
 
@@ -90,6 +95,8 @@ void hmgHS::permutation_to_harmony(Solution &s) {
 
     double min = std::numeric_limits<double>::max();
     double max = std::numeric_limits<double>::lowest();
+
+    // getting the minimum and maximum value in the initial harmony memory
     for (size_t i = 0; i < m_params.ms(); i++) {
 
         auto [s_min, s_max] = std::minmax_element(m_pop[i].harmony.begin(), m_pop[i].harmony.end());
@@ -104,6 +111,7 @@ void hmgHS::permutation_to_harmony(Solution &s) {
 
     double normalized_delta = (max - min) / (n - 1);
 
+    // converting permutation using the formula
     for (size_t j = 0; j < n; j++) {
         s.harmony[s.sequence[j]] = max - (normalized_delta * j);
     }
@@ -153,7 +161,7 @@ std::vector<double> hmgHS::improvise_new_harmony() {
 
             double r2 = RNG::instance().generate_real_number(0.0, 1.0);
             if (r2 < m_params.par()) {
-                new_harmony[j] = m_pop[0].harmony[j];
+                new_harmony[j] = m_pop[0].harmony[j]; // taking the value of the best harmony
             }
 
         } else {
@@ -191,42 +199,57 @@ void hmgHS::sort_permutation(Solution &s) {
     size_t n = m_instance.num_jobs();
 
     size_t i = 0;
+
     for (size_t cnt = 0; cnt < n; cnt++) {
 
-        if (i == s.sequence[i]) {
+        while (i < n && i == s.sequence[i]) {
             i++;
             continue;
         }
+
+        if (i == n) {
+            return;
+        }
+
         size_t idx = s.sequence[i];
-        std::swap(s.harmony[i], s.harmony[idx]);
         std::swap(s.sequence[i], s.sequence[idx]);
+        std::swap(s.harmony[i], s.harmony[idx]);
     }
+
+    for(size_t j = 0; j < n; j++) {
+        std::cout << s.harmony[j] << " ";
+    }
+    std::cout << std::endl;
 }
 
 void hmgHS::update(Solution &s) {
     size_t i = m_params.ms() - 1;
-    while (true) {
-        if (s.cost < m_pop[i].cost) {
-            if (i == 0) {
-                break;
-            }
-            i--;
-        } else {
-            i++;
+    while (s.cost < m_pop[i].cost) {
+        i--;
+        if (i > m_params.ms()) {
             break;
         }
     }
 
+    i++;
+
     if (i < m_params.ms()) {
         m_pop.insert(m_pop.begin() + i, s);
-        m_pop.erase(m_pop.begin() + m_params.ms());
+        m_pop.pop_back();
     }
 }
 
 Solution hmgHS::solve() {
 
+    size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
+    std::vector<size_t> ro;
+    if (m_params.becnhmark()){
+        ro = {90, 60, 30};
+    }
+
     Solution best_solution;
-    std::vector<size_t> ref;
+    std::vector<size_t> ref(m_instance.num_jobs());
+    std::iota(ref.begin(), ref.end(), 0);
 
     generate_initial_pop();
 
@@ -247,14 +270,19 @@ Solution hmgHS::solve() {
 
         std::sort(new_solution.harmony.begin(), new_solution.harmony.end());
 
-        ref = generate_random_sequence();
+        std::shuffle(ref.begin(), ref.end(), RNG::instance().gen());
         rls(new_solution, ref, m_instance);
-
         core::recalculate_solution(m_instance, new_solution);
 
         sort_permutation(new_solution);
 
         update(new_solution);
+
+        if (!ro.empty() && uptime() >= (ro.back()*mxn) / 1000){
+            
+            std::cout << best_solution.cost << '\n';
+            ro.pop_back();
+        }
 
         if (m_pop[0].cost < best_solution.cost) {
             best_solution = m_pop[0];
