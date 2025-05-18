@@ -12,7 +12,6 @@ struct Solution {
 };
 
 inline std::ostream &operator<<(std::ostream &os, const Solution &sol) {
-
     os << "Sequence: [";
     for (size_t i = 0; i < sol.sequence.size(); ++i) {
         os << sol.sequence[i] << (i != sol.sequence.size() - 1 ? ", " : "");
