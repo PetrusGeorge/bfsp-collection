@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "IG.h"
+#include "IG_RIS.h"
 #include "Instance.h"
 #include "Parameters.h"
 #include "RNG.h"
