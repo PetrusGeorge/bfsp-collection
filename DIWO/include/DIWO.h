@@ -2,18 +2,11 @@
 #define DIWO_H
 
 #include "Instance.h"
+#include "Parameters.h"
 #include "RNG.h"
 #include "Solution.h"
 #include <random>
-
-struct DIWOParams {
-    size_t p_max{10};
-    double pls{0.15};
-    size_t s_min{0};
-    size_t s_max{7};
-    size_t sigma_min{0};
-    size_t sigma_max{5};
-};
+#include <utility>
 
 class Population {
   public:
@@ -24,18 +17,18 @@ class Population {
 
     void add_solution(Solution solution);
     bool has_solution(const Solution &solution) const;
-    void calculate_seeds(const DIWOParams &params);
+    void calculate_seeds(size_t s_min, size_t s_max);
 };
 
 class DIWO {
   public:
-    DIWO(Instance instance, DIWOParams params) : m_instance(std::move(instance)), m_params(params) {}
+    DIWO(Instance instance, Parameters params) : m_instance(std::move(instance)), m_params(std::move(params)) {}
 
     Solution solve();
 
   private:
     Instance m_instance;
-    DIWOParams m_params;
+    Parameters m_params;
     std::mt19937 &m_rng = RNG::instance().gen();
 
     Population spatial_dispersal(const Population &pop);

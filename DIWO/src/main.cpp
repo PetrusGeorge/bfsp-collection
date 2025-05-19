@@ -9,8 +9,7 @@
 
 int main(int argc, char *argv[]) {
 
-    const Parameters params(argc, argv);
-    const DIWOParams aparams;
+    Parameters params(argc, argv);
 
     if (auto seed = params.seed()) {
         RNG::instance().set_seed(*seed);
@@ -18,8 +17,8 @@ int main(int argc, char *argv[]) {
 
     try {
         Instance instance(params.instance_path());
-        DIWO diwo(std::move(instance), aparams);
-        std::cout << diwo.solve() << '\n';
+        DIWO diwo(std::move(instance), std::move(params));
+        std::cout << diwo.solve().cost << '\n';
     } catch (std::runtime_error &err) {
         std::cerr << err.what() << '\n';
         exit(EXIT_FAILURE);

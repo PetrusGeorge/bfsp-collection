@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <cstdio>
+#include <iostream>
 #include <limits>
 #include <random>
 
@@ -23,7 +25,7 @@ size_t uptime() {
 } // namespace
 
 void Population::add_solution(Solution solution) {
-    size_t sol_cost = solution.cost;
+    const size_t sol_cost = solution.cost;
     solutions.emplace_back(std::move(solution));
 
     if (solutions.size() == 1) {
@@ -54,12 +56,12 @@ bool Population::has_solution(const Solution &solution) const {
     return false;
 }
 
-void Population::calculate_seeds(const DIWOParams &params) {
+void Population::calculate_seeds(size_t s_min, size_t s_max) {
     seeds.resize(solutions.size());
 
     const auto t_worst = static_cast<double>(solutions[worst_solution_idx].cost);
     const auto t_best = static_cast<double>(solutions[best_solution_idx].cost);
-    const auto multiplier = static_cast<double>((params.s_max - params.s_min) + params.s_min);
+    const auto multiplier = static_cast<double>((s_max - s_min) + s_min);
 
     for (size_t i = 0; i < solutions.size(); ++i) {
         const double div = (t_worst - static_cast<double>(solutions[i].cost) + EPSILON) /
@@ -71,12 +73,13 @@ void Population::calculate_seeds(const DIWOParams &params) {
 Population DIWO::population_init() {
     Solution best;
 
-    const int x = 5;
-    for (size_t k = 0; k < x; ++k) {
-        // TODO: this is wrong for now
+    const std::vector<size_t> stpt = core::stpt_sort(m_instance);
+    const size_t lambda = m_instance.num_jobs() >= 25 ? 25 : m_instance.num_jobs();
+
+    for (size_t i = 0; i < 5; ++i) {
         PF_NEH pf_neh(m_instance);
-        const size_t lambda = m_instance.num_jobs() >= 25 ? 25 : m_instance.num_jobs();
-        const auto sol = pf_neh.solve(lambda);
+
+        const auto sol = pf_neh.solve(lambda, i);
 
         if (sol.cost < best.cost) {
             best = sol;
@@ -92,7 +95,7 @@ Population DIWO::population_init() {
     Solution tmp;
 
     // N_0 is P_max
-    while (pop_unordered.solutions.size() < m_params.p_max) {
+    while (pop_unordered.solutions.size() < m_params.p_max()) {
         tmp.sequence = std::vector<size_t>(m_instance.num_jobs());
         std::iota(tmp.sequence.begin(), tmp.sequence.end(), 0);
         std::shuffle(tmp.sequence.begin(), tmp.sequence.end(), m_rng);
@@ -118,10 +121,10 @@ size_t DIWO::get_solution_d(const double deviation) {
 
     size_t d = std::floor(std::abs(std::normal_distribution{0.0, std::pow(deviation, 2)}(m_rng)));
 
-    if (d > m_instance.num_jobs() / 2 || d < m_params.sigma_min) {
-        d = std::floor(static_cast<double>(m_params.sigma_min) +
+    if (d > m_instance.num_jobs() / 2 || d < m_params.sigma_min()) {
+        d = std::floor(static_cast<double>(m_params.sigma_min()) +
                        (RNG::instance().generate_real_number(0.0, 1.0) *
-                        static_cast<double>(m_params.sigma_max - m_params.sigma_min)));
+                        static_cast<double>(m_params.sigma_max() - m_params.sigma_min())));
     }
 
     return d;
@@ -132,15 +135,23 @@ Population DIWO::spatial_dispersal(const Population &pop) {
     NEH neh(m_instance);
     for (size_t i = 0; i < pop.solutions.size(); ++i) {
         const auto &sol = pop.solutions[i];
-        const size_t max_time = 30 * m_instance.num_jobs() * m_instance.num_machines();
-        double deviation = ((1 - static_cast<double>(uptime()) / static_cast<double>(max_time)) *
-                                  static_cast<double>(m_params.sigma_max - m_params.sigma_min)) +
-                                 static_cast<double>(m_params.sigma_min);
-        const size_t half_size = pop.solutions.size() / 2;
+        const size_t max_time = m_params.ro() * m_instance.num_jobs() * m_instance.num_machines();
 
-        const double median = pop.solutions.size() % 2 == 0 ? (pop.solutions[half_size-1].cost + pop.solutions[half_size].cost) / 2.0 : pop.solutions[half_size].cost;
-         if (deviation > median) {
-          deviation *= ((sol.cost - median) / (pop.solutions[pop.worst_solution_idx].cost - median)) * 0.5 + 1;
+        double deviation = ((1 - static_cast<double>(uptime()) / static_cast<double>(max_time)) *
+                            static_cast<double>(m_params.sigma_max() - m_params.sigma_min())) +
+                           static_cast<double>(m_params.sigma_min());
+
+        const size_t half_size = pop.solutions.size() / 2;
+        const double median =
+            pop.solutions.size() % 2 == 0
+                ? static_cast<double>(pop.solutions[half_size - 1].cost + pop.solutions[half_size].cost) / 2.0
+                : static_cast<double>(pop.solutions[half_size].cost);
+
+        if (deviation > median) {
+            deviation *= ((static_cast<double>(sol.cost) - median) /
+                          (static_cast<double>(pop.solutions[pop.worst_solution_idx].cost) - median)) *
+                             0.5 +
+                         1;
         }
         for (size_t j = 0; j < static_cast<size_t>(pop.seeds[i]); ++j) {
 
@@ -157,14 +168,13 @@ Population DIWO::spatial_dispersal(const Population &pop) {
 
                 sol_copy.sequence.erase(sol_copy.sequence.begin() + idx);
             }
+            core::recalculate_solution(m_instance, sol_copy);
 
             std::sort(pi_r.begin(), pi_r.end(), [this](const size_t a, const size_t b) {
                 return m_instance.processing_times_sum()[a] < m_instance.processing_times_sum()[b];
             });
 
             neh.second_step(std::move(pi_r), sol_copy);
-            // TODO: check this
-            core::recalculate_solution(m_instance, sol_copy);
 
             new_pop.add_solution(std::move(sol_copy));
         }
@@ -174,7 +184,7 @@ Population DIWO::spatial_dispersal(const Population &pop) {
 
 void DIWO::local_search(Population &pop) {
     for (size_t i = 0; i < pop.solutions.size(); i++) {
-        if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.pls) {
+        if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.pls()) {
             continue;
         }
         std::vector<size_t> ref = pop.solutions[pop.best_solution_idx].sequence;
@@ -202,11 +212,11 @@ Population DIWO::competitive_exclusion(Population pop, Population new_pop) const
     competitive_pop.add_solution(std::move(pop.solutions[0]));
 
     for (size_t i = 1; i < pop.solutions.size(); i++) {
-        if (competitive_pop.solutions.size() >= m_params.p_max) {
+        if (competitive_pop.solutions.size() >= m_params.p_max()) {
             break;
         }
 
-        if (competitive_pop.has_solution(pop.solutions[i])) {
+        if (!competitive_pop.has_solution(pop.solutions[i])) {
             competitive_pop.add_solution(std::move(pop.solutions[i]));
         }
     }
@@ -215,14 +225,30 @@ Population DIWO::competitive_exclusion(Population pop, Population new_pop) const
 }
 
 Solution DIWO::solve() {
-    const size_t max_time = 30 * m_instance.num_jobs() * m_instance.num_machines();
-    Clock clock;
-    clock.start();
+    const size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
+    size_t time_limit = m_params.ro() * m_instance.num_jobs() * m_instance.num_machines();
+    std::vector<size_t> ro;
+    if (m_params.benchmark()) {
+        time_limit = 100 * mxn; // RO == 100
+        ro = {90, 60, 30};
+    }
     auto pop = population_init();
 
+    Solution best = pop.solutions[pop.best_solution_idx];
 
-    while (uptime() < max_time) {
-        pop.calculate_seeds(m_params);
+    while (true) {
+
+        if (!ro.empty() && uptime() >= ro.back() * mxn) {
+            std::cout << best.cost << '\n';
+            ro.pop_back();
+        }
+
+        if (uptime() > time_limit) {
+            break;
+        }
+
+        best = pop.solutions[pop.best_solution_idx];
+        pop.calculate_seeds(m_params.s_min(), m_params.s_max());
 
         Population new_pop = spatial_dispersal(pop);
         local_search(new_pop);
@@ -230,6 +256,5 @@ Solution DIWO::solve() {
         pop = competitive_exclusion(std::move(pop), std::move(new_pop));
     }
 
-    clock.stop();
-    return pop.solutions[pop.best_solution_idx];
+    return best;
 }
