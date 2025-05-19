@@ -31,43 +31,49 @@ IG_IJ::IG_IJ(Instance instance, Parameters params)
         m_T = m_params.tP() * m_instance.all_processing_times_sum() / 10*m_instance.num_jobs()*m_instance.num_machines();
         }
 
-
 double IG_IJ::acceptance_criterion(Solution pi_0, Solution pi_2) {
     return (pi_0.cost - pi_2.cost)/m_T;
 }
 
-
 void IG_IJ::BestSwap(Solution &solution) { // NOLINT
 
+    // Set correct departure times matrix to use partial recalculate solution
+    core::recalculate_solution(m_instance, solution);
+
+    // starting variables
+    Solution copy = solution;
+    size_t original_cost = solution.cost;
+    size_t best_j = 0;
+    size_t best_i = 0;
+    size_t best_cost = original_cost;
+
+
     for (size_t i = 0; i < solution.sequence.size() - 1; i++) {
-        // Set correct departure times matrix to use partial recalculate solution
-        core::recalculate_solution(m_instance, solution);
-
-        size_t best_j = 0;
-        size_t best_cost = solution.cost;
-
         for (size_t j = i + 1; j < solution.sequence.size(); j++) {
-            // Apply move
-            std::swap(solution.sequence[i], solution.sequence[j]);
+            // Movement for verification
+            std::swap(copy.sequence[i], copy.sequence[j]);
 
             if (i == 0) {
                 // If the first job is swapped it needs a full recalculation
-                core::recalculate_solution(m_instance, solution);
+                core::recalculate_solution(m_instance, copy);
             } else {
-                core::partial_recalculate_solution(m_instance, solution, i);
+                core::partial_recalculate_solution(m_instance, copy, i);
             }
 
             if (solution.cost <= best_cost) {
                 best_cost = solution.cost;
                 best_j = j;
+                best_i = i;
             }
-            std::swap(solution.sequence[i], solution.sequence[j]);
+            // Undo for now
+            std::swap(copy.sequence[i], copy.sequence[j]);
         }
-        if (best_j != 0) {
-            std::swap(solution.sequence[i], solution.sequence[best_j]);
-            solution.cost = best_cost;
-        }
-        core::recalculate_solution(m_instance, solution);
+    }
+
+    // Apply best swap
+    if(best_cost < original_cost){
+        solution.cost = best_cost;
+        std::swap(solution.sequence[best_i], solution.sequence[best_j]);
     }
 }
 
@@ -75,8 +81,11 @@ void IG_IJ::BestSwap(Solution &solution) { // NOLINT
 Solution IG_IJ::solve() {
 
     VERBOSE(m_params.verbose()) << "Initial solution started\n";
+    size_t n = m_instance.num_jobs();
+    size_t lambda = n > 200 ? 20 : n; // setting PF-NEH parameter
+
     PF_NEH pf_neh(m_instance);
-    Solution current = pf_neh.solve(20);
+    Solution current = pf_neh.solve(lambda);
     Solution best = current;
     Solution incumbent = current;
     std::vector<size_t> reference = current.sequence;
@@ -85,24 +94,24 @@ Solution IG_IJ::solve() {
     VERBOSE(m_params.verbose()) << current;
 
     // Set time limit to parameter or a default calculation
-    size_t time_limit = 0;
     size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
-    if (auto tl = m_params.tl()) {
-        time_limit = *tl;
-    } else {
-        time_limit = (m_params.ro() * mxn) / 1000;
-    }
+    size_t time_limit = (m_params.ro() * mxn) / 1000;
 
     VERBOSE(m_params.verbose()) << "Time limit: " << time_limit << "s\n";
     NEH neh(m_instance);
 
-    double r = (double)(rand() / RAND_MAX);
+    // Taking jumping probability
     double jP = m_params.jP();
 
     while (true) {
+        // random value to each interation
+        double r = RNG::instance().generate_real_number(0, 1);
+
+        // DestructConstruct Perturbation
         std::vector<size_t> removed = destroy(incumbent);
         neh.second_step(std::move(removed), incumbent); // Construct phase
 
+        // Local Search
         if(r < jP)
             BestSwap(incumbent);
         else
@@ -122,11 +131,12 @@ Solution IG_IJ::solve() {
                 best = current = std::move(incumbent);
             }
         }
-        // If the solution is worse than the best it's accepted 50% of the times
+        // If the solution is worse than the best it's accepted according to the acceptance criterion
         else if (r < acceptance_criterion(incumbent, current)) {
             current = std::move(incumbent);
         }
 
+        // Updating incubent for next interation
         incumbent = current;
     }
 
