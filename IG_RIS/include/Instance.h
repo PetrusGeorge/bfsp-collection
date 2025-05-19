@@ -11,6 +11,7 @@ struct Instance {
     size_t num_jobs() const { return m_num_jobs; }
     size_t num_machines() const { return m_num_machines; }
     const std::vector<size_t> &processing_times_sum() const { return m_processing_times_sum; }
+    size_t all_processing_times_sum() const { return m_all_processing_times_sum; }
 
     long p(size_t i, size_t j) const { return m_matrix[i][j]; }
     // Reverse matrix
@@ -23,8 +24,10 @@ struct Instance {
     size_t m_num_machines = 0;
     std::vector<std::vector<long>> m_matrix;
     std::vector<size_t> m_processing_times_sum;
+    size_t m_all_processing_times_sum;
 
     void calculate_processing_times_sum();
+    void calculate_all_processing_times_sum();
 };
 
 #endif

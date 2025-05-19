@@ -28,11 +28,17 @@ void config_argparse(argparse::ArgumentParser &cli) {
         .metavar("RO")
         .default_value(size_t(10))
         .scan<'i', size_t>();
+    
+    cli.add_argument("-tP", "--temperature")
+        .help("set the T parameter to define acceptance criterion using a constant temperature")
+        .metavar("TEMPERATURE")
+        .default_value((double)0.5)
+        .scan<'f', double>();
 
     cli.add_argument("-dS", "--destroy")
         .help("set the dS parameter the number of nodes to remove with in a destroy")
         .metavar("DESTROY")
-        .default_value(size_t(5))
+        .default_value(size_t(8))
         .scan<'i', size_t>();
 }
 } // namespace
@@ -58,5 +64,6 @@ Parameters::Parameters(int argc, char **argv) {
     m_seed = cli.present<size_t>("--seed");
     m_tl = cli.present<size_t>("--time");
     m_ro = cli.get<size_t>("--ro");
+    m_tP = cli.get<double>("--temperature");
     m_dS = cli.get<size_t>("--destroy");
 }

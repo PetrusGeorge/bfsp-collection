@@ -30,6 +30,10 @@ IG::IG(Instance instance, Parameters params)
       m_params(std::move(params)) {}
 
 
+double IG::acceptance_criterion(Solution &pi_0, Solution &pi_2) {
+    return (pi_0.cost - pi_2.cost)/m_T;
+}
+
 Solution IG::solve() {
 
     VERBOSE(m_params.verbose()) << "Initial solution started\n";
@@ -43,21 +47,21 @@ Solution IG::solve() {
     VERBOSE(m_params.verbose()) << current;
 
     // Set time limit to parameter or a default calculation
-    size_t time_limit = 0;
     size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
-    if (auto tl = m_params.tl()) {
-        time_limit = *tl;
-    } else {
-        time_limit = (m_params.ro() * mxn) / 1000;
-    }
+    size_t time_limit = (m_params.ro() * mxn) / 1000;
 
     VERBOSE(m_params.verbose()) << "Time limit: " << time_limit << "s\n";
     NEH neh(m_instance);
 
     while (true) {
+        // random value to each interation
+        double r = RNG::instance().generate_real_number(0, 1);
+
+        // DestructConstruct Perturbation
         std::vector<size_t> removed = destroy(incumbent);
         neh.second_step(std::move(removed), incumbent); // Construct phase
 
+        // local search
         rls(incumbent, reference, m_instance);
         
         //  Program should not accept any solution if the time is out
@@ -74,7 +78,7 @@ Solution IG::solve() {
             }
         }
         // If the solution is worse than the best it's accepted 50% of the times
-        else if (RNG::instance().generate(0, 1) == 1) {
+        else if (r < acceptance_criterion(incumbent, current)) {
             current = std::move(incumbent);
         }
 

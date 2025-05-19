@@ -54,6 +54,7 @@ Instance::Instance(const std::filesystem::path &path) {
 
     // Used for LPT
     calculate_processing_times_sum();
+    calculate_all_processing_times_sum();
 }
 
 void Instance::calculate_processing_times_sum() {
@@ -75,4 +76,10 @@ Instance Instance::create_reverse_instance() {
     }
 
     return reverse;
+}
+
+void Instance::calculate_all_processing_times_sum(){
+    for(size_t i =0; i < m_num_jobs; i++) {
+        m_all_processing_times_sum += m_processing_times_sum[i];
+    }
 }
