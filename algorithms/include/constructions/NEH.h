@@ -18,6 +18,8 @@ class NEH {
     void second_step(std::vector<size_t> phi, Solution &s);
 
   private:
+    size_t insert_calculation(size_t i, size_t pos, size_t best_value);
+
     Instance &m_instance;
 
     // TaillarDS (TDS) matrices

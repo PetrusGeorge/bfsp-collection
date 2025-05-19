@@ -17,6 +17,38 @@ Solution NEH::solve(std::vector<size_t> phi) {
     return s;
 }
 
+size_t NEH::insert_calculation(const size_t i, const size_t pos, const size_t best_value) {
+    size_t max_value = 0;
+
+    auto p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
+
+    auto set_f_and_max = [this, &max_value](size_t i, size_t j, size_t value) {
+        m_f[i][j] = value;
+        max_value = std::max(value + m_q[i][j], max_value);
+    };
+
+    size_t value = std::max(m_e[i - 1][0] + p(pos, 0), m_e[i - 1][1]);
+    set_f_and_max(i, 0, value);
+
+    if (max_value >= best_value) {
+        return max_value;
+    }
+
+    for (size_t j = 1; j < m_instance.num_machines() - 1; j++) {
+        value = std::max(m_f[i][j - 1] + p(pos, j), m_e[i - 1][j + 1]);
+        set_f_and_max(i, j, value);
+
+        if (max_value >= best_value) {
+            return max_value;
+        }
+    }
+
+    value = m_f[i][m_instance.num_machines() - 2] + p(pos, m_instance.num_machines() - 1);
+    set_f_and_max(i, m_instance.num_machines() - 1, value);
+
+    return max_value;
+}
+
 std::pair<size_t, size_t> NEH::taillard_best_insertion(const std::vector<size_t> &sequence, size_t pos) {
     m_e = core::calculate_departure_times(m_instance, sequence);
 
@@ -46,16 +78,7 @@ std::pair<size_t, size_t> NEH::taillard_best_insertion(const std::vector<size_t>
     size_t best_value = max_value;
 
     for (size_t i = 1; i <= sequence.size(); i++) {
-        max_value = 0;
-        size_t value = std::max(m_e[i - 1][0] + p(pos, 0), m_e[i - 1][1]);
-        set_f_and_max(i, 0, value);
-
-        for (size_t j = 1; j < m_instance.num_machines() - 1; j++) {
-            value = std::max(m_f[i][j - 1] + p(pos, j), m_e[i - 1][j + 1]);
-            set_f_and_max(i, j, value);
-        }
-        value = m_f[i][m_instance.num_machines() - 2] + p(pos, m_instance.num_machines() - 1);
-        set_f_and_max(i, m_instance.num_machines() - 1, value);
+        max_value = insert_calculation(i, pos, best_value);
 
         if (max_value < best_value) {
             best_value = max_value;
