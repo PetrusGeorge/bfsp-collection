@@ -14,8 +14,7 @@ class Parameters {
     std::optional<size_t> seed() const { return m_seed; }
     std::optional<size_t> tl() const { return m_tl; }
     size_t ro() const { return m_ro; }
-    double alpha() const { return m_alpha; }
-    size_t d() const { return m_d; }
+    size_t d() const { return m_dS; }
 
   private:
     std::string m_instance_path;
@@ -23,8 +22,7 @@ class Parameters {
     std::optional<size_t> m_seed;
     std::optional<size_t> m_tl;
     size_t m_ro = 10;
-    double m_alpha = 0.6;
-    size_t m_d = 6;
+    size_t m_dS = 8;
 };
 
 #endif

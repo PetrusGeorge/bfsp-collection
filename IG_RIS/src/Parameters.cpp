@@ -29,14 +29,8 @@ void config_argparse(argparse::ArgumentParser &cli) {
         .default_value(size_t(10))
         .scan<'i', size_t>();
 
-    cli.add_argument("-a", "--alpha")
-        .help("set the alpha parameter")
-        .metavar("ALPHA")
-        .default_value(0.6)
-        .scan<'f', double>();
-
-    cli.add_argument("-d", "--destroy")
-        .help("set the d parameter the number of nodes to remove with in a destroy")
+    cli.add_argument("-dS", "--destroy")
+        .help("set the dS parameter the number of nodes to remove with in a destroy")
         .metavar("DESTROY")
         .default_value(size_t(5))
         .scan<'i', size_t>();
@@ -64,6 +58,5 @@ Parameters::Parameters(int argc, char **argv) {
     m_seed = cli.present<size_t>("--seed");
     m_tl = cli.present<size_t>("--time");
     m_ro = cli.get<size_t>("--ro");
-    m_alpha = cli.get<double>("--alpha");
-    m_d = cli.get<size_t>("--destroy");
+    m_dS = cli.get<size_t>("--destroy");
 }
