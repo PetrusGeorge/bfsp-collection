@@ -3,7 +3,6 @@
 #include "Instance.h"
 #include "constructions/GRASP.h"
 
-#include <bits/types/cookie_io_functions_t.h>
 #include <cassert>
 #include <numeric>
 
