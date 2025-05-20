@@ -87,7 +87,7 @@ bool SVNS_D::LS1_D_swap(Solution &solution, std::vector<size_t> &reference) { //
 
             core::recalculate_solution(m_instance, solution);
         }
-        if (best_j != 0) {
+        if (best_cost < solution.cost) {
             std::swap(solution.sequence[index], solution.sequence[best_j]);
             solution.cost = best_cost;
         }
@@ -122,7 +122,7 @@ bool SVNS_D::LS2_D_insertion(Solution &solution, std::vector<size_t> &reference)
 
             core::recalculate_solution(m_instance, solution);
         }
-        if (best_j != index) {
+        if (best_cost < solution.cost) {
             apply_insertion(solution, (long)index, (long)best_j);
             solution.cost = best_cost;
         }
@@ -170,11 +170,10 @@ Solution SVNS_D::solve() {
     VERBOSE(m_params.verbose()) << "Initial solution finished, solution obtained:\n";
     VERBOSE(m_params.verbose()) << current;
 
-    const double time_limit = 60;
+    const double time_limit = 3;
     VERBOSE(m_params.verbose()) << "Time limit: " << time_limit << " seconds\n";
 
     while (true) {
-        Solution local_best = current;
         size_t counter = 0;
         size_t local_search_type = 0;
 
@@ -200,7 +199,7 @@ Solution SVNS_D::solve() {
                 while (uptime() <= time_limit) {
                     std::shuffle(reference.begin(), reference.end(), RNG::instance().gen());
 
-                    if (LS1_D_swap(candidate, reference)) {
+                    if (not LS1_D_swap(candidate, reference)) {
                         VERBOSE(m_params.verbose())
                             << "LS1_D Improved! " << original_cost << " " << candidate.cost << "\n";
                         break;
@@ -215,7 +214,7 @@ Solution SVNS_D::solve() {
                 while (uptime() <= time_limit) {
                     std::shuffle(reference.begin(), reference.end(), RNG::instance().gen());
 
-                    if (LS2_D_insertion(candidate, reference)) {
+                    if (not LS2_D_insertion(candidate, reference)) {
                         VERBOSE(m_params.verbose())
                             << "LS2_D Improved! " << original_cost << " " << candidate.cost << "\n";
                         break;
