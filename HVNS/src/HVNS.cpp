@@ -14,7 +14,7 @@ size_t uptime() {
 }
 } // namespace
 
-MA::MA(Instance instance, Parameters params) : m_instance(std::move(instance)), m_params(std::move(params)) {
+HVNS::HVNS(Instance instance, Parameters params) : m_instance(std::move(instance)), m_params(std::move(params)) {
     if (auto tl = m_params.time_limit()) {
         m_time_limit = *tl;
     } else {
@@ -22,9 +22,7 @@ MA::MA(Instance instance, Parameters params) : m_instance(std::move(instance)), 
     }
 }
 
-Solution MA::generate_first_solution() {
-
-    size_t n = m_instance.num_jobs();
+Solution HVNS::generate_first_solution() {
 
     std::vector<size_t> sorted_sequece = core::stpt_sort(m_instance);
 
@@ -34,7 +32,7 @@ Solution MA::generate_first_solution() {
     return s;
 }
 
-std::vector<size_t> MA::generate_random_sequence() {
+std::vector<size_t> HVNS::generate_random_sequence() {
 
     std::vector<size_t> v(m_instance.num_jobs());
     std::iota(v.begin(), v.end(), 0);
@@ -43,112 +41,7 @@ std::vector<size_t> MA::generate_random_sequence() {
     return v;
 }
 
-size_t MA::selection() {
-
-    size_t i = RNG::instance().generate((size_t)0, m_pop.size() - 1);
-    size_t j = i;
-
-    while (i == j) {
-        j = RNG::instance().generate((size_t)0, m_pop.size() - 1);
-    }
-
-    if (m_pop[i].cost > m_pop[j].cost) {
-        return j;
-    } else {
-        return i;
-    }
-}
-
-Solution MA::path_relink_swap(const Solution &beta, const Solution &pi) {
-
-    Solution best;
-    Solution current = beta;
-    size_t n = m_instance.num_jobs();
-
-    /*
-    Or the difference is 0 (and the solution are equal), or is greater than or equal to 2.
-    If is less than or equal to 2, maybe one swap can make the solutions equal, hence it's
-    applied a mutation.
-    */
-    size_t difference = 0;
-    for (size_t k = 0; k < n; k++) {
-        if (beta.sequence[k] != pi.sequence[k]) {
-
-            difference++;
-            if (difference > 2) {
-                break;
-            }
-        }
-    }
-
-    if (difference <= 2) {
-        mutation(current);
-        core::recalculate_solution(m_instance, current);
-        return current;
-    }
-
-    // cnt = number of jobs that are already in the correct position
-    /*
-    This part iterates over solution pi, finding where job i from solution
-    beta is in solution pi. If i = j (j is the index of the job searched for
-    in solution pi), then the jobs are in the same position (hence the correct
-    position) and i = i+1 and we search for the next job. Otherwise, we swap
-    the job at position i with the job at position j in solution beta, and
-    move on to the next iteration.
-    */
-    size_t i = 0;
-    for (size_t cnt = 0; cnt < n; cnt++) {
-
-        if(current.sequence[i] == pi.sequence[i]) {
-            i++;
-            continue;
-        }
-
-        size_t job = current.sequence[i];
-        for (size_t j = i+1; j < n; j++) {
-
-            if (job != pi.sequence[j]) {
-                continue;
-            }
-
-            std::swap(current.sequence[i], current.sequence[j]);
-            core::partial_recalculate_solution(m_instance, current, i);
-
-            if (current.cost < best.cost) {
-                best = current; // new best interdiary solution
-            }
-            
-
-            break;
-        }
-    }
-
-    return best;
-}
-
-void MA::mutation(Solution &individual) {
-
-    size_t insertion_position = RNG::instance().generate((size_t)0, individual.sequence.size() - 1);
-    size_t job_position = insertion_position;
-
-    while (insertion_position == job_position) {
-        job_position = RNG::instance().generate((size_t)0, individual.sequence.size() - 1);
-    }
-
-    individual.sequence.insert(individual.sequence.begin() + insertion_position, individual.sequence[job_position]);
-
-    if (insertion_position > job_position) {
-        individual.sequence.erase(individual.sequence.begin() + job_position);
-    } else {
-        individual.sequence.erase(individual.sequence.begin() + job_position + 1);
-    }
-}
-
-bool MA::equal_solution(Solution &s1, Solution &s2) {
-
-    if (s1.cost != s2.cost) {
-        return false;
-    }
+bool HVNS::equal_solution(Solution &s1, Solution &s2) {
 
     for (size_t i = 0; i < s1.sequence.size(); i++) {
 
@@ -160,68 +53,18 @@ bool MA::equal_solution(Solution &s1, Solution &s2) {
     return true;
 }
 
-void MA::population_updating(std::vector<Solution> &offspring_population) {
 
-    const size_t C = std::numeric_limits<size_t>::max(); 
-
-    for (size_t i = 0; i < offspring_population.size(); i++) {
-
-        bool already_exist = false;
-        size_t replaced_individual = C;
-        for (size_t j = 0; j < m_pop.size(); j++) {
-
-            if (equal_solution(offspring_population[i], m_pop[j])) {
-
-                already_exist = true;
-                break;
-            }
-
-            if (offspring_population[i].cost > m_pop[j].cost || replaced_individual != C) {
-                continue;
-            }
-
-            replaced_individual = j;
-        }
-
-        if (!already_exist && replaced_individual != C) {
-            m_pop.insert(m_pop.begin()+replaced_individual, offspring_population[i]);
-            m_pop.pop_back();
-        }
-    }
-}
-
-void MA::restart_population() {
-
-    // half the jobs will mutate twice, and the other half will be generated randomly
-
-    auto sort_criteria = [](Solution &p1, Solution &p2) { return p1.cost < p2.cost; };
-
-    std::sort(m_pop.begin(), m_pop.end(), sort_criteria);
-
-    for (size_t i = 0; i < m_pop.size(); i++) {
-
-        if (i < m_pop.size() / 2) {
-            mutation(m_pop[i]);
-            mutation(m_pop[i]);
-            core::recalculate_solution(m_instance, m_pop[i]);
-        } else {
-            m_pop[i].sequence = generate_random_sequence();
-            core::recalculate_solution(m_instance, m_pop[i]);
-        }
-    }
-}
-
-bool best_insertion(Solution &s) {
+bool HVNS::best_insertion(Solution &s) {
 
     bool improved = false;
     NEH helper(m_instance);
     size_t best_job;
     size_t best_obj = s.cost;
-    size_t best_index = numeric_limits<size_t>::infinity();
+    size_t best_index = std::numeric_limits<size_t>::infinity();
 
     for(size_t i = 0; i < m_instance.num_jobs(); i++) {
 
-        const size_t job = ref[i];
+        const size_t job = s.sequence[i];
         s.sequence.erase(s.sequence.begin() + (long)i);
 
         auto [index, obj] = helper.taillard_best_insertion(s.sequence, job);
@@ -236,7 +79,7 @@ bool best_insertion(Solution &s) {
         }
     }
 
-    if (!(best_index < numeric_limits<size_t>::infinity())) {
+    if (!(best_index < std::numeric_limits<size_t>::infinity())) {
         return improved;
     }
 
@@ -249,17 +92,125 @@ bool best_insertion(Solution &s) {
     return improved;
 }
 
-bool best_edge_insertion(Solution &s) {
+std::pair<size_t, size_t> HVNS::taillard_best_edge_insertion(const std::vector<size_t> &sequence, std::pair<size_t, size_t> &jobs) {
+    std::vector<std::vector<size_t>> m_e = core::calculate_departure_times(m_instance, sequence);
+
+    std::vector<std::vector<size_t>> m_q = core::calculate_tail(m_instance, sequence);
+    // Make it easier to implement find_best_insertion
+    // without an out of bound access
+    m_q.emplace_back(m_instance.num_machines(), 0);
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // std::cout << "Departure Times" << std::endl;
+    // for(size_t i = 0; i < m_e.size(); i++) {
+    //     for(size_t j = 0; j < m_e[i].size(); j++) {
+    //         std::cout << m_e[i][j] << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
+    // std::cout << std::endl;
+
+    // std::cout << "Tail" << std::endl;
+    // for(size_t i = 0; i < m_q.size(); i++) {
+    //     for(size_t j = 0; j < m_q[i].size(); j++) {
+    //         std::cout << m_q[i][j] << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
+    // std::cout << std::endl;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    auto p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
+
+    // f needs to store all possibilities of insertion so it has sequence.size + 1
+    std::vector<std::vector<size_t>> m_f = std::vector(sequence.size() + 1, std::vector<size_t>(m_instance.num_machines()));
+
+    // Evaluate best insertion
+    size_t max_value = 0;
+    auto set_f_and_max = [&m_q, &m_f, &max_value](size_t i, size_t j, size_t value) {
+        m_f[i][j] = value;
+        max_value = std::max(value + m_q[i][j], max_value);
+    };
+    
+    set_f_and_max(0, 0, p(jobs.first, 0));
+    for (size_t j = 1; j < m_instance.num_machines(); j++) {
+        set_f_and_max(0, j, m_f[0][j - 1] + p(jobs.first, j));
+    }
+
+    set_f_and_max(0, 0, m_f[0][0] + p(jobs.second, 0));
+    for (size_t j = 1; j < m_instance.num_machines()-1; j++) {
+        size_t value = std::max(m_f[0][j-1] + p(jobs.second, j), m_f[0][j+1]);
+        set_f_and_max(0, j, value);
+    }
+    size_t value = m_f[0][m_instance.num_machines() - 2] + p(jobs.second, m_instance.num_machines() - 1);
+    set_f_and_max(0, m_instance.num_machines() - 1, value);
+
+    size_t best_index = 0;
+    size_t best_value = max_value;
+
+    for (size_t i = 1; i <= sequence.size(); i++) {
+        max_value = 0;
+        value = std::max(m_e[i - 1][0] + p(jobs.first, 0), m_e[i - 1][1]);
+        set_f_and_max(i, 0, value);
+
+        for (size_t j = 1; j < m_instance.num_machines() - 1; j++) {
+            value = std::max(m_f[i][j - 1] + p(jobs.first, j), m_e[i - 1][j + 1]);
+            set_f_and_max(i, j, value);
+        }
+        value = m_f[i][m_instance.num_machines() - 2] + p(jobs.first, m_instance.num_machines() - 1);
+        set_f_and_max(i, m_instance.num_machines() - 1, value);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        max_value = 0;
+        value = std::max(m_f[i][0] + p(jobs.second, 0), m_f[i][1]);
+        set_f_and_max(i, 0, value);
+
+        for (size_t j = 1; j < m_instance.num_machines() - 1; j++) {
+            value = std::max(m_f[i][j - 1] + p(jobs.second, j), m_f[i][j + 1]);
+            set_f_and_max(i, j, value);
+        }
+        value = m_f[i][m_instance.num_machines() - 2] + p(jobs.second, m_instance.num_machines() - 1);
+        set_f_and_max(i, m_instance.num_machines() - 1, value);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        if (max_value < best_value) {
+            best_value = max_value;
+            best_index = i;
+        }
+    }
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // std::cout << "M_F" << std::endl;
+    // for(size_t i = 0; i < m_f.size(); i++) {
+    //     for(size_t j = 0; j < m_f[i].size(); j++) {
+    //         std::cout << m_f[i][j] << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
+    // std::cout << std::endl;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    return {best_index, best_value};
+}
+
+bool HVNS::best_edge_insertion(Solution &s) {
 
     bool improved = false;
     NEH helper(m_instance);
     size_t best_job;
     size_t best_obj = s.cost;
-    size_t best_index = numeric_limits<size_t>::infinity();
+    size_t best_index = std::numeric_limits<size_t>::infinity();
 
     for(size_t i = 0; i < m_instance.num_jobs(); i++) {
 
-        const size_t job = ref[i];
+        const size_t job = s.sequence[i];
         s.sequence.erase(s.sequence.begin() + (long)i, s.sequence.begin() + (long)i+2);
 
         auto [index, obj] = helper.taillard_best_insertion(s.sequence, job);
@@ -274,7 +225,7 @@ bool best_edge_insertion(Solution &s) {
         }
     }
 
-    if (!(best_index < numeric_limits<size_t>::infinity())) {
+    if (!(best_index < std::numeric_limits<size_t>::infinity())) {
         return improved;
     }
 
@@ -287,7 +238,7 @@ bool best_edge_insertion(Solution &s) {
     return improved;
 }
 
-bool best_swap(Solution &s) {
+bool HVNS::best_swap(Solution &s) {
 
     Solution copy = s;
     bool improved = false;
@@ -301,11 +252,7 @@ bool best_swap(Solution &s) {
 
             std::swap(copy.sequence[i], copy.sequence[j]);
 
-            if (i == 0) {
-                core::recalculate_solution(m_instance, copy);
-            } else {
-                core::partial_recalculate_solution(m_instance, copy, i);
-            }
+            core::partial_recalculate_solution(m_instance, copy, i);
 
             std::swap(copy.sequence[i], copy.sequence[j]);
 
@@ -332,24 +279,28 @@ bool best_swap(Solution &s) {
     return improved;
 }
 
-void shaking(Solution &s) {
+void HVNS::shaking(Solution &s, size_t k) {
 
     Solution copy = s;
-    if (best_insertion(copy)) {
-        s = copy;
-    } 
-
-    if (best_swap(copy)) {
-        s = copy;
-    } 
-
-    if (best_edge_insertion(copy)) {
-        s = copy;
+    switch (k) {
+        case 1:
+            best_insertion(copy);
+            break;
+        case 2:
+            best_swap(copy);
+            break;
+        case 3:
+            best_edge_insertion(copy);
+            break;
     }
+
+    if (copy.cost < s.cost) {
+        s = copy;
+    } 
 
 }
 
-Solution MA::solve() {
+Solution HVNS::solve() {
 
     size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
     std::vector<size_t> ro;
@@ -357,66 +308,59 @@ Solution MA::solve() {
         ro = {90, 60, 30};
     }
 
-    Solution best_solution = generate_first_solution();
+    Solution best_solution, current;
+    best_solution.sequence = generate_random_sequence();
+    core::recalculate_solution(m_instance, best_solution);
+    
+    for(size_t i = 0; i < best_solution.sequence.size(); i++) {std::cout << best_solution.sequence[i] << " ";}
+    std::cout << std::endl << "makespan: " << best_solution.cost << std::endl;
+
+    std::pair<size_t, size_t> jobs = std::make_pair(best_solution.sequence[0], best_solution.sequence[1]);
+
+    best_solution.sequence.erase(best_solution.sequence.begin(), best_solution.sequence.begin()+2);
+    auto [idx, makespan] = taillard_best_edge_insertion(best_solution.sequence, jobs);
+
+    best_solution.sequence.insert(best_solution.sequence.begin()+idx, jobs.first);
+    best_solution.sequence.insert(best_solution.sequence.begin()+idx+1, jobs.second);
+    
+    for(size_t i = 0; i < best_solution.sequence.size(); i++) {std::cout << best_solution.sequence[i] << " ";}
+    std::cout << std::endl << "makespan: " << makespan << std::endl;
+
+    core::recalculate_solution(m_instance, best_solution);
+
+    for(size_t i = 0; i < best_solution.sequence.size(); i++) {std::cout << best_solution.sequence[i] << " ";}
+    std::cout << std::endl << "makespan: " << best_solution.cost << "\nidx: " << idx << std::endl;
+
+    getchar();
+
+    size_t previous_best_obj = best_solution.cost;
 
     while (true) {
+        size_t k = 1;
 
-        std::vector<Solution> offspring_population;
-
-        while (offspring_population.size() < m_params.ps()) {
-
-            size_t parent_1 = selection();
-            size_t parent_2 = parent_1;
-            while (parent_2 == parent_1) {
-                parent_2 = selection();
+        while (k < KMAX) {
+            shaking(current, k);
+            
+            if (current.cost < best_solution.cost) {
+                best_solution = current;
             }
 
-            Solution offspring1, offspring2;
-            if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.pc()) {
-                offspring1 = path_relink_swap(m_pop[parent_1], m_pop[parent_2]);
-                offspring2 = path_relink_swap(m_pop[parent_2], m_pop[parent_1]);
+            Solution temp;
+            do {
+                // LC1
+                temp = current;
+                // LC2
+            } while(!equal_solution(current, temp));
+
+            if (best_solution.cost < previous_best_obj) {
+                k = 1;
+                previous_best_obj = best_solution.cost;
             } else {
-                offspring1 = m_pop[parent_1];
-                offspring2 = m_pop[parent_2];
-            }
-
-            if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.pm()) {
-                mutation(offspring1);
-                core::recalculate_solution(m_instance, offspring1);
-            }
-            if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.pm()) {
-                mutation(offspring2);
-                core::recalculate_solution(m_instance, offspring2);
-            }
-
-            if (!equal_solution(offspring1, m_pop[parent_1]) && !equal_solution(offspring1, m_pop[parent_2])) {
-                ref = offspring1.sequence;
-
-                if (rls(offspring1, ref, m_instance)) {
-                    core::recalculate_solution(m_instance, offspring1);
-                }
-
-                offspring_population.push_back(offspring1);
-            }
-            if (!equal_solution(offspring2, m_pop[parent_1]) && !equal_solution(offspring2, m_pop[parent_2])) {
-                ref = offspring2.sequence;
-
-                if (rls(offspring2, ref, m_instance)) {
-                    core::recalculate_solution(m_instance, offspring2);
-                }
-
-                offspring_population.push_back(offspring2);
+                k++;
             }
         }
-
-        std::sort(offspring_population.begin(), offspring_population.end(), sort_criteria);
-
-        population_updating(offspring_population);
-
-        count++;
-
         if (!ro.empty() && uptime() >= (ro.back()*mxn) / 1000){
-            
+                
             std::cout << best_solution.cost << '\n';
             ro.pop_back();
         }
@@ -424,12 +368,6 @@ Solution MA::solve() {
         if (uptime() > m_time_limit) {
             break;
         }
-
-        if (m_pop[0].cost < best_solution.cost) {
-            best_solution = m_pop[0];
-            count = 0;
-        }
-
     }
 
     return best_solution;

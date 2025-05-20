@@ -122,6 +122,14 @@ void core::partial_recalculate_solution(Instance &instance, Solution &s, size_t 
 
     auto p = [&instance](size_t i, size_t j) { return instance.p(i, j); };
 
+    if (start == 0) {
+        s.departure_times[0][0] = p(s.sequence[0], 0);
+        for (size_t j = 1; j < instance.num_machines(); j++) {
+            s.departure_times[0][j] = s.departure_times[0][j - 1] + p(s.sequence[0], j);
+        }
+        start++;
+    }
+    
     // Recalculate departure times from start index to the end
     for (size_t i = start; i < s.sequence.size(); i++) {
         const size_t node = s.sequence[i];

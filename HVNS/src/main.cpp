@@ -6,7 +6,7 @@
 #include "Instance.h"
 #include "Parameters.h"
 #include "RNG.h"
-// #include "HVNS.h"
+#include "HVNS.h"
 
 
 int main(int argc, char *argv[]) {
@@ -20,5 +20,9 @@ int main(int argc, char *argv[]) {
     }
 
     std::cout << "Seed: " << RNG::instance().seed() << '\n';
-
+    
+    HVNS hvns = HVNS(std::move(instance), std::move(params));
+    Solution best = hvns.solve();
+    std::cout << best.cost << "\n";
+    
 }

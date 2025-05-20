@@ -7,8 +7,10 @@
 #include "Parameters.h"
 #include "RNG.h"
 #include "Solution.h"
-#include "constructions/PF_NEH.h"
+#include "constructions/NEH.h"
 #include "local-search/RLS.h"
+
+#define KMAX 4
 
 class HVNS {
 
@@ -16,35 +18,23 @@ class HVNS {
     HVNS(Instance instance, Parameters params);
 
     // Generate a random sequence using PF-NEH and other PS-1 randomly
-    void generate_first_solution();
+    Solution generate_first_solution();
 
     // Generate a random permutation of jobs
     std::vector<size_t> generate_random_sequence();
 
-    // Select to individuals randomly and return the index of the one with better makespan
-    size_t selection();
-
-    /*
-    Apply swap moviments on beta to turn it equal to pi.
-    All intermediate solutions are evaluated and the best one is returned.
-    pi and beta aren't considered, and if the 2 solution are equal, beta is modified
-    */
-    Solution path_relink_swap(const Solution &beta, const Solution &pi);
-
-    // Inserts a randomly chosen job into another position
-    void mutation(Solution &individual);
-
-    // Mutate some solution and creates new ones randomly
-    void restart_population();
-
     // verify if two solutions are equal
     bool equal_solution(Solution &s1, Solution &s2);
 
-    /*
-    substituting some individuals by offsprings.
-    This algorithm only accept new solution, with better makespan
-    */
-    void population_updating(std::vector<Solution> &offspring_population);
+    bool best_insertion(Solution &s);
+
+    std::pair<size_t, size_t> taillard_best_edge_insertion(const std::vector<size_t> &sequence, std::pair<size_t, size_t> &jobs);
+
+    bool best_edge_insertion(Solution &s);
+
+    bool best_swap(Solution &s);
+
+    void shaking(Solution &s, size_t k);
 
     Solution solve();
 
