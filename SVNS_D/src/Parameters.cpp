@@ -1,25 +1,17 @@
 #include "Parameters.h"
 
 #include "argparse/argparse.hpp"
+#include <cstddef>
 
 namespace {
 void config_argparse(argparse::ArgumentParser &cli) {
     // Config the arguments to be received
     cli.add_argument("instance").help("instance path");
 
-    /*cli.add_argument("-s", "--seed").help("set random number generator seed").metavar("SEED").scan<'i', size_t>();*/
-    /**/
-    /*cli.add_argument("-v", "--verbose").help("set program
-     * verbosity").metavar("VERBOSE").default_value(false).flag();*/
-    /**/
-    /*cli.add_argument("-r", "--ro")*/
-    /*    .help("set the ro parameter which delimits the time limit of the program")*/
-    /*    .metavar("RO")*/
-    /*    .default_value(size_t(30))*/
-    /*    .scan<'i', size_t>();*/
-
-    /*cli.add_argument("-a", "--alpha").help("set alpha").metavar("alpha").scan<'g', double>();*/
-    /*cli.add_argument("-b", "--b").help("set beta").metavar("beta").scan<'g', double>();*/
+    cli.add_argument("-s", "--seed").help("set random number generator seed").metavar("SEED").scan<'i', size_t>();
+    cli.add_argument("-v", "--verbose").help("set programverbosity").metavar("VERBOSE").default_value(false).flag();
+    cli.add_argument("-b", "--beta").help("set beta").metavar("beta").scan<'g', double>();
+    cli.add_argument("-d", "--d").help("set d").metavar("beta").scan<'i', size_t>();
 }
 } // namespace
 
@@ -40,9 +32,24 @@ Parameters::Parameters(int argc, char **argv) {
 
     // Set members
     m_instance_path = cli.get<std::string>("instance");
-    /*m_verbose = cli.get<bool>("--verbose");*/
-    /*m_seed = cli.present<size_t>("--seed");*/
-    /*m_ro = cli.get<size_t>("--ro");*/
-    /*m_alpha = cli.get<double>("--alpha");*/
-    /*m_beta = cli.get<double>("--beta");*/
+    m_verbose = cli.get<bool>("--verbose");
+    m_seed = cli.present<size_t>("--seed");
+    m_beta = cli.get<double>("--beta");
+
+    if (m_beta == 0) {
+        m_alpha = 0.75;
+        m_d = 8;
+    } else if (m_beta == 0.25) {
+        m_alpha = 0;
+        m_d = 4;
+    } else if (m_beta == 0.5) {
+        m_alpha = 0;
+        m_d = 4;
+    } else if (m_beta == 0.75) {
+        m_alpha = 0;
+        m_d = 4;
+    } else if (m_beta == 1) {
+        m_alpha = 0.75;
+        m_d = 8;
+    }
 }

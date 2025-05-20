@@ -21,13 +21,6 @@ int main(int argc, char *argv[]) {
     Parameters params(argc, argv);
     Instance instance(params.instance_path());
 
-    /*try {*/
-    /*    Instance instance(params.instance_path());*/
-    /*} catch (std::runtime_error &err) {*/
-    /*    std::cerr << err.what() << '\n';*/
-    /*    exit(EXIT_FAILURE);*/
-    /*}*/
-
     if (auto seed = params.seed()) {
         RNG::instance().set_seed(*seed);
     }
@@ -49,13 +42,7 @@ int main(int argc, char *argv[]) {
 
     SVNS_D svns_d(instance, params);
 
-    Solution pwe2_solution = svns_d.PW_PWE2();
-    std::cout << "\nPWE2: " << '\n';
-    std::cout << pwe2_solution << '\n';
+    Solution solution_svns_d = svns_d.solve();
 
-    svns_d.LS2_D(pwe2_solution);
-    std::cout << "\nPWE2-LS2_D: " << '\n';
-    std::cout << pwe2_solution << '\n';
-
-    /*Solution solution_svns_d = svns_d.solve();*/
+    std::cout << solution_svns_d;
 }
