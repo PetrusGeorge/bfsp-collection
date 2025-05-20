@@ -4,6 +4,7 @@
 #include <chrono>
 #include <iostream>
 #include <limits>
+#include <math.h>
 
 namespace {
 size_t uptime() {
@@ -20,6 +21,19 @@ HVNS::HVNS(Instance instance, Parameters params) : m_instance(std::move(instance
     } else {
         this->m_time_limit = m_params.ro() * m_instance.num_jobs() * m_instance.num_machines() / 1000;
     }
+
+    size_t processing_times_sum = 0;
+    std::vector<size_t> vec_processing_times_sum =
+        m_instance.processing_times_sum();
+
+    for (size_t i = 0; i < vec_processing_times_sum.size(); i++) {
+        processing_times_sum += vec_processing_times_sum[i];
+    }
+
+    m_T_init = static_cast<double>(processing_times_sum) / (m_instance.num_jobs() * m_instance.num_machines() * 5);
+    m_T = m_T_init;
+    m_T_fin = m_T_init * 0.1;
+    m_n_iter = 0;
 }
 
 Solution HVNS::generate_first_solution() {
@@ -67,7 +81,7 @@ bool HVNS::best_insertion(Solution &s) {
         const size_t job = s.sequence[i];
         s.sequence.erase(s.sequence.begin() + (long)i);
 
-        auto [index, obj] = helper.taillard_best_insertion(s.sequence, job);
+        auto [index, obj] = helper.taillard_best_insertion(s.sequence, job, std::numeric_limits<size_t>::infinity());
 
         s.sequence.insert(s.sequence.begin() + (long)i, job);
 
@@ -92,114 +106,9 @@ bool HVNS::best_insertion(Solution &s) {
     return improved;
 }
 
-std::pair<size_t, size_t> HVNS::taillard_best_edge_insertion(const std::vector<size_t> &sequence, std::pair<size_t, size_t> &jobs) {
-    std::vector<std::vector<size_t>> m_e = core::calculate_departure_times(m_instance, sequence);
-
-    std::vector<std::vector<size_t>> m_q = core::calculate_tail(m_instance, sequence);
-    // Make it easier to implement find_best_insertion
-    // without an out of bound access
-    m_q.emplace_back(m_instance.num_machines(), 0);
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // std::cout << "Departure Times" << std::endl;
-    // for(size_t i = 0; i < m_e.size(); i++) {
-    //     for(size_t j = 0; j < m_e[i].size(); j++) {
-    //         std::cout << m_e[i][j] << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-    // std::cout << std::endl;
-
-    // std::cout << "Tail" << std::endl;
-    // for(size_t i = 0; i < m_q.size(); i++) {
-    //     for(size_t j = 0; j < m_q[i].size(); j++) {
-    //         std::cout << m_q[i][j] << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-    // std::cout << std::endl;
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    auto p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
-
-    // f needs to store all possibilities of insertion so it has sequence.size + 1
-    std::vector<std::vector<size_t>> m_f = std::vector(sequence.size() + 1, std::vector<size_t>(m_instance.num_machines()));
-
-    // Evaluate best insertion
-    size_t max_value = 0;
-    auto set_f_and_max = [&m_q, &m_f, &max_value](size_t i, size_t j, size_t value) {
-        m_f[i][j] = value;
-        max_value = std::max(value + m_q[i][j], max_value);
-    };
-    
-    set_f_and_max(0, 0, p(jobs.first, 0));
-    for (size_t j = 1; j < m_instance.num_machines(); j++) {
-        set_f_and_max(0, j, m_f[0][j - 1] + p(jobs.first, j));
-    }
-
-    set_f_and_max(0, 0, m_f[0][0] + p(jobs.second, 0));
-    for (size_t j = 1; j < m_instance.num_machines()-1; j++) {
-        size_t value = std::max(m_f[0][j-1] + p(jobs.second, j), m_f[0][j+1]);
-        set_f_and_max(0, j, value);
-    }
-    size_t value = m_f[0][m_instance.num_machines() - 2] + p(jobs.second, m_instance.num_machines() - 1);
-    set_f_and_max(0, m_instance.num_machines() - 1, value);
-
-    size_t best_index = 0;
-    size_t best_value = max_value;
-
-    for (size_t i = 1; i <= sequence.size(); i++) {
-        max_value = 0;
-        value = std::max(m_e[i - 1][0] + p(jobs.first, 0), m_e[i - 1][1]);
-        set_f_and_max(i, 0, value);
-
-        for (size_t j = 1; j < m_instance.num_machines() - 1; j++) {
-            value = std::max(m_f[i][j - 1] + p(jobs.first, j), m_e[i - 1][j + 1]);
-            set_f_and_max(i, j, value);
-        }
-        value = m_f[i][m_instance.num_machines() - 2] + p(jobs.first, m_instance.num_machines() - 1);
-        set_f_and_max(i, m_instance.num_machines() - 1, value);
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        max_value = 0;
-        value = std::max(m_f[i][0] + p(jobs.second, 0), m_f[i][1]);
-        set_f_and_max(i, 0, value);
-
-        for (size_t j = 1; j < m_instance.num_machines() - 1; j++) {
-            value = std::max(m_f[i][j - 1] + p(jobs.second, j), m_f[i][j + 1]);
-            set_f_and_max(i, j, value);
-        }
-        value = m_f[i][m_instance.num_machines() - 2] + p(jobs.second, m_instance.num_machines() - 1);
-        set_f_and_max(i, m_instance.num_machines() - 1, value);
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        if (max_value < best_value) {
-            best_value = max_value;
-            best_index = i;
-        }
-    }
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // std::cout << "M_F" << std::endl;
-    // for(size_t i = 0; i < m_f.size(); i++) {
-    //     for(size_t j = 0; j < m_f[i].size(); j++) {
-    //         std::cout << m_f[i][j] << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-    // std::cout << std::endl;
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    return {best_index, best_value};
-}
-
+/*
+We aren't sure if this algorithm use the taillard speed up or not
+*/
 bool HVNS::best_edge_insertion(Solution &s) {
 
     bool improved = false;
@@ -213,7 +122,7 @@ bool HVNS::best_edge_insertion(Solution &s) {
         const size_t job = s.sequence[i];
         s.sequence.erase(s.sequence.begin() + (long)i, s.sequence.begin() + (long)i+2);
 
-        auto [index, obj] = helper.taillard_best_insertion(s.sequence, job);
+        auto [index, obj] = helper.taillard_best_insertion(s.sequence, job, std::numeric_limits<size_t>::infinity());
 
         s.sequence.insert(s.sequence.begin() + (long)i, job);
 
@@ -287,10 +196,10 @@ void HVNS::shaking(Solution &s, size_t k) {
             best_insertion(copy);
             break;
         case 2:
-            best_swap(copy);
+            best_edge_insertion(copy);
             break;
         case 3:
-            best_edge_insertion(copy);
+            best_swap(copy);
             break;
     }
 
@@ -298,6 +207,47 @@ void HVNS::shaking(Solution &s, size_t k) {
         s = copy;
     } 
 
+}
+
+void HVNS::sa_rls(Solution &s, Solution &best) {
+
+    std::vector<size_t> ref = generate_random_sequence();
+    size_t j = 0;
+    size_t cnt = 0;
+    NEH helper(m_instance);
+    size_t curr_makespan = s.cost;
+    while (cnt < m_instance.num_jobs()) {
+        j = (j + 1) % m_instance.num_jobs();
+        const size_t job = ref[j];
+
+        size_t i;
+        for (i = 0; i < s.sequence.size(); i++) {
+            if (s.sequence[i] == job) {
+                s.sequence.erase(s.sequence.begin() + (long)i);
+            }
+        }
+
+        auto [best_index, best_nei_obj] = helper.taillard_best_insertion(s.sequence, job, i);
+        
+        double delta = static_cast<double>(best_nei_obj - curr_makespan);
+        if (RNG::instance().generate_real_number(0, 1) < 1 / exp(delta / m_T)) {
+            s.sequence.insert(s.sequence.begin() + (long)best_index, job);
+            cnt = 0;
+            std::shuffle(ref.begin(), ref.end(), RNG::instance().gen());
+            s.cost = best_nei_obj;
+        } else {   
+            s.sequence.insert(s.sequence.begin() + (long)i, job);
+            cnt++;
+        }
+
+        if (best_nei_obj < best.cost) {
+            best = s;
+        }
+
+        m_n_iter++;
+        double beta = (m_T_init - m_T_fin) / (m_n_iter * m_T_init * m_T_fin);
+        m_T = m_T / (1 + (beta * m_T));
+    }
 }
 
 Solution HVNS::solve() {
@@ -309,32 +259,8 @@ Solution HVNS::solve() {
     }
 
     Solution best_solution, current;
-    best_solution.sequence = generate_random_sequence();
-    core::recalculate_solution(m_instance, best_solution);
-    
-    for(size_t i = 0; i < best_solution.sequence.size(); i++) {std::cout << best_solution.sequence[i] << " ";}
-    std::cout << std::endl << "makespan: " << best_solution.cost << std::endl;
-
-    std::pair<size_t, size_t> jobs = std::make_pair(best_solution.sequence[0], best_solution.sequence[1]);
-
-    best_solution.sequence.erase(best_solution.sequence.begin(), best_solution.sequence.begin()+2);
-    auto [idx, makespan] = taillard_best_edge_insertion(best_solution.sequence, jobs);
-
-    best_solution.sequence.insert(best_solution.sequence.begin()+idx, jobs.first);
-    best_solution.sequence.insert(best_solution.sequence.begin()+idx+1, jobs.second);
-    
-    for(size_t i = 0; i < best_solution.sequence.size(); i++) {std::cout << best_solution.sequence[i] << " ";}
-    std::cout << std::endl << "makespan: " << makespan << std::endl;
-
-    core::recalculate_solution(m_instance, best_solution);
-
-    for(size_t i = 0; i < best_solution.sequence.size(); i++) {std::cout << best_solution.sequence[i] << " ";}
-    std::cout << std::endl << "makespan: " << best_solution.cost << "\nidx: " << idx << std::endl;
-
-    getchar();
 
     size_t previous_best_obj = best_solution.cost;
-
     while (true) {
         size_t k = 1;
 
@@ -347,7 +273,7 @@ Solution HVNS::solve() {
 
             Solution temp;
             do {
-                // LC1
+                sa_rls(current, best_solution);
                 temp = current;
                 // LC2
             } while(!equal_solution(current, temp));

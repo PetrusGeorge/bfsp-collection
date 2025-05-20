@@ -10,7 +10,7 @@
 #include "constructions/NEH.h"
 #include "local-search/RLS.h"
 
-#define KMAX 4
+#define KMAX 4 // number of neighborhoods
 
 class HVNS {
 
@@ -28,13 +28,13 @@ class HVNS {
 
     bool best_insertion(Solution &s);
 
-    std::pair<size_t, size_t> taillard_best_edge_insertion(const std::vector<size_t> &sequence, std::pair<size_t, size_t> &jobs);
-
     bool best_edge_insertion(Solution &s);
 
     bool best_swap(Solution &s);
 
     void shaking(Solution &s, size_t k);
+
+    void sa_rls(Solution &s, Solution &best);
 
     Solution solve();
 
@@ -42,6 +42,10 @@ class HVNS {
     Instance m_instance;
     Parameters m_params;
     size_t m_time_limit;
+    double m_T;
+    double m_T_init;
+    double m_T_fin;
+    size_t m_n_iter;
 };
 
 #endif

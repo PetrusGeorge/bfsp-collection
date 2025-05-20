@@ -22,7 +22,7 @@ bool rls(Solution &s, const std::vector<size_t> &ref, Instance &instance) {
             }
         }
 
-        auto [best_index, makespan] = helper.taillard_best_insertion(s.sequence, job);
+        auto [best_index, makespan] = helper.taillard_best_insertion(s.sequence, job, std::numeric_limits<size_t>::infinity());
         s.sequence.insert(s.sequence.begin() + (long)best_index, job);
 
         if (makespan < s.cost) {
