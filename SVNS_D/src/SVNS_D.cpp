@@ -165,7 +165,7 @@ Solution SVNS_D::solve() {
     VERBOSE(m_params.verbose()) << "Initial solution started\n";
 
     Solution current = PW_PWE2();
-    Solution global_best = current;
+    Solution best = current;
 
     VERBOSE(m_params.verbose()) << "Initial solution finished, solution obtained:\n";
     VERBOSE(m_params.verbose()) << current;
@@ -175,21 +175,23 @@ Solution SVNS_D::solve() {
 
     while (true) {
         Solution local_best = current;
-        size_t nml1 = 0;
-        size_t indmet = 0;
+        size_t counter = 0;
+        size_t local_search_type = 0;
 
         if (RNG::instance().generate(0, 1) < m_params.beta()) {
-            indmet = 0;
+            local_search_type = 0;
         } else {
-            indmet = 1;
+            local_search_type = 1;
         }
 
         while (true) {
-            ++nml1;
-            Solution candidate = current;
-            size_t og_cost = candidate.cost;
+            ++counter;
 
-            if (indmet == 0) {
+            Solution candidate = current;
+
+            size_t original_cost = current.cost;
+
+            if (local_search_type == 0) {
                 std::vector<size_t> reference(m_instance.num_jobs());
 
                 for (size_t i = 0; i < m_instance.num_jobs(); ++i) {
@@ -199,7 +201,8 @@ Solution SVNS_D::solve() {
                     std::shuffle(reference.begin(), reference.end(), RNG::instance().gen());
 
                     if (LS1_D_swap(candidate, reference)) {
-                        VERBOSE(m_params.verbose()) << "LS1_D Improved! " << og_cost << " " << candidate.cost << "\n";
+                        VERBOSE(m_params.verbose())
+                            << "LS1_D Improved! " << original_cost << " " << candidate.cost << "\n";
                         break;
                     }
                 }
@@ -213,35 +216,35 @@ Solution SVNS_D::solve() {
                     std::shuffle(reference.begin(), reference.end(), RNG::instance().gen());
 
                     if (LS2_D_insertion(candidate, reference)) {
-                        VERBOSE(m_params.verbose()) << "LS2_D Improved! " << og_cost << " " << candidate.cost << "\n";
+                        VERBOSE(m_params.verbose())
+                            << "LS2_D Improved! " << original_cost << " " << candidate.cost << "\n";
                         break;
                     }
                 }
             }
-            if (candidate.cost < local_best.cost || nml1 == 1) {
+            if (candidate.cost < original_cost or counter == 1) {
+                local_search_type = 1 - local_search_type;
                 current = candidate;
-                local_best = candidate;
-                indmet = 1 - indmet;
+                original_cost = candidate.cost;
             } else {
                 break;
             }
         };
-        if (local_best.cost < global_best.cost) {
-            global_best = local_best;
+        if (current.cost < best.cost) {
+            best = current;
         }
-        if (global_best.cost < local_best.cost and RNG::instance().generate(0, 1) < m_params.alpha()) {
-            local_best = global_best;
+        if (current.cost > best.cost and RNG::instance().generate(0, 1) < m_params.alpha()) {
+            current = best;
         }
-        pertubation(local_best);
+        pertubation(current);
 
-        if (local_best.cost < global_best.cost) {
-            global_best = local_best;
+        if (current.cost < best.cost) {
+            best = current;
         }
         if (uptime() > time_limit) {
             VERBOSE(m_params.verbose()) << "Time limit reached!\n";
             break;
         }
     }
-
-    return global_best;
+    return best;
 }
