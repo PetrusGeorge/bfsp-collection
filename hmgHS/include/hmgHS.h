@@ -17,7 +17,7 @@ class hmgHS {
   public:
     hmgHS(Instance instance, Parameters params);
 
-    // Generate 2 random sequence using NEH and NEH-WPT (it hasn't been done yet) and other MS-2 randomly
+    // Generate 2 random sequence using NEH and NEH-WPT and other (MS-2) randomly
     void generate_initial_pop();
 
     std::vector<size_t> generate_random_sequence();

@@ -26,30 +26,6 @@ void hmgHS::generate_initial_pop() {
 
     m_pop = std::vector<Solution>(m_params.ms());
     Solution s;
-    auto sort_criteria = [&s](size_t i, size_t j) { return s.harmony[i] > s.harmony[j]; };
-
-    m_pop[0] = s;
-    m_pop[1] = s;
-
-    for (size_t i = 2; i < m_params.ms(); i++) {
-
-        s.harmony = generate_random_harmony();
-
-        std::vector<size_t> phi(m_instance.num_jobs());
-        std::iota(phi.begin(), phi.end(), 0);
-
-        std::sort(phi.begin(), phi.end(), sort_criteria);
-
-        s.sequence = phi;
-
-        core::recalculate_solution(m_instance, s);
-
-        revision(s);
-
-        sort_permutation(s);
-
-        m_pop[i] = s;
-    }
 
     std::vector<size_t> phi(m_instance.num_jobs());
     std::iota(phi.begin(), phi.end(), 0);
@@ -57,14 +33,29 @@ void hmgHS::generate_initial_pop() {
     NEH neh(m_instance);
     m_pop[0] = neh.solve(phi);
     core::recalculate_solution(m_instance, m_pop[0]);
-    m_pop[0].harmony = std::vector<double>(m_instance.num_jobs(), 0.0);
-    m_pop[1].harmony = std::vector<double>(m_instance.num_jobs(), 0.0);
-    permutation_to_harmony(m_pop[0]);
-
     NEH_WPT neh_wpt(m_instance);
     m_pop[1] = neh_wpt.solve();
     core::recalculate_solution(m_instance, m_pop[1]);
+
+    for (size_t i = 2; i < m_params.ms(); i++) {
+
+        s.harmony = generate_random_harmony();
+
+        harmony_to_permutation(s);
+
+        core::recalculate_solution(m_instance, s);
+
+        revision(s);
+
+        sort_permutation(s);
+        
+        m_pop[i] = s;
+    }
+
+    m_pop[0].harmony = std::vector<double>(m_instance.num_jobs(), 0.0);
     m_pop[1].harmony = std::vector<double>(m_instance.num_jobs(), 0.0);
+    
+    permutation_to_harmony(m_pop[0]);
     permutation_to_harmony(m_pop[1]);
 }
 
@@ -153,15 +144,13 @@ std::vector<double> hmgHS::improvise_new_harmony() {
 
     for (size_t j = 0; j < n; j++) {
 
-        double r1 = RNG::instance().generate_real_number(0.0, 1.0);
-        if (r1 < m_params.pcr()) {
-
-            size_t alpha = RNG::instance().generate((size_t)0, m_params.ms() - 1);
-            new_harmony[j] = m_pop[alpha].harmony[j];
-
-            double r2 = RNG::instance().generate_real_number(0.0, 1.0);
-            if (r2 < m_params.par()) {
+        if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.pcr()) {
+            
+            if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.par()) {
                 new_harmony[j] = m_pop[0].harmony[j]; // taking the value of the best harmony
+            } else {
+                size_t alpha = RNG::instance().generate((size_t)0, m_params.ms() - 1);
+                new_harmony[j] = m_pop[alpha].harmony[j];
             }
 
         } else {
@@ -178,20 +167,18 @@ std::vector<double> hmgHS::improvise_new_harmony() {
 
 void hmgHS::revision(Solution &s) {
     size_t n = m_instance.num_jobs();
-    std::vector<double> z = s.harmony;
-    std::sort(z.begin(), z.end(), [](double a, double b) { return a > b; });
+
+    std::sort(s.harmony.begin(), s.harmony.end(), [](double a, double b) { return a > b; });
 
     for (size_t j = 0; j < n - 1; j++) {
-        if (z[j] == z[j + 1]) {
+        if (s.harmony[j] == s.harmony[j + 1]) {
             if (j != 0) {
-                z[j] += (z[j - 1] - z[j]) / n;
+                s.harmony[j] += (s.harmony[j - 1] - s.harmony[j]) / n;
             } else {
-                z[j] += 0.01;
+                s.harmony[j] += 0.01;
             }
         }
     }
-
-    s.harmony.swap(z);
 }
 
 void hmgHS::sort_permutation(Solution &s) {
@@ -216,10 +203,6 @@ void hmgHS::sort_permutation(Solution &s) {
         std::swap(s.harmony[i], s.harmony[idx]);
     }
 
-    for(size_t j = 0; j < n; j++) {
-        std::cout << s.harmony[j] << " ";
-    }
-    std::cout << std::endl;
 }
 
 void hmgHS::update(Solution &s) {
@@ -243,7 +226,7 @@ Solution hmgHS::solve() {
 
     size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
     std::vector<size_t> ro;
-    if (m_params.becnhmark()){
+    if (m_params.benchmark()){
         ro = {90, 60, 30};
     }
 
@@ -253,9 +236,7 @@ Solution hmgHS::solve() {
 
     generate_initial_pop();
 
-    auto sort_criteria = [](Solution &s1, Solution &s2) { return s1.cost < s2.cost; };
-
-    std::sort(m_pop.begin(), m_pop.end(), sort_criteria);
+    std::sort(m_pop.begin(), m_pop.end(), [](Solution &s1, Solution &s2) { return s1.cost < s2.cost; });
 
     best_solution = m_pop[0];
 
@@ -264,19 +245,21 @@ Solution hmgHS::solve() {
         Solution new_solution;
         new_solution.harmony = improvise_new_harmony();
 
+        harmony_to_permutation(new_solution);
+        
         revision(new_solution);
 
-        harmony_to_permutation(new_solution);
-
+        // this line shouldn't exist, but for some reason this improve the quality of solutions in small instances
         std::sort(new_solution.harmony.begin(), new_solution.harmony.end());
 
         std::shuffle(ref.begin(), ref.end(), RNG::instance().gen());
         rls(new_solution, ref, m_instance);
         core::recalculate_solution(m_instance, new_solution);
 
+        update(new_solution);
+
         sort_permutation(new_solution);
 
-        update(new_solution);
 
         if (!ro.empty() && uptime() >= (ro.back()*mxn) / 1000){
             
@@ -284,13 +267,14 @@ Solution hmgHS::solve() {
             ro.pop_back();
         }
 
+        if (uptime() > m_time_limit) {
+            break;
+        }
+
         if (m_pop[0].cost < best_solution.cost) {
             best_solution = m_pop[0];
         }
 
-        if (uptime() > m_time_limit) {
-            break;
-        }
     }
 
     m_pop.clear();
