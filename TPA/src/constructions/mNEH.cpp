@@ -43,7 +43,7 @@ std::vector<size_t> MNEH::priority_rule(const double alpha, Instance &instance) 
 
     for (size_t job = 0; job < instance.num_jobs(); ++job) {
         const double priority_value =
-            (alpha * average(job, instance)) + ((1 + alpha) * standard_deviation(job, instance));
+            (alpha * average(job, instance)) + ((1 - alpha) * standard_deviation(job, instance));
         priority_rule_values.emplace_back(job, priority_value);
     }
 

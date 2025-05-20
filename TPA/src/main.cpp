@@ -6,8 +6,6 @@
 #include "Instance.h"
 #include "Parameters.h"
 #include "RNG.h"
-#include "constructions/NEH.h"
-#include "constructions/mNEH.h"
 #include "TPA.h"
 
 int main(int argc, char *argv[]) {
@@ -37,7 +35,6 @@ int main(int argc, char *argv[]) {
     // std::cout << s_neh << '\n';
 
     TPA tpa(instance);
-    tpa.solve();
-    std::cout << "test" << std::endl;
-    
+    Solution s_tpa = tpa.solve();
+    std::cout << s_tpa << std::endl;
 }

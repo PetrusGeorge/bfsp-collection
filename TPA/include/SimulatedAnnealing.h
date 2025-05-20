@@ -1,29 +1,29 @@
 #ifndef SIMULATED_ANNEALING_H
 #define SIMULATED_ANNEALING_H
 
+#include "Instance.h"
 #include "Solution.h"
 
 #include <iostream>
 
 class SimulatedAnnealing {
   public:
-    SimulatedAnnealing(Solution &solution, Instance &instance, double finalTemp, int nIter);
+    SimulatedAnnealing(Solution &solution, Instance &instance, double final_temp, int n_iter);
     Solution solve();
 
   private:
-    Solution &solution;
-    Instance instance;
+    Solution &m_solution;
+    Instance &m_instance;
 
-    int nIter;
+    int m_n_iter;
 
-    double finalTemp;
-    double initialTemp;
-    double decay;
+    double m_final_temp;
+    double m_initial_temp;
+    double m_decay;
 
-    void calculateInitialTemp();
-    void calculateDecay();
-    Solution anneal(Solution &currentSolution, int nodeToChange);
-
+    void calculate_initial_temp();
+    void calculate_decay();
+    Solution anneal(Solution &current_solution, size_t position);
 };
 
 #endif
