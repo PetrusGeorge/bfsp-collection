@@ -6,22 +6,24 @@
 #include "Log.h"
 #include "Parameters.h"
 #include "RNG.h"
+#include "SaDIWO.h"
 
 int main(int argc, char *argv[]) {
 
-    const Parameters params(argc, argv);
+    Parameters params(argc, argv);
+    if (auto seed = params.seed()) {
+        RNG::instance().set_seed(*seed);
+    }
+    std::cout << "Seed: " << RNG::instance().seed() << '\n';
+
     try {
-        const Instance instance(params.instance_path());
+        Instance instance(params.instance_path());
+        SaDIWO sadiwo(std::move(instance), std::move(params));
+        std::cout << sadiwo.solve().cost << "\n";
     } catch (std::runtime_error &err) {
         std::cerr << err.what() << '\n';
         exit(EXIT_FAILURE);
     }
-
-    if (auto seed = params.seed()) {
-        RNG::instance().set_seed(*seed);
-    }
-
-    std::cout << "Seed: " << RNG::instance().seed() << '\n';
 
     DEBUG << "Showing normal debug macro\n";
     DEBUG_EXTRA << "Showing extra debug macro\n";
