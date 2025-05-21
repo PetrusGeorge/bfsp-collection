@@ -15,6 +15,7 @@ class Parameters {
     double alpha() const { return m_alpha; }
     double beta() const { return m_beta; }
     size_t d() const { return m_d; }
+    size_t ro() const { return m_ro; }
 
   private:
     std::string m_instance_path;
@@ -23,6 +24,7 @@ class Parameters {
     double m_alpha = 0.0;
     double m_beta = 0.0;
     size_t m_d = 0;
+    size_t m_ro = 30;
 };
 
 #endif

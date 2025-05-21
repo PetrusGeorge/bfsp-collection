@@ -37,13 +37,10 @@ Solution SVNS_D::PW_PWE2() {
     NEH neh_reversed(reversed_instance);
 
     Solution pw_solution = pw.solve();
-    core::recalculate_solution(m_instance, pw_solution);
 
     Solution pwe_solution = neh.solve(pw_solution.sequence);
-    core::recalculate_solution(m_instance, pwe_solution);
 
     Solution pwe_reversed_solution = neh_reversed.solve(pw_solution.sequence);
-    core::recalculate_solution(m_instance, pwe_reversed_solution);
 
     Solution pwe2_solution;
 
@@ -58,22 +55,21 @@ Solution SVNS_D::PW_PWE2() {
     } else {
         solution = pw_solution;
     }
+    core::recalculate_solution(m_instance, solution);
     return solution;
 }
 
 bool SVNS_D::LS1_D_swap(Solution &solution, std::vector<size_t> &reference) { // NOLINT
-    core::recalculate_solution(m_instance, solution);
     size_t original_cost = solution.cost;
 
     for (size_t i = 0; i < solution.sequence.size() - 1; i++) {
-        // Set correct departure times matrix to use partial recalculate solution
-        core::recalculate_solution(m_instance, solution);
-
         size_t index = reference[i];
         size_t best_j = 0;
         size_t best_cost = solution.cost;
 
         for (size_t j = index + 1; j < solution.sequence.size(); j++) {
+            size_t copy_cost = solution.cost;
+
             // Apply move
             std::swap(solution.sequence[index], solution.sequence[j]);
 
@@ -83,31 +79,31 @@ bool SVNS_D::LS1_D_swap(Solution &solution, std::vector<size_t> &reference) { //
                 best_cost = solution.cost;
                 best_j = j;
             }
+            // undo move
             std::swap(solution.sequence[index], solution.sequence[j]);
 
-            core::recalculate_solution(m_instance, solution);
+            solution.cost = copy_cost;
         }
         if (best_cost < solution.cost) {
             std::swap(solution.sequence[index], solution.sequence[best_j]);
             solution.cost = best_cost;
         }
-        core::recalculate_solution(m_instance, solution);
     }
+
     return solution.cost < original_cost;
 }
 
 bool SVNS_D::LS2_D_insertion(Solution &solution, std::vector<size_t> &reference) { // NOLINT
-    core::recalculate_solution(m_instance, solution);
     size_t original_cost = solution.cost;
 
     for (size_t i = 0; i < solution.sequence.size(); i++) {
-        core::recalculate_solution(m_instance, solution);
-
         size_t index = reference[i];
         size_t best_j = 0;
         size_t best_cost = solution.cost;
 
         for (size_t j = 0; j < solution.sequence.size(); j++) {
+            size_t copy_cost = solution.cost;
+
             // Apply move
             apply_insertion(solution, (long)index, (long)j);
 
@@ -120,13 +116,12 @@ bool SVNS_D::LS2_D_insertion(Solution &solution, std::vector<size_t> &reference)
             // undo move
             apply_insertion(solution, (long)j, (long)index);
 
-            core::recalculate_solution(m_instance, solution);
+            solution.cost = copy_cost;
         }
         if (best_cost < solution.cost) {
             apply_insertion(solution, (long)index, (long)best_j);
             solution.cost = best_cost;
         }
-        core::recalculate_solution(m_instance, solution);
     }
     return solution.cost < original_cost;
 }
@@ -170,7 +165,7 @@ Solution SVNS_D::solve() {
     VERBOSE(m_params.verbose()) << "Initial solution finished, solution obtained:\n";
     VERBOSE(m_params.verbose()) << current;
 
-    const double time_limit = 3;
+    const double time_limit = m_params.ro() * m_instance.num_jobs() * m_instance.num_machines() * 1e-3;
     VERBOSE(m_params.verbose()) << "Time limit: " << time_limit << " seconds\n";
 
     while (true) {
@@ -182,7 +177,6 @@ Solution SVNS_D::solve() {
         } else {
             local_search_type = 1;
         }
-
         while (true) {
             ++counter;
 
@@ -200,8 +194,6 @@ Solution SVNS_D::solve() {
                     std::shuffle(reference.begin(), reference.end(), RNG::instance().gen());
 
                     if (not LS1_D_swap(candidate, reference)) {
-                        VERBOSE(m_params.verbose())
-                            << "LS1_D Improved! " << original_cost << " " << candidate.cost << "\n";
                         break;
                     }
                 }
@@ -215,8 +207,6 @@ Solution SVNS_D::solve() {
                     std::shuffle(reference.begin(), reference.end(), RNG::instance().gen());
 
                     if (not LS2_D_insertion(candidate, reference)) {
-                        VERBOSE(m_params.verbose())
-                            << "LS2_D Improved! " << original_cost << " " << candidate.cost << "\n";
                         break;
                     }
                 }

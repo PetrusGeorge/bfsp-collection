@@ -9,9 +9,10 @@ void config_argparse(argparse::ArgumentParser &cli) {
     cli.add_argument("instance").help("instance path");
 
     cli.add_argument("-s", "--seed").help("set random number generator seed").metavar("SEED").scan<'i', size_t>();
+    cli.add_argument("-r", "--ro").help("set ro").metavar("ro").scan<'i', size_t>();
     cli.add_argument("-v", "--verbose").help("set programverbosity").metavar("VERBOSE").default_value(false).flag();
     cli.add_argument("-b", "--beta").help("set beta").metavar("beta").scan<'g', double>();
-    cli.add_argument("-d", "--d").help("set d").metavar("beta").scan<'i', size_t>();
+    cli.add_argument("-d", "--d").help("set d").metavar("destroy").scan<'i', size_t>();
 }
 } // namespace
 
