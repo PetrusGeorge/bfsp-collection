@@ -189,7 +189,7 @@ void DIWO::local_search(Population &pop) {
         }
         std::vector<size_t> ref = pop.solutions[pop.best_solution_idx].sequence;
         for (size_t j = 0; j < 3; j++) {
-            rls(pop.solutions[i], ref, m_instance);
+            rls_grabowski(pop.solutions[i], ref, m_instance);
             // Update best solution if it's found by rls
             if (pop.solutions[i].cost < pop.solutions[pop.best_solution_idx].cost) {
                 pop.best_solution_idx = i;
