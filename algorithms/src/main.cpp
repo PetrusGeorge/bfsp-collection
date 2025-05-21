@@ -3,6 +3,7 @@
 #include <iostream>
 #include <numeric>
 
+#include "Core.h"
 #include "Instance.h"
 #include "Parameters.h"
 #include "RNG.h"
@@ -42,7 +43,7 @@ int main(int argc, char *argv[]) {
     std::cout << s_neh << '\n';
 
     std::shuffle(phi.begin(), phi.end(), RNG::instance().gen());
-    rls(s_neh, phi, instance);
+    rls_grabowski(s_neh, phi, instance);
     std::cout << "\nRLS:" << '\n';
     std::cout << s_neh << '\n';
 }

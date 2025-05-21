@@ -17,7 +17,7 @@ class NEH {
     std::pair<size_t, size_t> taillard_best_insertion(const std::vector<size_t> &sequence, size_t pos);
 
     // Same as above but only tries to insert within the provided ranges
-    std::pair<size_t, size_t> taillard_grabowski_best_ins(const std::vector<size_t> &sequence, size_t pos,
+    std::pair<size_t, size_t> taillard_grabowski_best_ins(const Solution &s, size_t pos,
                                                           const std::vector<std::pair<size_t, size_t>> &ranges);
 
     void second_step(std::vector<size_t> phi, Solution &s);

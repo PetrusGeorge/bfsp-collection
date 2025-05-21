@@ -49,8 +49,11 @@ size_t NEH::insert_calculation(const size_t i, const size_t pos, const size_t be
     return max_value;
 }
 
-std::pair<size_t, size_t> NEH::taillard_grabowski_best_ins(const std::vector<size_t> &sequence, const size_t pos,
+std::pair<size_t, size_t> NEH::taillard_grabowski_best_ins(const Solution &s, const size_t pos,
                                                            const std::vector<std::pair<size_t, size_t>> &ranges) {
+
+    const std::vector<size_t> &sequence = s.sequence;
+    
     m_e = core::calculate_departure_times(m_instance, sequence);
 
     m_q = core::calculate_tail(m_instance, sequence);
@@ -79,7 +82,7 @@ std::pair<size_t, size_t> NEH::taillard_grabowski_best_ins(const std::vector<siz
     }
 
     size_t best_index = 0;
-    size_t best_value = max_value;
+    size_t best_value = std::min(max_value, s.cost);
 
     for (const auto &range : ranges) {
         for (size_t i = range.first; i <= range.second; i++) {

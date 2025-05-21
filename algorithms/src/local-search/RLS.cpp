@@ -145,6 +145,7 @@ bool rls_grabowski(Solution &s, const std::vector<size_t> &ref, Instance &instan
     size_t j = 0;
     size_t cnt = 0;
     NEH helper(instance);
+    core::recalculate_solution(instance, s); // Set departure times matrix
     while (cnt < instance.num_jobs()) {
         j = (j + 1) % instance.num_jobs();
 
@@ -161,7 +162,7 @@ bool rls_grabowski(Solution &s, const std::vector<size_t> &ref, Instance &instan
             }
         }
 
-        const auto [best_index, makespan] = helper.taillard_grabowski_best_ins(s.sequence, job, ranges);
+        const auto [best_index, makespan] = helper.taillard_grabowski_best_ins(s, job, ranges);
 
         if (makespan < s.cost) {
             s.sequence.insert(s.sequence.begin() + (long)best_index, job);
