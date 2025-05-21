@@ -40,12 +40,8 @@ class SaDIWO {
     size_t get_solution_d(const Population &pop, size_t solution_cost);
     Population competitive_exclusion(Population pop, Population new_pop) const;
 
-    void ls1(Solution &sol);
-    void ls2(Solution &sol);
-    void ls3(Solution &sol);
-    void local_search(Population &pop);
-
     // Same as DIWO paper
+    void local_search(Population &pop);
     Population population_init();
 };
 

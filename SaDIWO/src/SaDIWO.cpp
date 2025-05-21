@@ -9,6 +9,7 @@
 #include "NEH.h"
 #include "PF_NEH.h"
 #include "Parameters.h"
+#include "RLS.h"
 #include "SaDIWO.h"
 #include "Solution.h"
 
@@ -186,27 +187,19 @@ Population SaDIWO::spatial_dispersal(const Population &pop) {
     return new_pop;
 }
 
-void SaDIWO::ls1(Solution &sol) {}
-
-void SaDIWO::ls2(Solution &sol) {}
-
-void SaDIWO::ls3(Solution &sol) {}
-
 void SaDIWO::local_search(Population &pop) {
-    for (auto &sol : pop.solutions) {
-        bool improved = true;
-        size_t previous_cost = sol.cost;
-        while (improved) {
-            // yes, in this order
-            ls2(sol);
-            ls3(sol);
-            ls1(sol);
-
-            if (previous_cost == sol.cost) {
-                improved = false;
-            } else {
-                previous_cost = sol.cost;
+    for (size_t i = 0; i < pop.solutions.size(); i++) {
+        if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.pls()) {
+            continue;
+        }
+        std::vector<size_t> ref = pop.solutions[pop.best_solution_idx].sequence;
+        for (size_t j = 0; j < 3; j++) {
+            rls_grabowski(pop.solutions[i], ref, m_instance);
+            // Update best solution if it's found by rls
+            if (pop.solutions[i].cost < pop.solutions[pop.best_solution_idx].cost) {
+                pop.best_solution_idx = i;
             }
+            std::shuffle(ref.begin(), ref.end(), m_rng);
         }
     }
 }
