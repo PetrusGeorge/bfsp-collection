@@ -25,7 +25,7 @@ void config_argparse(argparse::ArgumentParser &cli) {
     cli.add_argument("--pls")
         .help("set the probability of running local search")
         .metavar("PLS")
-        .default_value(10.0)
+        .default_value(0.15)
         .scan<'f', double>();
 
     cli.add_argument("--p_max")
