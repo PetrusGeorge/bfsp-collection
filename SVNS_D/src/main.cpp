@@ -6,7 +6,7 @@
 #include "Instance.h"
 #include "Parameters.h"
 #include "RNG.h"
-#include "SVNS_D.h"
+#include "SVNS_S.h"
 #include "constructions/GRASP.h"
 #include "constructions/LPT.h"
 #include "constructions/MinMax.h"
@@ -40,9 +40,9 @@ int main(int argc, char *argv[]) {
     std::cout << "\nRLS:" << '\n';
     std::cout << s_neh << '\n';
 
-    SVNS_D svns_d(instance, params);
+    SVNS_S svns_s(instance, params);
 
-    Solution solution_svns_d = svns_d.solve();
+    Solution solution_svns_s = svns_s.solve();
 
-    std::cout << solution_svns_d;
+    std::cout << solution_svns_s;
 }

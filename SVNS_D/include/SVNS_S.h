@@ -8,7 +8,7 @@
 #include <cstddef>
 #include <vector>
 
-class SVNS_D { // NOLINT
+class SVNS_S { // NOLINT
   private:
     Instance &m_instance;
     Parameters &m_params;
@@ -18,12 +18,12 @@ class SVNS_D { // NOLINT
   public:
     Solution PW_PWE2(); // NOLINT
 
-    bool LS1_D_swap(Solution &solution, std::vector<size_t> &reference);      // NOLINT
-    bool LS2_D_insertion(Solution &solution, std::vector<size_t> &reference); // NOLINT
+    bool LS1_S_swap(Solution &solution, std::vector<size_t> &reference);      // NOLINT
+    bool LS2_S_insertion(Solution &solution, std::vector<size_t> &reference); // NOLINT
 
     void pertubation(Solution &solution);
 
-    SVNS_D(Instance &instance, Parameters &params);
+    SVNS_S(Instance &instance, Parameters &params);
 
     Solution solve();
 };

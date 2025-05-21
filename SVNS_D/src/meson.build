@@ -6,5 +6,5 @@ sources = files(
   'Instance.cpp', 
   'Parameters.cpp', 
   'main.cpp', 
-  'SVNS_D.cpp'
+  'SVNS_S.cpp'
 ) + ls_src + constructions_src
