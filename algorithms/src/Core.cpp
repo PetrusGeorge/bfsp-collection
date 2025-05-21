@@ -119,6 +119,10 @@ std::vector<size_t> core::calculate_new_departure_time(Instance &instance, std::
 }
 
 void core::partial_recalculate_solution(Instance &instance, Solution &s, size_t start) {
+    if (start == 0) {
+        recalculate_solution(instance, s);
+        return;
+    }
 
     auto p = [&instance](size_t i, size_t j) { return instance.p(i, j); };
 
