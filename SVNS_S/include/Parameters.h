@@ -15,14 +15,16 @@ class Parameters {
     double alpha() const { return m_alpha; }
     double beta() const { return m_beta; }
     size_t d() const { return m_d; }
+    size_t k() const { return m_k; }
 
   private:
     std::string m_instance_path;
     bool m_verbose = false;
     std::optional<size_t> m_seed;
-    double m_alpha = 0.0;
-    double m_beta = 0.0;
-    size_t m_d = 0;
+    double m_alpha = 0.5;
+    double m_beta = 1;
+    size_t m_d = 6;
+    size_t m_k = 30;
 };
 
 #endif

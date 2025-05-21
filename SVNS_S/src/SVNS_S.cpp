@@ -19,7 +19,7 @@ namespace {
 double uptime() {
     static const auto global_start_time = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - global_start_time);
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(now - global_start_time);
     return static_cast<double>(duration.count());
 }
 } // namespace
@@ -62,7 +62,6 @@ bool SVNS_S::LS1_S_swap(Solution &solution, std::vector<size_t> &reference) { //
     size_t original_cost = solution.cost;
 
     for (size_t i = 0; i < solution.sequence.size() - 1; i++) {
-        core::recalculate_solution(m_instance, solution);
         size_t index = reference[i];
         size_t best_j = 0;
         size_t best_cost = solution.cost;
@@ -71,12 +70,7 @@ bool SVNS_S::LS1_S_swap(Solution &solution, std::vector<size_t> &reference) { //
             // Apply move
             std::swap(solution.sequence[index], solution.sequence[j]);
 
-            if (index == 0) {
-                // If the first job is swapped it needs a full recalculation
-                core::recalculate_solution(m_instance, solution);
-            } else {
-                core::partial_recalculate_solution(m_instance, solution, index);
-            }
+            core::recalculate_solution(m_instance, solution);
 
             if (solution.cost <= best_cost) {
                 best_cost = solution.cost;
@@ -90,6 +84,7 @@ bool SVNS_S::LS1_S_swap(Solution &solution, std::vector<size_t> &reference) { //
             std::swap(solution.sequence[index], solution.sequence[best_j]);
             solution.cost = best_cost;
         }
+        core::recalculate_solution(m_instance, solution);
     }
     return solution.cost < original_cost;
 }
@@ -98,8 +93,7 @@ bool SVNS_S::LS2_S_insertion(Solution &solution, std::vector<size_t> &reference)
 
     size_t original_cost = solution.cost;
 
-    for (size_t i = 0; i < solution.sequence.size(); i++) {
-        core::recalculate_solution(m_instance, solution);
+    for (size_t i = 0; i < solution.sequence.size()-1; i++) {
         size_t index = reference[i];
         size_t best_j = 0;
         size_t best_cost = solution.cost;
@@ -108,12 +102,7 @@ bool SVNS_S::LS2_S_insertion(Solution &solution, std::vector<size_t> &reference)
             // Apply move
             apply_insertion(solution, (long)index, (long)j);
 
-            if (index == 0) {
-                // If the first job is swapped it needs a full recalculation
-                core::recalculate_solution(m_instance, solution);
-            } else {
-                core::partial_recalculate_solution(m_instance, solution, index);
-            }
+            core::recalculate_solution(m_instance, solution);
 
             if (solution.cost <= best_cost) {
                 best_cost = solution.cost;
@@ -121,18 +110,12 @@ bool SVNS_S::LS2_S_insertion(Solution &solution, std::vector<size_t> &reference)
             }
             // undo move
             apply_insertion(solution, (long)j, (long)index);
-            
-            if (index == 0) {
-                // If the first job is swapped it needs a full recalculation
-                core::recalculate_solution(m_instance, solution);
-            } else {
-                core::partial_recalculate_solution(m_instance, solution, index);
-            }
         }
         if (best_cost < solution.cost) {
             apply_insertion(solution, (long)index, (long)best_j);
             solution.cost = best_cost;
         }
+        core::recalculate_solution(m_instance, solution);
     }
     return solution.cost < original_cost;
 }
@@ -176,8 +159,10 @@ Solution SVNS_S::solve() {
     VERBOSE(m_params.verbose()) << "Initial solution finished, solution obtained:\n";
     VERBOSE(m_params.verbose()) << current;
 
-    const double time_limit = 3;
-    VERBOSE(m_params.verbose()) << "Time limit: " << time_limit << " seconds\n";
+    size_t n2xm = m_instance.num_jobs() * m_instance.num_jobs() * m_instance.num_machines();
+    const double time_limit = m_params.k() * n2xm * 10;
+    VERBOSE(m_params.verbose()) << "Time limit: " << time_limit/1000000 << " seconds\n";
+
 
     while (true) {
         size_t counter = 0;
@@ -191,7 +176,6 @@ Solution SVNS_S::solve() {
 
         while (true) {
             ++counter;
-
             Solution candidate = current;
 
             size_t original_cost = current.cost;
@@ -204,14 +188,14 @@ Solution SVNS_S::solve() {
                 }
                 std::shuffle(reference.begin(), reference.end(), RNG::instance().gen());
 
-                LS1_S_swap(candidate, reference);
+                LS1_S_swap(candidate, reference);  
             } else {
                 std::vector<size_t> reference(m_instance.num_jobs());
 
                 for (size_t i = 0; i < m_instance.num_jobs(); ++i) {
                     reference[i] = i;
                 }
-                    std::shuffle(reference.begin(), reference.end(), RNG::instance().gen());
+                std::shuffle(reference.begin(), reference.end(), RNG::instance().gen());
 
                 LS2_S_insertion(candidate, reference);
             }
