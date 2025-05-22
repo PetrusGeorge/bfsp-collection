@@ -9,6 +9,7 @@
 #include "Solution.h"
 #include "constructions/NEH.h"
 #include "local-search/RLS.h"
+#include "constructions/LPT.h"
 
 #include <vector>
 

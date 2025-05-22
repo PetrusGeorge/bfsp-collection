@@ -1,1 +1,1 @@
-constructions_src = files('NEH.cpp')
+constructions_src = files('NEH.cpp', 'LPT.cpp')

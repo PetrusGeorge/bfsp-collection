@@ -14,7 +14,7 @@ void config_argparse(argparse::ArgumentParser &cli) {
     cli.add_argument("-r", "--ro")
         .help("set the ro parameter which delimits the time limit of the program")
         .metavar("RO")
-        .default_value(size_t(5))
+        .default_value(size_t(30))
         .scan<'i', size_t>();
 
     cli.add_argument("-s", "--ps")

@@ -44,11 +44,10 @@ void HDDE::generate_initial_pop() {
 
     m_pop = std::vector<Solution>(1);
 
-    std::vector<size_t> phi(m_instance.num_jobs());
-    std::iota(phi.begin(), phi.end(), 0);
+    Solution phi = LPT::solve(m_instance);
 
     NEH neh = NEH(m_instance);
-    m_pop[0] = neh.solve(phi); // MME heuristic for the first solution
+    m_pop[0] = neh.solve(phi.sequence);
     core::recalculate_solution(m_instance, m_pop[0]);
 
     // generating other random solutions
@@ -217,8 +216,7 @@ Solution HDDE::solve() {
             std::shuffle(ref.begin(), ref.end(), RNG::instance().gen());
 
             rls(trial, ref, m_instance);
-            core::recalculate_solution(m_instance, trial);
-            
+
             if(trial.cost < m_pop[i].cost){
                 m_pop[i] = trial;
             }
