@@ -15,6 +15,7 @@ class Parameters {
     std::optional<size_t> seed() const { return m_seed; }
     std::optional<size_t> time_limit() const { return m_tl; }
     size_t ro() const { return m_ro; }
+    size_t n_iter() const { return m_n_iter; }
 
   private:
     std::string m_instance_path;
@@ -23,6 +24,7 @@ class Parameters {
     std::optional<size_t> m_seed;
     std::optional<size_t> m_tl;
     size_t m_ro = 100;
+    size_t m_n_iter = 1800000;
 };
 
 #endif

@@ -37,15 +37,19 @@ std::pair<size_t, size_t> NEH::taillard_best_insertion(const std::vector<size_t>
         max_value = std::max(value + m_q[i][j], max_value);
     };
 
+    size_t best_index;
+    size_t best_value;
     if (original_position != 0) {
         set_f_and_max(0, 0, p(job, 0));
         for (size_t j = 1; j < m_instance.num_machines(); j++) {
             set_f_and_max(0, j, m_f[0][j - 1] + p(job, j));
         }
+        best_index = 0;
+        best_value = max_value;
+    } else {
+        best_index = 1;
+        best_value = std::numeric_limits<size_t>::max();
     }
-
-    size_t best_index = 0;
-    size_t best_value = max_value;
 
     for (size_t i = 1; i <= sequence.size(); i++) {
         if (original_position == i) {

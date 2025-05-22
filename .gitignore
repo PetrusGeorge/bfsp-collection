@@ -35,3 +35,4 @@
 
 # Compilation Database
 *compile_commands.json
+.vscode

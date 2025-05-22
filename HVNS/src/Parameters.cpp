@@ -23,6 +23,12 @@ void config_argparse(argparse::ArgumentParser &cli) {
         .metavar("RO")
         .default_value(size_t(100))
         .scan<'i', size_t>();
+
+    cli.add_argument("-i", "--iterations")
+        .help("set the n_iter parameter which delimits number of iterations required for the current temperature to go from the initial temperature to the final temperature")
+        .metavar("N_ITER")
+        .default_value(size_t(1800000))
+        .scan<'i', size_t>();
 }
 } // namespace
 
@@ -48,4 +54,5 @@ Parameters::Parameters(int argc, char **argv) {
     m_seed = cli.present<size_t>("--seed");
     m_tl = cli.present<size_t>("--time");
     m_ro = cli.get<size_t>("--ro");
+    m_n_iter = cli.get<size_t>("--iterations");
 }
