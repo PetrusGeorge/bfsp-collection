@@ -63,6 +63,8 @@ Solution MFFO::solve() {
         // Determine whether to apply RLS based on a probability
         if (RNG::instance().generate_real_number(0.0, 1.0) < m_param.pls()) {
             rls(s1, best.sequence, m_instance);
+        } else {
+            core::recalculate_solution(m_instance,s1);
         }
 
         if (!ro.empty() && uptime() >= ro.back() * mxn) {
@@ -81,6 +83,19 @@ Solution MFFO::solve() {
                 best = s1;
             }
         }
+
+        // Update criterion
+        size_t worst_idx = 0;
+        size_t worst_cost = population[0].cost;
+        // Find worst solution
+        for (size_t i = 1; i < population.size(); i++){
+            if (population[i].cost > worst_cost){
+                worst_idx = i;
+                worst_cost = population[i].cost;
+            }
+        }
+
+        population[worst_idx] = best;
 
         i = (i + 1) % m_param.ps();
     }
