@@ -34,6 +34,47 @@ P_EDA::P_EDA(Instance &instance, Parameters &params, size_t ps, double lambda)
     m_pc.reserve(m_ps);
 }
 
+bool P_EDA::mrls(Solution &s, Instance &instance) {
+    std::vector<size_t> ref = fisher_yates_shuffle();
+    bool improved = false;
+    size_t j = 0;
+    size_t cnt = 0;
+    NEH helper(instance);
+    while (cnt < instance.num_jobs()) {
+        j++;
+        if(j >= instance.num_jobs()){
+            j = j % instance.num_jobs();
+            for (size_t i = 0; i < j; i++) {
+                const size_t j = RNG::instance().generate(size_t{0}, i);
+        
+                std::swap(ref[i], ref[j]);
+            }
+        }
+
+        const size_t job = ref[j];
+        for (size_t i = 0; i < s.sequence.size(); i++) {
+            if (s.sequence[i] == job) {
+                s.sequence.erase(s.sequence.begin() + (long)i);
+            }
+        }
+
+        auto [best_index, makespan] = helper.taillard_best_insertion(s.sequence, job);
+        s.sequence.insert(s.sequence.begin() + (long)best_index, job);
+
+        if (makespan < s.cost) {
+            cnt = 0;
+            s.cost = makespan;
+            improved = true;
+            continue;
+        }
+        else{
+            cnt++;
+        }
+    }
+
+    return improved;
+}
+
 Solution P_EDA::solve() {
     time_expired = false;
 
@@ -257,6 +298,7 @@ void P_EDA::modified_linear_rank_selection() {
             }
         }
     }
+    
     m_pc = new_pc;
 }
 

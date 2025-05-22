@@ -21,6 +21,8 @@ class P_EDA { // NOLINT
     void generate_random_individuals();
     void modified_linear_rank_selection();
 
+    bool mrls(Solution &s, Instance &instance);
+
     // functions related to the probabilistic model
     Solution probabilistic_model(const SizeTMatrix &p, const std::vector<SizeTMatrix> &t);
     std::vector<std::vector<size_t>> get_p();
