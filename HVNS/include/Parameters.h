@@ -22,7 +22,7 @@ class Parameters {
     bool m_benchmark = false;
     std::optional<size_t> m_seed;
     std::optional<size_t> m_tl;
-    size_t m_ro = 30;
+    size_t m_ro = 100;
 };
 
 #endif

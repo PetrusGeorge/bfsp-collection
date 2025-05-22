@@ -17,7 +17,7 @@ class HVNS {
   public:
     HVNS(Instance instance, Parameters params);
 
-    // Generate a random sequence using PF-NEH and other PS-1 randomly
+    // use neh to generate one solution
     Solution generate_first_solution();
 
     // Generate a random permutation of jobs
@@ -25,6 +25,8 @@ class HVNS {
 
     // verify if two solutions are equal
     bool equal_solution(Solution &s1, Solution &s2);
+    
+    std::pair<size_t, size_t> taillard_best_edge_insertion(const std::vector<size_t> &sequence, std::pair<size_t, size_t> &jobs, size_t original_position);
 
     bool best_insertion(Solution &s);
 
@@ -36,7 +38,10 @@ class HVNS {
 
     void sa_rls(Solution &s, Solution &best);
 
+    void sa_best_edge_insertion(Solution &s, Solution &best);
+
     Solution solve();
+
 
   private:
     Instance m_instance;

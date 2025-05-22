@@ -67,14 +67,92 @@ bool HVNS::equal_solution(Solution &s1, Solution &s2) {
     return true;
 }
 
+std::pair<size_t, size_t> HVNS::taillard_best_edge_insertion(const std::vector<size_t> &sequence, std::pair<size_t, size_t> &jobs, size_t original_position) {
+    size_t m = m_instance.num_machines();
+
+    auto m_e = core::calculate_departure_times(m_instance, sequence);
+
+    auto m_q = core::calculate_tail(m_instance, sequence);
+    // Make it easier to implement find_best_insertion
+    // without an out of bound access
+    m_q.emplace_back(m_instance.num_machines(), 0);
+
+    auto p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
+
+    auto m_f = std::vector(sequence.size() + 1, std::vector<size_t>(m_instance.num_machines()));
+
+    m_f[0][0] = p(jobs.first, 0);
+    for(size_t j = 1; j < m; j++) {
+        m_f[0][j] = m_f[0][j-1] + p(jobs.first, j);
+    }
+
+    for(size_t i = 1; i < m_f.size(); i++) {
+
+        m_f[i][0] = std::max(m_e[i-1][0] + p(jobs.first, 0), m_e[i-1][1]);
+        size_t j;
+        for(j = 1; j < m_f[i].size() - 1; j++) {
+            m_f[i][j] = std::max(m_f[i][j-1] + p(jobs.first, j), m_e[i-1][j+1]);
+        }
+        m_f[i][j] = m_f[i][j-1] + p(jobs.first, j);
+    }
+
+    // Evaluate best insertion
+    size_t max_value = 0;
+    auto set_f_and_max = [&m_f, &m_q, &max_value](size_t i, size_t j, size_t value) {
+        m_f[i][j] = value;
+        max_value = std::max(value + m_q[i][j], max_value);
+    };
+
+
+    size_t best_index = 0;
+    size_t best_value = max_value;
+    if (original_position != 0) {
+        set_f_and_max(0, 0, std::max(m_f[0][0] + p(jobs.second, 0), m_f[0][1]));
+        size_t j;
+        for (j = 1; j < m_instance.num_machines() - 1; j++) {
+            set_f_and_max(0, j, std::max(m_f[0][j - 1] + p(jobs.second, j), m_f[0][j+1]));
+        }
+        set_f_and_max(0, j, m_f[0][j - 1] + p(jobs.second, j));
+
+        best_index = 0;
+        best_value = max_value;
+    } else {
+        best_index = 1;
+        best_value = std::numeric_limits<size_t>::infinity();
+    }
+
+    for (size_t i = 1; i <= sequence.size(); i++) {
+        if (original_position == i) {
+            continue;
+        }
+
+        max_value = 0;
+        size_t value = std::max(m_f[i][0] + p(jobs.second, 0), m_f[i][1]);
+        set_f_and_max(i, 0, value);
+
+        for (size_t j = 1; j < m_instance.num_machines() - 1; j++) {
+            value = std::max(m_f[i][j - 1] + p(jobs.second, j), m_f[i][j + 1]);
+            set_f_and_max(i, j, value);
+        }
+        value = m_f[i][m_instance.num_machines() - 2] + p(jobs.second, m_instance.num_machines() - 1);
+        set_f_and_max(i, m_instance.num_machines() - 1, value);
+
+        if (max_value < best_value) {
+            best_value = max_value;
+            best_index = i;
+        }
+    }
+
+    return {best_index, best_value};
+}
 
 bool HVNS::best_insertion(Solution &s) {
 
     bool improved = false;
     NEH helper(m_instance);
-    size_t best_job;
+    size_t best_job_index;
     size_t best_obj = s.cost;
-    size_t best_index = std::numeric_limits<size_t>::infinity();
+    size_t best_insetion_index = std::numeric_limits<size_t>::infinity();
 
     for(size_t i = 0; i < m_instance.num_jobs(); i++) {
 
@@ -87,44 +165,41 @@ bool HVNS::best_insertion(Solution &s) {
 
         if (obj < best_obj) {
             best_obj = obj;
-            best_index = index;
-            best_job = i;
+            best_insetion_index = index;
+            best_job_index = i;
             improved = true;
         }
     }
 
-    if (!(best_index < std::numeric_limits<size_t>::infinity())) {
+    if (!(best_insetion_index < std::numeric_limits<size_t>::infinity())) {
         return improved;
     }
 
-    if (best_job < best_index) {
-        std::rotate(s.sequence.begin()+best_job, s.sequence.begin()+best_job+1, s.sequence.begin()+best_index);
+    if (best_job_index < best_insetion_index) {
+        std::rotate(s.sequence.begin()+best_job_index, s.sequence.begin()+best_job_index+1, s.sequence.begin()+best_insetion_index);
     } else {
-        std::rotate(s.sequence.begin()+best_index, s.sequence.begin()+best_job, s.sequence.begin()+best_job+1);
+        std::rotate(s.sequence.begin()+best_insetion_index, s.sequence.begin()+best_job_index, s.sequence.begin()+best_job_index+1);
     }
 
     return improved;
 }
 
-/*
-We aren't sure if this algorithm use the taillard speed up or not
-*/
 bool HVNS::best_edge_insertion(Solution &s) {
 
     bool improved = false;
-    NEH helper(m_instance);
     size_t best_job;
-    size_t best_obj = s.cost;
     size_t best_index = std::numeric_limits<size_t>::infinity();
+    size_t best_obj = s.cost;
 
-    for(size_t i = 0; i < m_instance.num_jobs(); i++) {
+    for(size_t i = 0; i < m_instance.num_jobs() - 1; i++) {
 
-        const size_t job = s.sequence[i];
+        std::pair<size_t, size_t> jobs = { s.sequence[i], s.sequence[i+1] };
         s.sequence.erase(s.sequence.begin() + (long)i, s.sequence.begin() + (long)i+2);
 
-        auto [index, obj] = helper.taillard_best_insertion(s.sequence, job, std::numeric_limits<size_t>::infinity());
+        auto [index, obj] = taillard_best_edge_insertion(s.sequence, jobs, std::numeric_limits<size_t>::infinity());
 
-        s.sequence.insert(s.sequence.begin() + (long)i, job);
+        s.sequence.insert(s.sequence.begin() + (long)i, jobs.first);
+        s.sequence.insert(s.sequence.begin() + (long)i+1, jobs.second);
 
         if (obj < best_obj) {
             best_obj = obj;
@@ -139,9 +214,9 @@ bool HVNS::best_edge_insertion(Solution &s) {
     }
 
     if (best_job < best_index) {
-        std::rotate(s.sequence.begin()+best_job, s.sequence.begin()+best_job+1, s.sequence.begin()+best_index);
+        std::rotate(s.sequence.begin()+best_job, s.sequence.begin()+best_job+2, s.sequence.begin()+best_index+2);
     } else {
-        std::rotate(s.sequence.begin()+best_index, s.sequence.begin()+best_job, s.sequence.begin()+best_job+1);
+        std::rotate(s.sequence.begin()+best_index, s.sequence.begin()+best_job, s.sequence.begin()+best_job+2);
     }
 
     return improved;
@@ -215,21 +290,20 @@ void HVNS::sa_rls(Solution &s, Solution &best) {
     size_t j = 0;
     size_t cnt = 0;
     NEH helper(m_instance);
-    size_t curr_makespan = s.cost;
     while (cnt < m_instance.num_jobs()) {
         j = (j + 1) % m_instance.num_jobs();
         const size_t job = ref[j];
-
         size_t i;
         for (i = 0; i < s.sequence.size(); i++) {
             if (s.sequence[i] == job) {
                 s.sequence.erase(s.sequence.begin() + (long)i);
+                // break;
             }
         }
 
         auto [best_index, best_nei_obj] = helper.taillard_best_insertion(s.sequence, job, i);
         
-        double delta = static_cast<double>(best_nei_obj - curr_makespan);
+        double delta = static_cast<double>(best_nei_obj - s.cost);
         if (RNG::instance().generate_real_number(0, 1) < 1 / exp(delta / m_T)) {
             s.sequence.insert(s.sequence.begin() + (long)best_index, job);
             cnt = 0;
@@ -237,6 +311,76 @@ void HVNS::sa_rls(Solution &s, Solution &best) {
             s.cost = best_nei_obj;
         } else {   
             s.sequence.insert(s.sequence.begin() + (long)i, job);
+            cnt++;
+        }
+
+        if (best_nei_obj < best.cost) {
+            best = s;
+        }
+
+        m_n_iter++;
+        double beta = (m_T_init - m_T_fin) / (m_n_iter * m_T_init * m_T_fin);
+        m_T = m_T / (1 + (beta * m_T));
+    }
+}
+
+void HVNS::sa_best_edge_insertion(Solution &s, Solution &best) {
+
+    std::vector<size_t> ref = generate_random_sequence();
+    size_t j = 0;
+    size_t cnt = 0;
+    NEH helper(m_instance);
+    while (cnt < m_instance.num_jobs()) {
+
+        // for(size_t g = 0; g < s.sequence.size(); g++) {
+        //     std::cout << s.sequence[g] << " ";
+        // }
+        // std::cout << std::endl;
+
+        // if(s.sequence.size() != initial_size) {
+        //     getchar();
+        // }
+
+        j = (j + 1) % m_instance.num_jobs();
+        std::pair<size_t, size_t> jobs;
+        jobs.first = ref[j];
+
+        size_t i;
+        std::cout << "j: " << j << "; job1: " << jobs.first << std::endl; 
+        for (i = 0; i < s.sequence.size()-1; i++) {
+            // std::cout << "i: " << i << std::endl;
+            if (s.sequence[i] == jobs.first) {
+                // std::cout << "entrou" << std::endl;
+                jobs.second = s.sequence[i+1];
+                s.sequence.erase(s.sequence.begin() + i, s.sequence.begin() + i + 2);
+                break;
+            }
+        }
+
+        if (i == m_instance.num_jobs()-1) {
+            std::cout << "deu continue" << std::endl;
+            cnt++;
+            continue;
+        }
+
+        auto [best_index, best_nei_obj] = taillard_best_edge_insertion(s.sequence, jobs, i);
+        
+        
+        double delta = static_cast<double>(best_nei_obj - s.cost);
+        std::cout << "best_idx: " << best_index << "; makespan: " << best_nei_obj << "; delta: " << delta << std::endl;
+
+        if(best_nei_obj == 0) {
+            getchar();
+        }
+        if (RNG::instance().generate_real_number(0, 1) < 1 / exp(delta / m_T)) {
+            s.sequence.insert(s.sequence.begin() + best_index, jobs.first);
+            s.sequence.insert(s.sequence.begin() + best_index + 1, jobs.second);
+            s.cost = best_nei_obj;
+            cnt = 0;
+            std::shuffle(ref.begin(), ref.end(), RNG::instance().gen());
+        } else {   
+            s.sequence.insert(s.sequence.begin() + i, jobs.first);
+            s.sequence.insert(s.sequence.begin() + i + 1, jobs.second);
             cnt++;
         }
 
@@ -260,11 +404,14 @@ Solution HVNS::solve() {
 
     Solution best_solution, current;
 
+    best_solution = current = generate_first_solution();
+
     size_t previous_best_obj = best_solution.cost;
     while (true) {
         size_t k = 1;
 
         while (k < KMAX) {
+
             shaking(current, k);
             
             if (current.cost < best_solution.cost) {
@@ -272,11 +419,15 @@ Solution HVNS::solve() {
             }
 
             Solution temp;
+            std::cout << "antes do Local search" << std::endl;
             do {
                 sa_rls(current, best_solution);
+                std::cout << "depois do rls" << std::endl;
                 temp = current;
-                // LC2
+                sa_best_edge_insertion(current, best_solution);
+                std::cout << "depois do edge insertion" << std::endl;
             } while(!equal_solution(current, temp));
+            std::cout << "depois do Local search" << std::endl;
 
             if (best_solution.cost < previous_best_obj) {
                 k = 1;
@@ -285,6 +436,7 @@ Solution HVNS::solve() {
                 k++;
             }
         }
+
         if (!ro.empty() && uptime() >= (ro.back()*mxn) / 1000){
                 
             std::cout << best_solution.cost << '\n';
