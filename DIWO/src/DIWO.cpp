@@ -79,7 +79,7 @@ Population DIWO::population_init() {
     for (size_t i = 0; i < 5; ++i) {
         PF_NEH pf_neh(m_instance);
 
-        const auto sol = pf_neh.solve(lambda, i);
+        const Solution sol = pf_neh.solve(lambda, i);
 
         if (sol.cost < best.cost) {
             best = sol;

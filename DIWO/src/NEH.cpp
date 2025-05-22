@@ -53,7 +53,7 @@ std::pair<size_t, size_t> NEH::taillard_grabowski_best_ins(const Solution &s, co
                                                            const std::vector<std::pair<size_t, size_t>> &ranges) {
 
     const std::vector<size_t> &sequence = s.sequence;
-    
+
     m_e = core::calculate_departure_times(m_instance, sequence);
 
     m_q = core::calculate_tail(m_instance, sequence);

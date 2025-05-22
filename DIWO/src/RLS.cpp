@@ -1,8 +1,8 @@
 #include "RLS.h"
 #include "Core.h"
 #include "Instance.h"
-#include "Solution.h"
 #include "NEH.h"
+#include "Solution.h"
 
 #include <cassert>
 #include <cstdint>
@@ -145,6 +145,7 @@ bool rls_grabowski(Solution &s, const std::vector<size_t> &ref, Instance &instan
     size_t j = 0;
     size_t cnt = 0;
     NEH helper(instance);
+    core::recalculate_solution(instance, s);
     while (cnt < instance.num_jobs()) {
         j = (j + 1) % instance.num_jobs();
 
