@@ -20,7 +20,7 @@ namespace {
 size_t uptime() {
     static const auto global_start_time = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - global_start_time);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - global_start_time);
     return duration.count();
 }
 } // namespace
@@ -95,7 +95,7 @@ Solution IG_IJ::solve() {
 
     // Set time limit to parameter or a default calculation
     size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
-    size_t time_limit = (m_params.ro() * mxn) / 1000;
+    size_t time_limit = (m_params.ro() * mxn);
 
     VERBOSE(m_params.verbose()) << "Time limit: " << time_limit << "s\n";
     NEH neh(m_instance);
