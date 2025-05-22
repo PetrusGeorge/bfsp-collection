@@ -9,9 +9,16 @@ void config_argparse(argparse::ArgumentParser &cli) {
 
     cli.add_argument("-s", "--seed").help("set random number generator seed").metavar("SEED").scan<'i', size_t>();
 
-    cli.add_argument("-tl", "--time-limit")
-        .help("set the time limit in seconds")
-        .metavar("TIME LIMIT")
+    cli.add_argument("-b", "--benchmark")
+        .help("set program to benchmark mode")
+        .metavar("BENCHMARK")
+        .default_value(false)
+        .flag();
+
+    cli.add_argument("-r", "--ro")
+        .help("set the ro parameter which delimits the time limit of the program")
+        .metavar("RO")
+        .default_value(size_t(30))
         .scan<'i', size_t>();
 
     cli.add_argument("-a", "--alpha")
@@ -53,11 +60,11 @@ Parameters::Parameters(int argc, char **argv) {
 
     // Set members
     m_instance_path = cli.get<std::string>("instance");
+    m_benchmark = cli.get<bool>("--benchmark");
     m_seed = cli.present<size_t>("--seed");
-    m_time_limit = cli.present<size_t>("--time-limit");
+    m_ro = cli.get<size_t>("--ro");
     m_alpha = cli.get<double>("--alpha");
     m_pls = cli.get<double>("--pls");
     m_ps = cli.get<size_t>("--ps");
     m_T = cli.get<size_t>("--T");
-    m_time_limit = cli.present<size_t>("--time-limit");
 }

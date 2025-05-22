@@ -5,5 +5,6 @@ sources = files(
   'NEH.cpp',
   'Parameters.cpp',
   'RLS.cpp',
+  'MinMax.cpp',
   'main.cpp',
 )

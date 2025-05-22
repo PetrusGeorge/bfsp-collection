@@ -21,11 +21,9 @@ int main(int argc, char *argv[]) {
         RNG::instance().set_seed(*seed);
     }
 
-    std::cout << "Seed: " << RNG::instance().seed() << '\n';
-
     MFFO mffo(Instance(params.instance_path()), params);
 
     const Solution s = mffo.solve();
 
-    std::cout << s << '\n';
+    std::cout << s.cost << '\n';
 }
