@@ -11,7 +11,7 @@
 class Population {
   public:
     std::vector<Solution> solutions;
-    std::vector<int> seeds;
+    std::vector<size_t> seeds;
     size_t best_solution_idx;
     size_t worst_solution_idx;
 

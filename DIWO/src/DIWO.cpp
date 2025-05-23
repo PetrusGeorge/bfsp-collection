@@ -4,7 +4,6 @@
 #include <limits>
 #include <random>
 
-#include "Clock.h"
 #include "Core.h"
 #include "DIWO.h"
 #include "Instance.h"
@@ -61,12 +60,12 @@ void Population::calculate_seeds(size_t s_min, size_t s_max) {
 
     const auto t_worst = static_cast<double>(solutions[worst_solution_idx].cost);
     const auto t_best = static_cast<double>(solutions[best_solution_idx].cost);
-    const auto multiplier = static_cast<double>((s_max - s_min) + s_min);
+    const auto multiplier = static_cast<double>(s_max - s_min);
 
     for (size_t i = 0; i < solutions.size(); ++i) {
         const double div = (t_worst - static_cast<double>(solutions[i].cost) + EPSILON) /
                            (static_cast<double>(t_worst - t_best) + EPSILON);
-        seeds[i] = std::floor(div * multiplier);
+        seeds[i] = static_cast<size_t>(std::floor(div * multiplier)) + s_min;
     }
 }
 
@@ -133,13 +132,15 @@ size_t DIWO::get_solution_d(const double deviation) {
 Population DIWO::spatial_dispersal(const Population &pop) {
     Population new_pop;
     NEH neh(m_instance);
+
+    const size_t max_time = m_params.ro() * m_instance.num_jobs() * m_instance.num_machines();
+
+    double deviation = ((1 - static_cast<double>(uptime()) / static_cast<double>(max_time)) *
+                        static_cast<double>(m_params.sigma_max() - m_params.sigma_min())) +
+                       static_cast<double>(m_params.sigma_min());
+
     for (size_t i = 0; i < pop.solutions.size(); ++i) {
         const auto &sol = pop.solutions[i];
-        const size_t max_time = m_params.ro() * m_instance.num_jobs() * m_instance.num_machines();
-
-        double deviation = ((1 - static_cast<double>(uptime()) / static_cast<double>(max_time)) *
-                            static_cast<double>(m_params.sigma_max() - m_params.sigma_min())) +
-                           static_cast<double>(m_params.sigma_min());
 
         const size_t half_size = pop.solutions.size() / 2;
         const double median =
@@ -147,11 +148,10 @@ Population DIWO::spatial_dispersal(const Population &pop) {
                 ? static_cast<double>(pop.solutions[half_size - 1].cost + pop.solutions[half_size].cost) / 2.0
                 : static_cast<double>(pop.solutions[half_size].cost);
 
-        if (deviation > median) {
+        if (static_cast<double>(sol.cost) > median) {
             deviation *= ((static_cast<double>(sol.cost) - median) /
                           (static_cast<double>(pop.solutions[pop.worst_solution_idx].cost) - median)) *
-                             0.5 +
-                         1;
+                             0.5 + 1;
         }
         for (size_t j = 0; j < static_cast<size_t>(pop.seeds[i]); ++j) {
 
