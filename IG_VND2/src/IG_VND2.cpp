@@ -36,10 +36,6 @@ double IG_VND2::acceptance_criterion(Solution pi_0, Solution pi_2) {
 }
 
 void IG_VND2::BestSwap(Solution &solution) { // NOLINT
-
-    // Set correct departure times matrix to use partial recalculate solution
-    core::recalculate_solution(m_instance, solution);
-
     // starting variables
     Solution copy = solution;
     size_t original_cost = solution.cost;
@@ -59,7 +55,7 @@ void IG_VND2::BestSwap(Solution &solution) { // NOLINT
             } else {
                 core::partial_recalculate_solution(m_instance, copy, i);
             }
-
+            
             if (solution.cost <= best_cost) {
                 best_cost = solution.cost;
                 best_j = j;
@@ -67,6 +63,12 @@ void IG_VND2::BestSwap(Solution &solution) { // NOLINT
             }
             // Undo for now
             std::swap(copy.sequence[i], copy.sequence[j]);
+        }
+        if (i == 0) {
+            // If the first job is swapped it needs a full recalculation
+            core::recalculate_solution(m_instance, copy);
+        } else {
+            core::partial_recalculate_solution(m_instance, copy, i);
         }
     }
 
