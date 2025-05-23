@@ -34,27 +34,34 @@ P_EDA::P_EDA(Instance &instance, Parameters &params, size_t ps, double lambda)
     m_pc.reserve(m_ps);
 }
 
-bool P_EDA::mrls(Solution &s, Instance &instance) {
-    std::vector<size_t> ref = fisher_yates_shuffle();
+bool P_EDA::mrls(Solution &s, std::vector<size_t> &ref, Instance &instance) {
     bool improved = false;
+    size_t n = instance.num_jobs();
     size_t j = 0;
     size_t cnt = 0;
     NEH helper(instance);
-    while (cnt < instance.num_jobs()) {
+    while (cnt <= n) {
         j++;
-        if(j >= instance.num_jobs()){
-            j = j % instance.num_jobs();
-            for (size_t i = 0; i < j; i++) {
-                const size_t j = RNG::instance().generate(size_t{0}, i);
+        if(j >= n){
+            j = j % n;
+            std::vector<size_t> shuffled;
+            shuffled.reserve(n);
+            
+            while(!ref.empty()) {
+                const size_t k = RNG::instance().generate(size_t{0}, ref.size()-1);
         
-                std::swap(ref[i], ref[j]);
+                shuffled.push_back(ref[k]);
+                ref.erase(ref.begin() + k);
             }
+
+            ref = shuffled;
         }
 
         const size_t job = ref[j];
         for (size_t i = 0; i < s.sequence.size(); i++) {
             if (s.sequence[i] == job) {
                 s.sequence.erase(s.sequence.begin() + (long)i);
+                break;
             }
         }
 
@@ -91,6 +98,8 @@ Solution P_EDA::solve() {
     // generating the initial population and applying the modified linear rank selection
     generate_initial_population();
     modified_linear_rank_selection();
+    std::vector<size_t> ref(m_instance.num_jobs()); // referencied shuffled sequence to mrls
+    std::iota(ref.begin(), ref.end(), 0);
 
     // the p[i][j] represents how many times job j appeared before or in position i give the current population
     auto p = get_p();
@@ -121,9 +130,9 @@ Solution P_EDA::solve() {
             std::cout << best << "\n";
         }
 
-        auto ref = fisher_yates_shuffle();
+        std::shuffle(ref.begin(), ref.end(), RNG::instance().gen());
 
-        rls(best, ref, m_instance);
+        mrls(best, ref, m_instance);
 
         const auto [found_in_population, max_cost_pos] = in_population_and_max_makespan(best.sequence);
         const auto &max_cost = m_pc[max_cost_pos].cost;
