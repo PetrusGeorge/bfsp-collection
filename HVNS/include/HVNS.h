@@ -8,9 +8,8 @@
 #include "RNG.h"
 #include "Solution.h"
 #include "constructions/NEH.h"
-#include "local-search/RLS.h"
 
-#define KMAX 4 // number of neighborhoods
+#define KMAX 3 // number of neighborhoods
 
 class HVNS {
 
@@ -24,21 +23,22 @@ class HVNS {
     std::vector<size_t> generate_random_sequence();
 
     // verify if two solutions are equal
-    bool equal_solution(Solution &s1, Solution &s2);
-    
-    // adaptation of taillard_best_insertion to edge insertion method
-    std::pair<size_t, size_t> taillard_best_edge_insertion(const std::vector<size_t> &sequence, std::pair<size_t, size_t> &jobs, size_t original_position);
+    static bool equal_solution(Solution &s1, Solution &s2);
 
-    // finds the best position to reinsert a job and reinserts it    
-    bool best_insertion(Solution &s);
+    // adaptation of taillard_best_insertion to edge insertion method
+    std::pair<size_t, size_t> taillard_best_edge_insertion(const std::vector<size_t> &sequence,
+                                                           std::pair<size_t, size_t> &jobs, size_t original_position);
+
+    // finds the best position to reinsert a job and reinserts it
+    void best_insertion(Solution &s);
 
     // finds the best position to reinsert a sequence of two jobs and reinserts them
-    bool best_edge_insertion(Solution &s);
+    void best_edge_insertion(Solution &s);
 
     // finds the best job swap and applies it
-    bool best_swap(Solution &s);
+    void best_swap(Solution &s);
 
-    // it defines which method (swap, edge insertion, insertion) will be used 
+    // it defines which method (swap, edge insertion, insertion) will be used
     void shaking(Solution &s, size_t k);
 
     // rls + sa = it can accept some insertions, even if it's worth than the current solution
@@ -52,11 +52,11 @@ class HVNS {
   private:
     Instance m_instance;
     Parameters m_params;
-    size_t m_time_limit; 
-    double m_T; // current temperature
+    size_t m_time_limit;
+    double m_T;      // current temperature
     double m_T_init; // initial temperature
-    double m_T_fin; // "final" temperature
-    double m_beta; // cooling adjustment
+    double m_T_fin;  // "final" temperature
+    double m_beta;   // cooling adjustment
 };
 
 #endif

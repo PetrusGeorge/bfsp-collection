@@ -129,7 +129,7 @@ void core::partial_recalculate_solution(Instance &instance, Solution &s, size_t 
         }
         start++;
     }
-    
+
     // Recalculate departure times from start index to the end
     for (size_t i = start; i < s.sequence.size(); i++) {
         const size_t node = s.sequence[i];

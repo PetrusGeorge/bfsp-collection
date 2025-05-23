@@ -32,8 +32,8 @@ class RNG {
     }
 
     double generate_real_number(double min, double max) {
-      std::uniform_real_distribution<double> dis(min, max);
-      return dis(m_gen);
+        std::uniform_real_distribution<double> dis(min, max);
+        return dis(m_gen);
     }
 
   private:

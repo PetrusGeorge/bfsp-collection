@@ -11,7 +11,11 @@ void config_argparse(argparse::ArgumentParser &cli) {
 
     cli.add_argument("-v", "--verbose").help("set program verbosity").metavar("VERBOSE").default_value(false).flag();
 
-    cli.add_argument("-b", "--benchmark").help("set program to benchmark mode").metavar("BENCHMARK").default_value(false).flag();
+    cli.add_argument("-b", "--benchmark")
+        .help("set program to benchmark mode")
+        .metavar("BENCHMARK")
+        .default_value(false)
+        .flag();
 
     cli.add_argument("-t", "--time")
         .help("set the time limit for the program")
@@ -25,7 +29,8 @@ void config_argparse(argparse::ArgumentParser &cli) {
         .scan<'i', size_t>();
 
     cli.add_argument("-i", "--iterations")
-        .help("set the n_iter parameter which delimits number of iterations required for the current temperature to go from the initial temperature to the final temperature")
+        .help("set the n_iter parameter which delimits number of iterations required for the current temperature to go "
+              "from the initial temperature to the final temperature")
         .metavar("N_ITER")
         .default_value(size_t(1800000))
         .scan<'i', size_t>();
