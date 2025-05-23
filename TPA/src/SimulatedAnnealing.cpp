@@ -25,8 +25,6 @@ Solution SimulatedAnnealing::solve() {
 
     Solution best_solution = m_solution;
     Solution current_solution = m_solution;
-    std::cout << "initial_temp: " << m_initial_temp << "\n";
-    getchar();
 
     while (current_temp > m_final_temp) {
         auto position = RNG::instance().generate<size_t>(0, n_jobs - 1);
@@ -35,7 +33,7 @@ Solution SimulatedAnnealing::solve() {
 
         int delta = (int)new_sol.cost - (int)current_solution.cost;
 
-        if (delta <= 0) {
+        if (delta < 0) {
             current_solution = new_sol;
             reference_cost = new_sol.cost;
 
@@ -54,7 +52,6 @@ Solution SimulatedAnnealing::solve() {
         }
 
         current_temp = current_temp / (1 + (m_decay * current_temp));
-        std::cout << "current_temp: " << current_temp << "\n";
     }
 
     return best_solution;
@@ -85,6 +82,7 @@ Solution SimulatedAnnealing::anneal(Solution &current_solution, size_t position)
     std::vector<size_t> phi = {current_solution.sequence.begin() + (long)position + 1, current_solution.sequence.end()};
 
     Solution new_sol;
+    new_sol.cost = current_solution.cost;
     new_sol.sequence = new_seq;
     helper.second_step(phi, new_sol);
 
