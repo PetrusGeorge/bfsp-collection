@@ -9,13 +9,13 @@ namespace {
 size_t uptime() {
     static const auto global_start_time = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - global_start_time);
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - global_start_time);
     return duration.count();
 }
 } // namespace
 
 HDDE::HDDE(Instance instance, Parameters params) : m_instance(std::move(instance)), m_params(std::move(params)) {
-    this->m_time_limit = m_params.ro() * m_instance.num_jobs() * m_instance.num_machines();
+    m_time_limit = (m_params.ro() * m_instance.num_jobs() * m_instance.num_machines()) / 1000;
 }
 
 bool HDDE::new_in_population(std::vector<size_t> &sequence) {
@@ -66,22 +66,6 @@ std::vector<size_t> HDDE::generate_random_sequence() {
     std::shuffle(v.begin(), v.end(), RNG::instance().gen());
 
     return v;
-}
-
-size_t HDDE::tournament() {
-
-    size_t i = RNG::instance().generate((size_t)0, m_pop.size() - 1);
-    size_t j = i;
-
-    while (i == j) {
-        j = RNG::instance().generate((size_t)0, m_pop.size() - 1);
-    }
-
-    if (m_pop[i].cost > m_pop[j].cost) {
-        return j;
-    } else {
-        return i;
-    }
 }
 
 std::vector<size_t> HDDE::mutation() {
@@ -197,6 +181,13 @@ size_t HDDE::find_best_solution() {
 
 Solution HDDE::solve() {
 
+
+    size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
+    std::vector<size_t> ro;
+    if (m_params.benchmark()){
+        ro = {90, 60, 30};
+    }
+
     Solution best_solution;
     size_t idx;
 
@@ -223,12 +214,18 @@ Solution HDDE::solve() {
         }
         
         idx = find_best_solution();
-        if (m_pop[idx].cost < best_solution.cost) {
-            best_solution = m_pop[idx];
+
+        if (!ro.empty() && uptime() >= ro.back() * mxn / 1000) {
+            std::cout << best_solution.cost << '\n';
+            ro.pop_back();
         }
 
         if (uptime() > m_time_limit) {
             break;
+        }
+
+        if (m_pop[idx].cost < best_solution.cost) {
+            best_solution = m_pop[idx];
         }
     }
 

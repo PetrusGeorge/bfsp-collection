@@ -27,9 +27,6 @@ class HDDE {
     // generate one random solution
     std::vector<size_t> generate_random_sequence();
 
-    // pick two solutions and return the index of the one which has the best makespan
-    size_t tournament();
-
     // generate one solution based on other three in the population. The solution generated don't follow the constraints
     // of the problem for instance, it might be generated a solution like {5, 4, 5, 1, 3}
     std::vector<size_t> mutation();
