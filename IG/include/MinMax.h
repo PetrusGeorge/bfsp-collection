@@ -1,7 +1,6 @@
 #ifndef MINMAX_H
 #define MINMAX_H
 #include "Instance.h"
-#include "Parameters.h"
 #include "Solution.h"
 
 class MinMax {
