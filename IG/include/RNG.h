@@ -16,9 +16,13 @@ class RNG {
         return instance;
     }
 
-    const std::mt19937 &gen() const { return m_gen; }
+    std::mt19937 &gen() { return m_gen; }
     size_t seed() const { return m_seed; }
-    void set_seed(size_t seed) { m_seed = seed; }
+
+    void set_seed(size_t seed) {
+        m_seed = seed;
+        m_gen.seed(m_seed);
+    }
 
     // If any more functions are needed make them here on this class
     template <typename T> T generate(T min, T max) {
@@ -27,12 +31,21 @@ class RNG {
         return dis(m_gen);
     }
 
+    double generate_real_number(double min, double max) {
+        std::uniform_real_distribution<double> dis(min, max);
+        return dis(m_gen);
+    }
+
   private:
     RNG() = default;
 
     // Random seed if no seed is set
     size_t m_seed = std::random_device{}();
+#ifdef __APPLE__
+    std::mt19937 m_gen{static_cast<unsigned int>(m_seed)};
+#else
     std::mt19937 m_gen{m_seed};
+#endif
 };
 
 #endif
