@@ -29,9 +29,11 @@ def main(binary_path, num_threads):
     instances.sort()
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
         futures = [executor.submit(process_iteration, binary_path, instance, size, i) for (size, instance) in instances for i in range(num_runs)]
+        counter = 0
         for future in as_completed(futures):
             result = future.result()
-            print(f"Tarefa concluída:{result}")
+            counter += 1
+            print(f"Finished:{result} | {counter} out of {len(futures)}")
  
 if __name__ == "__main__":
     if len(sys.argv) != 3:

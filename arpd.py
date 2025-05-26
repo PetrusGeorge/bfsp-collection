@@ -19,10 +19,7 @@ for jxmy_dir in os.listdir(results_dir):
         if not os.path.isdir(instance_path):
             continue
 
-        try:
-            instance_index = int(instance_dir[instance_dir.find("N")+1:]) - 1
-        except ValueError:
-            continue
+        instance_index = int(instance_dir[instance_dir.find("N")+1:]) - 1
 
         values = []
         for file in os.listdir(instance_path):
