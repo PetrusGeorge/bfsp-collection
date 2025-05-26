@@ -95,8 +95,19 @@ Solution IG_VND1::solve() {
     VERBOSE(m_params.verbose()) << current;
 
     // Set time limit to parameter or a default calculation
-    size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
-    size_t time_limit = (m_params.ro() * mxn) / 1000;
+    size_t time_limit = 0;
+    const size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
+    if (auto tl = m_params.tl()) {
+        time_limit = *tl;
+    } else {
+        time_limit = (m_params.ro() * mxn) / 1000;
+    }
+
+    std::vector<size_t> ro;
+    if (m_params.becnhmark()) {
+        time_limit = (100 * mxn) / 1000; // RO == 100
+        ro = {90, 60, 30};
+    }
 
     VERBOSE(m_params.verbose()) << "Time limit: " << time_limit << "s\n";
     NEH neh(m_instance);
@@ -131,6 +142,12 @@ Solution IG_VND1::solve() {
 
         incumbent = temporal;
 
+        if (!ro.empty() && uptime() >= (ro.back() * mxn) / 1000) {
+
+            std::cout << "rho " << ro.back() << ": " << best.cost << '\n';
+            ro.pop_back();
+        }
+        
         //  Program should not accept any solution if the time is out
         if (uptime() > time_limit) {
             break;
