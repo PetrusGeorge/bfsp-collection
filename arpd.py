@@ -24,9 +24,6 @@ for jxmy_dir in os.listdir(results_dir):
         except ValueError:
             continue
 
-        if instance_index >= 10:
-            continue
-
         values = []
         for file in os.listdir(instance_path):
             if file.endswith(".txt"):
@@ -36,6 +33,8 @@ for jxmy_dir in os.listdir(results_dir):
                         ro_values.append(float(value))
                     values.append(ro_values)
 
+        if len(ro_values) != 4:
+            print(f"There was an error in instance {instance_path}")
 
         mean_values = [0,0,0,0]
         for ro_values in values:
