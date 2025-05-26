@@ -15,7 +15,11 @@ void config_argparse(argparse::ArgumentParser &cli) {
 
     cli.add_argument("-v", "--verbose").help("set program verbosity").metavar("VERBOSE").default_value(false).flag();
 
-    cli.add_argument("-b", "--benchmark").help("set program to benchmark mode").metavar("BENCHMARK").default_value(false).flag();
+    cli.add_argument("-b", "--benchmark")
+        .help("set program to benchmark mode")
+        .metavar("BENCHMARK")
+        .default_value(false)
+        .flag();
 
     cli.add_argument("-r", "--ro")
         .help("set the ro parameter which delimits the time limit of the program")

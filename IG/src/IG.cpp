@@ -61,7 +61,7 @@ Solution IG::solve() {
 
     // Set time limit to parameter or a default calculation
     size_t time_limit = 0;
-    size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
+    const size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
     if (auto tl = m_params.tl()) {
         time_limit = *tl;
     } else {
@@ -69,7 +69,7 @@ Solution IG::solve() {
     }
 
     std::vector<size_t> ro;
-    if (m_params.becnhmark()){
+    if (m_params.becnhmark()) {
         time_limit = (100 * mxn) / 1000; // RO == 100
         ro = {90, 60, 30};
     }
@@ -80,8 +80,8 @@ Solution IG::solve() {
     while (true) {
         Solution incumbent = local_search(current);
 
-        if (!ro.empty() && uptime() >= (ro.back()*mxn) / 1000){
-            
+        if (!ro.empty() && uptime() >= (ro.back() * mxn) / 1000) {
+
             std::cout << best.cost << '\n';
             ro.pop_back();
         }
