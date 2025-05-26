@@ -21,12 +21,12 @@
 #include <utility>
 
 namespace {
-std::atomic<bool> time_expired(false); // Flag to track time
-
-void timer_thread(size_t duration_seconds) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(duration_seconds));
-    time_expired = true; // Set flag when time is up
-}
+    size_t uptime() {
+        static const auto global_start_time = std::chrono::steady_clock::now();
+        auto now = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - global_start_time);
+        return duration.count();
+    }
 } // namespace
 
 P_EDA::P_EDA(Instance &instance, Parameters &params, size_t ps, double lambda)
@@ -83,15 +83,21 @@ bool P_EDA::mrls(Solution &s, std::vector<size_t> &ref, Instance &instance) {
 }
 
 Solution P_EDA::solve() {
-    time_expired = false;
-
+    // Set time limit to parameter or a default calculation
+    size_t time_limit = 0;
+    const size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
+    
+    time_limit = (m_params.ro() * mxn);
+    
+    std::vector<size_t> ro;
+    if (m_params.benchmark()) {
+        time_limit = (100 * mxn); // RO == 100
+        ro = {90, 60, 30};
+    }
     // Shao ran tests with this duration, chaging ro parameter between 30,60,90
     const size_t duration = m_instance.num_machines() * m_instance.num_jobs() * m_params.ro();
 
     std::cout << "Total running time: " << duration << " ms\n";
-
-    // initializing thread to track the duration of the test
-    auto timer_future = std::async(std::launch::async, timer_thread, duration);
 
     size_t gen = 1;
 
@@ -106,7 +112,7 @@ Solution P_EDA::solve() {
     // the t[i][j][k] represents how many times job k appeared immideatly after job j in position i
     auto t = get_t();
 
-    while (!time_expired) {
+    while (true) {
         const Solution alpha = probabilistic_model(p, t);
 
         if (m_params.verbose()) {
@@ -133,6 +139,19 @@ Solution P_EDA::solve() {
         std::shuffle(ref.begin(), ref.end(), RNG::instance().gen());
 
         mrls(best, ref, m_instance);
+        
+        if (!ro.empty() && uptime() >= (ro.back() * mxn)) {
+            auto min_sofar = std::min_element(m_pc.begin(), m_pc.end(), [](const Solution &a, const Solution &b) {
+                return a.cost < b.cost; // Compare costs
+            });
+            std::cout << "rho " << ro.back() << " = " << min_sofar[0].cost << '\n';
+            ro.pop_back();
+        }
+
+        //  Program should not accept any solution if the time is out
+        if (uptime() > time_limit) {
+            break;
+        }
 
         const auto [found_in_population, max_cost_pos] = in_population_and_max_makespan(best.sequence);
         const auto &max_cost = m_pc[max_cost_pos].cost;
