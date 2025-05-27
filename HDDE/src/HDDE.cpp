@@ -1,4 +1,5 @@
 #include "HDDE.h"
+#include "local-search/RLS.h"
 
 #include <algorithm>
 #include <chrono>
@@ -14,19 +15,19 @@ size_t uptime() {
 }
 } // namespace
 
-HDDE::HDDE(Instance instance, Parameters params) : m_instance(std::move(instance)), m_params(std::move(params)) {
-    m_time_limit = (m_params.ro() * m_instance.num_jobs() * m_instance.num_machines()) / 1000;
-}
+HDDE::HDDE(Instance instance, Parameters params)
+    : m_instance(std::move(instance)), m_params(std::move(params)),
+      m_time_limit((m_params.ro() * m_instance.num_jobs() * m_instance.num_machines()) / 1000) {}
 
 bool HDDE::new_in_population(std::vector<size_t> &sequence) {
 
     // check every solution in population
-    for (size_t i = 0; i < m_pop.size(); i++) {
+    for (auto &i : m_pop) {
 
         bool already_exist = true;
-        for (size_t j = 0; j < m_pop[i].sequence.size(); j++) {
+        for (size_t j = 0; j < i.sequence.size(); j++) {
 
-            if (sequence[j] != m_pop[i].sequence[j]) {
+            if (sequence[j] != i.sequence[j]) {
                 already_exist = false;
                 break;
             }
@@ -44,7 +45,7 @@ void HDDE::generate_initial_pop() {
 
     m_pop = std::vector<Solution>(1);
 
-    Solution phi = LPT::solve(m_instance);
+    const Solution phi = LPT::solve(m_instance);
 
     NEH neh = NEH(m_instance);
     m_pop[0] = neh.solve(phi.sequence);
@@ -69,10 +70,10 @@ std::vector<size_t> HDDE::generate_random_sequence() {
 }
 
 std::vector<size_t> HDDE::mutation() {
-    size_t n = m_instance.num_jobs();
+    const size_t n = m_instance.num_jobs();
 
     // taking three random solutions
-    size_t ind_1 = RNG::instance().generate((size_t)0, m_pop.size() - 1);
+    const size_t ind_1 = RNG::instance().generate((size_t)0, m_pop.size() - 1);
     size_t ind_2 = ind_1;
     size_t ind_3 = ind_1;
 
@@ -99,7 +100,7 @@ std::vector<size_t> HDDE::mutation() {
 }
 
 Solution HDDE::crossover(std::vector<size_t> &pi) {
-    size_t n = m_instance.num_jobs();
+    const size_t n = m_instance.num_jobs();
     std::vector<size_t> pi_temp;
 
     // putting some unique jobs into pi_temp
@@ -109,8 +110,8 @@ Solution HDDE::crossover(std::vector<size_t> &pi) {
         }
 
         bool out_pi_temp = true;
-        for (size_t j = 0; j < pi_temp.size(); j++) {
-            if (pi[i] == pi_temp[j]) {
+        for (const unsigned long j : pi_temp) {
+            if (pi[i] == j) {
                 out_pi_temp = false;
                 break;
             }
@@ -126,13 +127,11 @@ Solution HDDE::crossover(std::vector<size_t> &pi) {
 
     // finding the position of pi_temp jobs jobs within ref
     std::vector<size_t> deleted;
-    size_t k = 0;
     for (size_t i = ref.size() - 1; i < ref.size(); --i) {
 
-        for (size_t j = 0; j < pi_temp.size(); ++j) {
-            if (ref[i] == pi_temp[j]) {
+        for (const unsigned long j : pi_temp) {
+            if (ref[i] == j) {
                 deleted.push_back(i);
-                k++;
                 break;
             }
         }
@@ -143,8 +142,8 @@ Solution HDDE::crossover(std::vector<size_t> &pi) {
     }
 
     // deleting ref jobs are in pi_temp
-    for (size_t i = 0; i < deleted.size(); i++) {
-        ref.erase(ref.begin() + deleted[i]);
+    for (const unsigned long i : deleted) {
+        ref.erase(ref.begin() + static_cast<long>(i));
     }
 
     // neh second step in ref to make ref have all the jobs missing in the best position
@@ -165,7 +164,6 @@ Solution HDDE::generate_new_solution() {
     core::recalculate_solution(m_instance, s);
 
     return s;
-    
 }
 
 size_t HDDE::find_best_solution() {
@@ -181,15 +179,14 @@ size_t HDDE::find_best_solution() {
 
 Solution HDDE::solve() {
 
-
-    size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
+    const size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
     std::vector<size_t> ro;
-    if (m_params.benchmark()){
+    if (m_params.benchmark()) {
         ro = {90, 60, 30};
     }
 
     Solution best_solution;
-    size_t idx;
+    size_t idx = 0;
 
     generate_initial_pop();
 
@@ -201,18 +198,18 @@ Solution HDDE::solve() {
     std::iota(ref.begin(), ref.end(), 0);
 
     while (true) {
-        for(size_t i = 0; i < m_pop.size(); i++) {
+        for (auto &i : m_pop) {
             Solution trial = generate_new_solution();
-            
+
             std::shuffle(ref.begin(), ref.end(), RNG::instance().gen());
 
-            rls(trial, ref, m_instance);
+            rls_grabowski(trial, ref, m_instance);
 
-            if(trial.cost < m_pop[i].cost){
-                m_pop[i] = trial;
+            if (trial.cost < i.cost) {
+                i = trial;
             }
         }
-        
+
         idx = find_best_solution();
 
         if (!ro.empty() && uptime() >= ro.back() * mxn / 1000) {

@@ -11,7 +11,11 @@ void config_argparse(argparse::ArgumentParser &cli) {
 
     cli.add_argument("-v", "--verbose").help("set program verbosity").metavar("VERBOSE").default_value(false).flag();
 
-    cli.add_argument("-b", "--benchmark").help("set program to benchmark mode").metavar("BENCHMARK").default_value(false).flag();
+    cli.add_argument("-b", "--benchmark")
+        .help("set program to benchmark mode")
+        .metavar("BENCHMARK")
+        .default_value(false)
+        .flag();
 
     cli.add_argument("-r", "--ro")
         .help("set the ro parameter which delimits the time limit of the program")
@@ -25,24 +29,11 @@ void config_argparse(argparse::ArgumentParser &cli) {
         .default_value(size_t(20))
         .scan<'i', size_t>();
 
-    cli.add_argument("-m", "--z")
-        .help("set the z parameter ")
-        .metavar("Z")
-        .default_value(0.2)
-        .scan<'f', double>();
+    cli.add_argument("-m", "--z").help("set the z parameter ").metavar("Z").default_value(0.2).scan<'f', double>();
 
-    cli.add_argument("-c", "--cr")
-        .help("set the cr parameter")
-        .metavar("CR")
-        .default_value(0.2)
-        .scan<'f', double>();
+    cli.add_argument("-c", "--cr").help("set the cr parameter").metavar("CR").default_value(0.2).scan<'f', double>();
 
-    cli.add_argument("-ls", "--pl")
-        .help("set the pld parameter")
-        .metavar("PL")
-        .default_value(0.2)
-        .scan<'f', double>();
-
+    cli.add_argument("-ls", "--pl").help("set the pld parameter").metavar("PL").default_value(0.2).scan<'f', double>();
 }
 } // namespace
 

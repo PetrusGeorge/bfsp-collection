@@ -18,6 +18,7 @@ class Parameters {
     double z() const { return m_z; }
     double cr() const { return m_cr; }
     double pl() const { return m_pl; }
+
   private:
     std::string m_instance_path;
     bool m_verbose = false;

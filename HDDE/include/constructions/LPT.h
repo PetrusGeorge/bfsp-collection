@@ -7,7 +7,6 @@
 class LPT {
   public:
     static Solution solve(Instance &instance);
-
 };
 
 #endif

@@ -4,7 +4,8 @@
 #include <algorithm>
 #include <numeric>
 
-static std::vector<size_t> initial_job_sequence(Instance &instance) {
+namespace {
+std::vector<size_t> initial_job_sequence(Instance &instance) {
     std::vector<size_t> sequence(instance.num_jobs());
     std::iota(sequence.begin(), sequence.end(), 0);
 
@@ -14,6 +15,7 @@ static std::vector<size_t> initial_job_sequence(Instance &instance) {
 
     return sequence;
 }
+} // namespace
 
 Solution LPT::solve(Instance &instance) {
     Solution s;

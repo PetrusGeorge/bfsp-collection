@@ -17,8 +17,8 @@ int main(int argc, char *argv[]) {
         RNG::instance().set_seed(*seed);
     }
 
-    HDDE hdde = HDDE(std::move(instance), std::move(params));
-    Solution s = hdde.solve();
+    HDDE hdde = HDDE(std::move(instance), params);
+    const Solution s = hdde.solve();
 
     std::cout << s.cost << '\n';
 
