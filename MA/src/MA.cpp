@@ -24,8 +24,8 @@ MA::MA(Instance instance, Parameters params) : m_instance(std::move(instance)), 
 
 void MA::initialize_population() {
 
-    size_t n = m_instance.num_jobs();
-    size_t lambda = n > LAMBDA_MAX ? LAMBDA_MAX : n; // setting PF-NEH parameter
+    const size_t n = m_instance.num_jobs();
+    const size_t lambda = n > LAMBDA_MAX ? LAMBDA_MAX : n; // setting PF-NEH parameter
 
     m_pop = std::vector<Solution>(m_params.ps());
 
@@ -52,7 +52,7 @@ std::vector<size_t> MA::generate_random_sequence() {
 
 size_t MA::selection() {
 
-    size_t i = RNG::instance().generate((size_t)0, m_pop.size() - 1);
+    const size_t i = RNG::instance().generate((size_t)0, m_pop.size() - 1);
     size_t j = i;
 
     while (i == j) {
@@ -61,16 +61,15 @@ size_t MA::selection() {
 
     if (m_pop[i].cost > m_pop[j].cost) {
         return j;
-    } else {
-        return i;
     }
+    return i;
 }
 
 Solution MA::path_relink_swap(const Solution &beta, const Solution &pi) {
 
     Solution best;
     Solution current = beta;
-    size_t n = m_instance.num_jobs();
+    const size_t n = m_instance.num_jobs();
 
     /*
     Or the difference is 0 (and the solution are equal), or is greater than or equal to 2.
@@ -106,13 +105,13 @@ Solution MA::path_relink_swap(const Solution &beta, const Solution &pi) {
     size_t i = 0;
     for (size_t cnt = 0; cnt < n; cnt++) {
 
-        if(current.sequence[i] == pi.sequence[i]) {
+        if (current.sequence[i] == pi.sequence[i]) {
             i++;
             continue;
         }
 
-        size_t job = current.sequence[i];
-        for (size_t j = i+1; j < n; j++) {
+        const size_t job = current.sequence[i];
+        for (size_t j = i + 1; j < n; j++) {
 
             if (job != pi.sequence[j]) {
                 continue;
@@ -124,7 +123,6 @@ Solution MA::path_relink_swap(const Solution &beta, const Solution &pi) {
             if (current.cost < best.cost) {
                 best = current; // new best interdiary solution
             }
-            
 
             break;
         }
@@ -135,7 +133,7 @@ Solution MA::path_relink_swap(const Solution &beta, const Solution &pi) {
 
 void MA::mutation(Solution &individual) {
 
-    size_t insertion_position = RNG::instance().generate((size_t)0, individual.sequence.size() - 1);
+    const size_t insertion_position = RNG::instance().generate((size_t)0, individual.sequence.size() - 1);
     size_t job_position = insertion_position;
 
     while (insertion_position == job_position) {
@@ -169,29 +167,29 @@ bool MA::equal_solution(Solution &s1, Solution &s2) {
 
 void MA::population_updating(std::vector<Solution> &offspring_population) {
 
-    const size_t C = std::numeric_limits<size_t>::max(); 
+    const size_t c = std::numeric_limits<size_t>::max();
 
-    for (size_t i = 0; i < offspring_population.size(); i++) {
+    for (auto &i : offspring_population) {
 
         bool already_exist = false;
-        size_t replaced_individual = C;
+        size_t replaced_individual = c;
         for (size_t j = 0; j < m_pop.size(); j++) {
 
-            if (equal_solution(offspring_population[i], m_pop[j])) {
+            if (equal_solution(i, m_pop[j])) {
 
                 already_exist = true;
                 break;
             }
 
-            if (offspring_population[i].cost > m_pop[j].cost || replaced_individual != C) {
+            if (i.cost > m_pop[j].cost || replaced_individual != c) {
                 continue;
             }
 
             replaced_individual = j;
         }
 
-        if (!already_exist && replaced_individual != C) {
-            m_pop.insert(m_pop.begin()+replaced_individual, offspring_population[i]);
+        if (!already_exist && replaced_individual != c) {
+            m_pop.insert(m_pop.begin() + replaced_individual, i);
             m_pop.pop_back();
         }
     }
@@ -218,13 +216,13 @@ void MA::restart_population() {
     }
 }
 
-Solution MA::solve() {
+Solution MA::solve() { // NOLINT
 
     Solution best_solution;
     std::vector<size_t> ref;
-    size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
+    const size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
     std::vector<size_t> ro;
-    if (m_params.benchmark()){
+    if (m_params.benchmark()) {
         ro = {90, 60, 30};
     }
 
@@ -248,13 +246,14 @@ Solution MA::solve() {
 
         while (offspring_population.size() < m_params.ps()) {
 
-            size_t parent_1 = selection();
+            const size_t parent_1 = selection();
             size_t parent_2 = parent_1;
             while (parent_2 == parent_1) {
                 parent_2 = selection();
             }
 
-            Solution offspring1, offspring2;
+            Solution offspring1;
+            Solution offspring2;
             if (RNG::instance().generate_real_number(0.0, 1.0) < m_params.pc()) {
                 offspring1 = path_relink_swap(m_pop[parent_1], m_pop[parent_2]);
                 offspring2 = path_relink_swap(m_pop[parent_2], m_pop[parent_1]);
@@ -275,7 +274,7 @@ Solution MA::solve() {
             if (!equal_solution(offspring1, m_pop[parent_1]) && !equal_solution(offspring1, m_pop[parent_2])) {
                 ref = offspring1.sequence;
 
-                if (rls(offspring1, ref, m_instance)) {
+                if (rls_grabowski(offspring1, ref, m_instance)) {
                     core::recalculate_solution(m_instance, offspring1);
                 }
 
@@ -298,12 +297,12 @@ Solution MA::solve() {
 
         count++;
 
-        if (!ro.empty() && uptime() >= (ro.back()*mxn) / 1000){
-            
+        if (!ro.empty() && uptime() >= (ro.back() * mxn) / 1000) {
+
             std::cout << best_solution.cost << '\n';
             ro.pop_back();
         }
-        
+
         if (uptime() > m_time_limit) {
             break;
         }

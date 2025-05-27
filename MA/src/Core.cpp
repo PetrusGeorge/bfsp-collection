@@ -64,18 +64,9 @@ std::vector<size_t> core::stpt_sort(Instance &instance) {
     std::vector<size_t> seq(instance.num_jobs());
     std::iota(seq.begin(), seq.end(), 0);
 
-    std::vector<size_t> optzado;
-    optzado.reserve(instance.num_jobs());
-
-    for (size_t i = 0; i < instance.num_jobs(); i++) {
-        size_t sum = 0;
-        for (size_t j = 0; j < instance.num_machines(); j++) {
-            sum += instance.p(i, j);
-        }
-        optzado.push_back(sum);
-    }
-
-    std::sort(seq.begin(), seq.end(), [optzado, instance](size_t a, size_t b) { return optzado[a] < optzado[b]; });
+    std::sort(seq.begin(), seq.end(), [&instance](size_t a, size_t b) {
+        return instance.processing_times_sum()[a] < instance.processing_times_sum()[b];
+    });
 
     return seq;
 }
@@ -90,15 +81,12 @@ size_t core::calculate_sigma(Instance &instance, std::vector<std::vector<size_t>
     size_t sigma = 0;
 
     for (size_t machine = 0; machine < m; machine++) {
-        size_t sum = 0;
 
         if (k == 0) {
-            sum = (new_departure_time[machine] - p(job, machine));
+            sigma += (new_departure_time[machine] - p(job, machine));
         } else {
-            sum = (new_departure_time[machine] - d[d.size() - 1][machine] - p(job, machine));
+            sigma += (new_departure_time[machine] - d[d.size() - 1][machine] - p(job, machine));
         }
-
-        sigma += sum;
     }
 
     return sigma;
@@ -131,7 +119,6 @@ std::vector<size_t> core::calculate_new_departure_time(Instance &instance, std::
 }
 
 void core::partial_recalculate_solution(Instance &instance, Solution &s, size_t start) {
-
     if (start == 0) {
         recalculate_solution(instance, s);
         return;

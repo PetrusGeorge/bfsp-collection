@@ -36,13 +36,13 @@ class MA {
     Solution path_relink_swap(const Solution &beta, const Solution &pi);
 
     // Inserts a randomly chosen job into another position
-    void mutation(Solution &individual);
+    static void mutation(Solution &individual);
 
     // Mutate some solution and creates new ones randomly
     void restart_population();
 
     // verify if two solutions are equal
-    bool equal_solution(Solution &s1, Solution &s2);
+    static bool equal_solution(Solution &s1, Solution &s2);
 
     /*
     substituting some individuals by offsprings.
