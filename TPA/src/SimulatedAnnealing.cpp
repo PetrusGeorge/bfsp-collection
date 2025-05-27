@@ -7,6 +7,7 @@
 #include "Solution.h"
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 
 SimulatedAnnealing::SimulatedAnnealing(Solution &solution, Instance &instance, double final_temp, int n_iter)
     : m_solution(solution), m_instance(instance), m_n_iter(n_iter), m_final_temp(final_temp), m_initial_temp(0),
@@ -33,7 +34,7 @@ Solution SimulatedAnnealing::solve() {
 
         int delta = (int)new_sol.cost - (int)current_solution.cost;
 
-        if (delta < 0) {
+        if (delta <= 0) {
             current_solution = new_sol;
             reference_cost = new_sol.cost;
 
@@ -77,14 +78,14 @@ void SimulatedAnnealing::calculate_decay() {
 Solution SimulatedAnnealing::anneal(Solution &current_solution, size_t position) {
     NEH helper(m_instance);
 
-    std::vector<size_t> new_seq = {current_solution.sequence.begin(),
-                                   current_solution.sequence.begin() + (long)position + 1};
-    std::vector<size_t> phi = {current_solution.sequence.begin() + (long)position + 1, current_solution.sequence.end()};
+    Solution new_sol = current_solution;
+    size_t job = current_solution.sequence[position];
+    new_sol.sequence.erase(new_sol.sequence.begin() + position);
 
-    Solution new_sol;
-    new_sol.cost = current_solution.cost;
-    new_sol.sequence = new_seq;
-    helper.second_step(phi, new_sol);
+    auto [best_index, makespan] = helper.taillard_best_insertion(new_sol.sequence, job);
+
+    new_sol.sequence.insert(new_sol.sequence.begin() + best_index, job);
+    new_sol.cost = makespan;
 
     return new_sol;
 }
