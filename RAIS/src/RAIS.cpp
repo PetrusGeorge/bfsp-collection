@@ -10,19 +10,19 @@ namespace {
 double uptime() {
   static const auto global_start_time = std::chrono::steady_clock::now();
   auto now = std::chrono::steady_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::seconds>(
-      now - global_start_time);
+  auto duration =
+      std::chrono::duration_cast<std::chrono::seconds>(now - global_start_time);
   return static_cast<double>(duration.count());
 }
 } // namespace
 
 RAIS::RAIS(Instance instance, Parameters params)
     : m_instance(std::move(instance)), m_params(std::move(params)) {
-  if (auto tl = params.time_limit()) {
+  if (auto tl = m_params.time_limit()) {
     this->m_time_limit = *tl;
   } else {
-    this->m_time_limit =
-        m_instance.num_jobs() * m_instance.num_machines() * m_params.ro() / 1000;
+    this->m_time_limit = m_instance.num_jobs() * m_instance.num_machines() *
+                         m_params.ro() / 1000;
   }
 
   size_t processing_times_sum = 0;
@@ -33,7 +33,8 @@ RAIS::RAIS(Instance instance, Parameters params)
     processing_times_sum += vec_processing_times_sum[i];
   }
 
-  this->m_T = 0.6 * static_cast<double>(processing_times_sum) / (m_instance.num_jobs() * 10);
+  this->m_T = 0.6 * static_cast<double>(processing_times_sum) /
+              (m_instance.num_jobs() * 10);
 }
 
 double RAIS::affinity_calculation(size_t cost) {
@@ -64,7 +65,6 @@ void RAIS::initialization() {
     core::recalculate_solution(m_instance, m_pop[i]);
     m_pop[i].affinity = affinity_calculation(m_pop[i].cost);
   }
-
 }
 
 std::vector<Solution> RAIS::clone_antibodies(std::vector<Solution> &clones) {
@@ -209,12 +209,12 @@ Solution RAIS::solve() {
 
   size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
   std::vector<size_t> ro;
-  if (m_params.benchmark()){
+  if (m_params.benchmark()) {
     ro = {90, 60, 30};
   }
 
   std::vector<Solution> clones(m_params.nc() * (m_params.nc() + 1) / 2);
-  
+
   size_t G = 1;
 
   Solution best_solution;
@@ -241,8 +241,8 @@ Solution RAIS::solve() {
 
     supression();
 
-    if (!ro.empty() && uptime() >= (ro.back()*mxn) / 1000){
-           
+    if (!ro.empty() && uptime() >= (ro.back() * mxn) / 1000) {
+
       std::cout << best_solution.cost << '\n';
       ro.pop_back();
     }

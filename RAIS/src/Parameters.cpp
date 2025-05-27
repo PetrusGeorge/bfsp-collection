@@ -18,7 +18,11 @@ void config_argparse(argparse::ArgumentParser &cli) {
       .default_value(false)
       .flag();
 
-  cli.add_argument("-b", "--benchmark").help("set program to benchmark mode").metavar("BENCHMARK").default_value(false).flag();
+  cli.add_argument("-b", "--benchmark")
+      .help("set program to benchmark mode")
+      .metavar("BENCHMARK")
+      .default_value(false)
+      .flag();
 
   cli.add_argument("-tl", "--time")
       .help("set program verbosity")
