@@ -213,7 +213,7 @@ Solution DE_PLS::solve() {
     const size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
     std::vector<size_t> ro;
     if (m_params.benchmark()) {
-        ro = {90, 60, 30, 10};
+        ro = {90, 60, 30};
     }
 
     const double multiplier = static_cast<double>(m_instance.total_processing_time()) / (10 * static_cast<double>(mxn));
