@@ -8,7 +8,7 @@ Solution MinMax::solve() {
 
     std::vector<size_t> sequence;
 
-    std::function<int(size_t, size_t)> p = [this](size_t i, size_t j) {
+    const std::function<int(size_t, size_t)> p = [this](size_t i, size_t j) {
         return m_instance.p(i, j); // Call m_instance.p through the lambda
     };
     size_t first_node = 0;

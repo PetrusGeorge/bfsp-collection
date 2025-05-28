@@ -2,7 +2,6 @@
 
 #include "Instance.h"
 #include <algorithm>
-#include <iostream>
 #include <numeric>
 
 std::vector<std::vector<size_t>> core::calculate_departure_times(Instance &instance,
@@ -120,17 +119,12 @@ std::vector<size_t> core::calculate_new_departure_time(Instance &instance, std::
 }
 
 void core::partial_recalculate_solution(Instance &instance, Solution &s, size_t start) {
+    if (start == 0) {
+        recalculate_solution(instance, s);
+        return;
+    }
 
     auto p = [&instance](size_t i, size_t j) { return instance.p(i, j); };
-
-    // Calculate first job
-    if (start == 0) {
-        s.departure_times[0][0] = p(s.sequence[0], 0);
-        for (size_t j = 1; j < instance.num_machines(); j++) {
-            s.departure_times[0][j] = s.departure_times[0][j - 1] + p(s.sequence[0], j);
-        }
-        start = 1;
-    }
 
     // Recalculate departure times from start index to the end
     for (size_t i = start; i < s.sequence.size(); i++) {

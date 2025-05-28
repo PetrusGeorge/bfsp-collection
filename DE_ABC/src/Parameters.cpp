@@ -11,7 +11,11 @@ void config_argparse(argparse::ArgumentParser &cli) {
 
     cli.add_argument("-v", "--verbose").help("set program verbosity").metavar("VERBOSE").default_value(false).flag();
 
-    cli.add_argument("-b", "--benchmark").help("set program to benchmark mode").metavar("BENCHMARK").default_value(false).flag();
+    cli.add_argument("-b", "--benchmark")
+        .help("set program to benchmark mode")
+        .metavar("BENCHMARK")
+        .default_value(false)
+        .flag();
 
     cli.add_argument("-t", "--time")
         .help("set the time limit for the program")
@@ -49,6 +53,8 @@ void config_argparse(argparse::ArgumentParser &cli) {
         .metavar("THETA")
         .default_value(0.75)
         .scan<'f', double>();
+
+    cli.add_argument("-i", "--it").help("").metavar("IT").default_value(size_t(1)).scan<'i', size_t>();
 }
 } // namespace
 
@@ -79,4 +85,5 @@ Parameters::Parameters(int argc, char **argv) {
     m_pc = cli.get<double>("--pc");
     m_pls = cli.get<double>("--pls");
     m_theta = cli.get<double>("--theta");
+    m_it = cli.get<size_t>("--it");
 }

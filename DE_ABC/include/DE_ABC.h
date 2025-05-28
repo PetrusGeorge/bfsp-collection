@@ -13,10 +13,10 @@
 
 #include <vector>
 
-class DE_ABC {
+class DeAbc {
 
   public:
-    DE_ABC(Instance instance, Parameters params);
+    DeAbc(Instance instance, Parameters params);
 
     // verify if the sequence exists in the population
     bool new_in_population(std::vector<size_t> &sequence);
@@ -71,9 +71,9 @@ class DE_ABC {
     Parameters m_params;
     size_t m_time_limit;
     std::vector<Solution> m_pop;
-    std::vector<bool> changed;
-    std::vector<size_t> BNL;
-    std::vector<size_t> NL;
+    std::vector<bool> m_changed;
+    std::vector<size_t> m_BNL;
+    std::vector<size_t> m_NL;
 };
 
 #endif

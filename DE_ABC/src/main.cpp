@@ -19,8 +19,8 @@ int main(int argc, char *argv[]) {
 
     // std::cout << "Seed: " << RNG::instance().seed() << '\n';
 
-    DE_ABC deabc = DE_ABC(std::move(instance), std::move(params));
-    Solution s = deabc.solve();
+    DE_ABC deabc = DE_ABC(std::move(instance), params);
+    const Solution s = deabc.solve();
 
     std::cout << s.cost << '\n';
 

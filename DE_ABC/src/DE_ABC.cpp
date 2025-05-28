@@ -32,12 +32,12 @@ DE_ABC::DE_ABC(Instance instance, Parameters params) : m_instance(std::move(inst
 bool DE_ABC::new_in_population(std::vector<size_t> &sequence) {
 
     // check every solution in population
-    for (size_t i = 0; i < m_pop.size(); i++) {
+    for (auto &i : m_pop) {
 
         bool already_exist = true;
-        for (size_t j = 0; j < m_pop[i].sequence.size(); j++) {
+        for (size_t j = 0; j < i.sequence.size(); j++) {
 
-            if (sequence[j] != m_pop[i].sequence[j]) {
+            if (sequence[j] != i.sequence[j]) {
                 already_exist = false;
                 break;
             }
@@ -60,19 +60,18 @@ void DE_ABC::generate_initial_pop() {
     core::recalculate_solution(m_instance, m_pop[0]);
 
     // generating other random solutions
-    for (size_t i = 1; i < m_params.ps(); i++) {
+    while (m_pop.size() < m_params.ps()) {
 
         std::vector<size_t> new_seq = generate_random_sequence();
 
         if (!new_in_population(new_seq)) {
-            i--;
             continue;
         }
 
         Solution s;
         s.sequence = new_seq;
-        m_pop.push_back(s);
-        core::recalculate_solution(m_instance, m_pop[i]);
+        core::recalculate_solution(m_instance, s);
+        m_pop.push_back(std::move(s));
     }
 }
 
@@ -87,7 +86,7 @@ std::vector<size_t> DE_ABC::generate_random_sequence() {
 
 size_t DE_ABC::tournament() {
 
-    size_t i = RNG::instance().generate((size_t)0, m_pop.size() - 1);
+    const size_t i = RNG::instance().generate((size_t)0, m_pop.size() - 1);
     size_t j = i;
 
     while (i == j) {
@@ -96,16 +95,15 @@ size_t DE_ABC::tournament() {
 
     if (m_pop[i].cost > m_pop[j].cost) {
         return j;
-    } else {
-        return i;
     }
+    return i;
 }
 
 std::vector<size_t> DE_ABC::mutation() {
-    size_t n = m_instance.num_jobs();
+    const size_t n = m_instance.num_jobs();
 
     // taking three random solutions
-    size_t ind_1 = RNG::instance().generate((size_t)0, m_pop.size() - 1);
+    const size_t ind_1 = RNG::instance().generate((size_t)0, m_pop.size() - 1);
     size_t ind_2 = ind_1;
     size_t ind_3 = ind_1;
 
@@ -132,7 +130,7 @@ std::vector<size_t> DE_ABC::mutation() {
 }
 
 Solution DE_ABC::crossover(std::vector<size_t> &pi) {
-    size_t n = m_instance.num_jobs();
+    const size_t n = m_instance.num_jobs();
     std::vector<size_t> pi_temp;
 
     // putting some unique jobs into pi_temp
@@ -142,8 +140,8 @@ Solution DE_ABC::crossover(std::vector<size_t> &pi) {
         }
 
         bool out_pi_temp = true;
-        for (size_t j = 0; j < pi_temp.size(); j++) {
-            if (pi[i] == pi_temp[j]) {
+        for (unsigned long j : pi_temp) {
+            if (pi[i] == j) {
                 out_pi_temp = false;
                 break;
             }
@@ -162,8 +160,8 @@ Solution DE_ABC::crossover(std::vector<size_t> &pi) {
     size_t k = 0;
     for (size_t i = ref.size() - 1; i < ref.size(); --i) {
 
-        for (size_t j = 0; j < pi_temp.size(); ++j) {
-            if (ref[i] == pi_temp[j]) {
+        for (unsigned long j : pi_temp) {
+            if (ref[i] == j) {
                 deleted.push_back(i);
                 k++;
                 break;
@@ -176,8 +174,8 @@ Solution DE_ABC::crossover(std::vector<size_t> &pi) {
     }
 
     // deleting ref jobs are in pi_temp
-    for (size_t i = 0; i < deleted.size(); i++) {
-        ref.erase(ref.begin() + deleted[i]);
+    for (unsigned long i : deleted) {
+        ref.erase(ref.begin() + i);
     }
 
     // neh second step in ref to make ref have all the jobs missing in the best position
@@ -211,9 +209,9 @@ void DE_ABC::update_neighborhood() {
 }
 
 size_t DE_ABC::swap(Solution &s) {
-    size_t n = m_instance.num_jobs();
-    size_t idx_1 = RNG::instance().generate((size_t)0, n - 2);
-    size_t idx_2 = RNG::instance().generate((size_t)idx_1 + 1, n - 1);
+    const size_t n = m_instance.num_jobs();
+    const size_t idx_1 = RNG::instance().generate((size_t)0, n - 2);
+    const size_t idx_2 = RNG::instance().generate(idx_1 + 1, n - 1);
 
     std::swap(s.sequence[idx_1], s.sequence[idx_2]);
 
@@ -221,9 +219,9 @@ size_t DE_ABC::swap(Solution &s) {
 }
 
 size_t DE_ABC::insertion(Solution &s) {
-    size_t n = m_instance.num_jobs();
-    size_t idx_1 = RNG::instance().generate((size_t)0, n - 3);
-    size_t idx_2 = RNG::instance().generate((size_t)idx_1 + 2, n - 1);
+    const size_t n = m_instance.num_jobs();
+    const size_t idx_1 = RNG::instance().generate((size_t)0, n - 3);
+    const size_t idx_2 = RNG::instance().generate(idx_1 + 2, n - 1);
 
     std::rotate(s.sequence.begin() + idx_1 + 1, s.sequence.begin() + idx_2, s.sequence.begin() + idx_2 + 1);
 
@@ -231,8 +229,8 @@ size_t DE_ABC::insertion(Solution &s) {
 }
 
 void DE_ABC::self_adaptative() {
-    size_t idx;
-    size_t idx_to_recalculate;
+    size_t idx = 0;
+    size_t idx_to_recalculate = 0;
     for (size_t i = 0; i < m_params.ps(); i++) {
         idx = tournament();
 
@@ -267,7 +265,7 @@ void DE_ABC::self_adaptative() {
 }
 
 void DE_ABC::replace_unchanged() {
-    size_t n = m_instance.num_jobs();
+    const size_t n = m_instance.num_jobs();
 
     // modifying unchanged solutions
     for (size_t i = 0; i < m_pop.size(); i++) {
@@ -277,8 +275,8 @@ void DE_ABC::replace_unchanged() {
         }
 
         size_t idx_to_recalculate = std::numeric_limits<size_t>::max();
-        // i don't know how many insertions i have to do
-        for (size_t j = 0; j < n / 4; j++) {
+        const size_t it = m_params.it(); // std::min((size_t) 1, n/20);
+        for (size_t j = 0; j < it; j++) {
             idx_to_recalculate = std::min(insertion(m_pop[i]), idx_to_recalculate);
         }
 
@@ -314,7 +312,8 @@ size_t DE_ABC::find_best_solution() {
 }
 
 void DE_ABC::local_search() {
-    size_t idx;
+    size_t idx = 0;
+
     for (size_t i = 0; i < m_instance.num_jobs(); i++) {
         if (RNG::instance().generate_real_number(0, 1) < m_params.pls()) {
             idx = tournament();
@@ -324,20 +323,22 @@ void DE_ABC::local_search() {
             } else {
                 changed[idx] = false;
             }
+        } else {
+            i--;
         }
     }
 }
 
 Solution DE_ABC::solve() {
 
-    size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
+    const size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
     std::vector<size_t> ro;
-    if (m_params.benchmark()){
+    if (m_params.benchmark()) {
         ro = {90, 60, 30};
     }
 
     Solution best_solution;
-    size_t idx;
+    size_t idx = 0;
 
     generate_initial_pop();
 
@@ -356,12 +357,12 @@ Solution DE_ABC::solve() {
 
         idx = find_best_solution();
 
-        if (!ro.empty() && uptime() >= (ro.back()*mxn) / 1000){
-            
+        if (!ro.empty() && uptime() >= (ro.back() * mxn) / 1000) {
+
             std::cout << best_solution.cost << '\n';
             ro.pop_back();
         }
-        
+
         if (uptime() > m_time_limit) {
             break;
         }
