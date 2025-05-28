@@ -16,6 +16,7 @@ class Parameters {
     double beta() const { return m_beta; }
     size_t d() const { return m_d; }
     size_t ro() const { return m_ro; }
+    bool benchmark() const { return m_benchmark; }
 
   private:
     std::string m_instance_path;
@@ -25,6 +26,7 @@ class Parameters {
     double m_beta = 0.0;
     size_t m_d = 0;
     size_t m_ro = 30;
+    bool m_benchmark = false;
 };
 
 #endif

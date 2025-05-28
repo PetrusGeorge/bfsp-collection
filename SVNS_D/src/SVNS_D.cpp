@@ -16,11 +16,11 @@
 #include <vector>
 
 namespace {
-double uptime() {
+size_t uptime() {
     static const auto global_start_time = std::chrono::steady_clock::now();
     auto now = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - global_start_time);
-    return static_cast<double>(duration.count());
+    return static_cast<size_t>(duration.count());
 }
 } // namespace
 
@@ -165,9 +165,15 @@ Solution SVNS_D::solve() {
     VERBOSE(m_params.verbose()) << "Initial solution finished, solution obtained:\n";
     VERBOSE(m_params.verbose()) << current;
 
-    const double time_limit = m_params.ro() * m_instance.num_jobs() * m_instance.num_machines() * 1e-3;
-    VERBOSE(m_params.verbose()) << "Time limit: " << time_limit << " seconds\n";
+    size_t time_limit = 0;
+    const size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
 
+    std::vector<size_t> ro;
+    if (m_params.benchmark()) {
+        time_limit = (100 * mxn) / 1000; // RO == 100
+        ro = {90, 60, 30};
+    }
+    VERBOSE(m_params.verbose()) << "Time limit: " << time_limit << "s\n";
     while (true) {
         size_t counter = 0;
         size_t local_search_type = 0;
@@ -219,6 +225,11 @@ Solution SVNS_D::solve() {
                 break;
             }
         };
+        if (!ro.empty() && uptime() >= (ro.back() * mxn) / 1000) {
+
+            std::cout << best.cost << '\n';
+            ro.pop_back();
+        }
         if (current.cost < best.cost) {
             best = current;
         }

@@ -1,20 +1,11 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
-#include <numeric>
 
 #include "Instance.h"
 #include "Parameters.h"
 #include "RNG.h"
 #include "SVNS_D.h"
-#include "constructions/GRASP.h"
-#include "constructions/LPT.h"
-#include "constructions/MinMax.h"
-#include "constructions/NEH.h"
-#include "constructions/PF.h"
-#include "constructions/PW.h"
-#include "constructions/mNEH.h"
-#include "local-search/RLS.h"
 
 int main(int argc, char *argv[]) {
 
@@ -24,25 +15,9 @@ int main(int argc, char *argv[]) {
     if (auto seed = params.seed()) {
         RNG::instance().set_seed(*seed);
     }
-
     std::cout << "Seed: " << RNG::instance().seed() << '\n';
-
-    std::vector<size_t> phi(instance.num_jobs());
-    std::iota(phi.begin(), phi.end(), 0);
-
-    NEH n(instance); // false -> not reversed jobs);
-    Solution s_neh = n.solve(phi);
-    std::cout << "\nNEH:" << '\n';
-    std::cout << s_neh << '\n';
-
-    std::shuffle(phi.begin(), phi.end(), RNG::instance().gen());
-    rls(s_neh, phi, instance);
-    std::cout << "\nRLS:" << '\n';
-    std::cout << s_neh << '\n';
 
     SVNS_D svns_d(instance, params);
 
     Solution solution_svns_d = svns_d.solve();
-
-    std::cout << solution_svns_d;
 }
