@@ -9,6 +9,10 @@ struct Solution {
     size_t cost = std::numeric_limits<size_t>::max();
     std::vector<size_t> sequence;
     std::vector<std::vector<size_t>> departure_times;
+    size_t ds;
+    size_t ps;
+    double tau;
+    double jp;
 };
 
 inline std::ostream &operator<<(std::ostream &os, const Solution &sol) {

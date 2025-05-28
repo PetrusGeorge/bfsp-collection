@@ -15,7 +15,9 @@ std::vector<size_t> stpt_sort(Instance &instance);
 std::vector<size_t> calculate_new_departure_time(Instance &instance, std::vector<std::vector<size_t>> &d, size_t node);
 
 size_t calculate_sigma(Instance &instance, std::vector<std::vector<size_t>> &d, std::vector<size_t> &new_departure_time,
-                       size_t job, size_t k);
+                       size_t job);
+
+void partial_recalculate_solution(Instance &instance, Solution &s, size_t start);
 
 void recalculate_solution(Instance &instance, Solution &s);
 

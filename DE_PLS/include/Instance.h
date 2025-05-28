@@ -2,8 +2,8 @@
 #define INSTANCE_H
 
 #include <filesystem>
-#include <vector>
 #include <numeric>
+#include <vector>
 
 struct Instance {
   public:
@@ -20,11 +20,7 @@ struct Instance {
     Instance create_reverse_instance();
 
     size_t total_processing_time() const {
-        return std::accumulate(
-            m_processing_times_sum.begin(),
-            m_processing_times_sum.end(),
-            size_t(0)
-        );
+        return std::accumulate(m_processing_times_sum.begin(), m_processing_times_sum.end(), size_t(0));
     }
 
   private:

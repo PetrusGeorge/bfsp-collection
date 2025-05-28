@@ -3,7 +3,7 @@
 #include "constructions/NEH.h"
 #include "constructions/PF.h"
 
-PF_NEH::PF_NEH(Instance &instance) : m_instance(instance) {};
+PF_NEH::PF_NEH(Instance &instance) : m_instance(instance){};
 
 Solution PF_NEH::solve(size_t lambda) {
 
