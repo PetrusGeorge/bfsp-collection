@@ -4,13 +4,13 @@
 #include "Instance.h"
 #include "Solution.h"
 
-class GraspNeh {
+class GRASP_NEH {
   public:
-    GraspNeh(Instance &instance, size_t x, double beta);
+    GRASP_NEH(Instance &instance, size_t x, double beta);
 
     Solution solve();
 
-    Solution grasp();
+    Solution GRASP();
 
   private:
     Instance &m_instance;

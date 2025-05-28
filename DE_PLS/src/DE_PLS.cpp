@@ -222,7 +222,7 @@ Solution DE_PLS::solve() {
 
     std::sort(m_pop.begin(), m_pop.end(), [](Solution &p1, Solution &p2) { return p1.cost < p2.cost; });
 
-    best_solution_idx = 0;
+    Solution best_solution = m_pop[0];
 
     while (true) {
 
@@ -242,13 +242,13 @@ Solution DE_PLS::solve() {
 
             core::recalculate_solution(m_instance, s);
 
-            const std::vector<size_t> ref = m_pop[best_solution_idx].sequence;
+            const std::vector<size_t> ref = best_solution.sequence;
             rls(s, ref, m_instance);
             core::recalculate_solution(m_instance, s);
 
             if (!ro.empty() && uptime() >= (ro.back() * mxn)) {
 
-                std::cout << m_pop[best_solution_idx].cost << '\n';
+                std::cout << best_solution.cost << '\n';
                 ro.pop_back();
             }
 
@@ -258,21 +258,20 @@ Solution DE_PLS::solve() {
 
             if (s.cost < m_pop[i].cost) {
                 m_pop[i] = s;
-                if (s.cost < m_pop[best_solution_idx].cost) {
-                    best_solution_idx = i;
+                if (s.cost < best_solution.cost) {
+                    best_solution = s;
                 }
             } else {
                 const double delta = static_cast<double>(s.cost) - static_cast<double>(m_pop[i].cost);
                 if (RNG::instance().generate_real_number(0, 1) < exp(-delta / (multiplier * s.tau))) {
                     m_pop[i] = s;
-                    best_solution_idx = find_best_solution();
                 }
             }
         }
 
         if (!ro.empty() && uptime() >= (ro.back() * mxn)) {
 
-            std::cout << m_pop[best_solution_idx].cost << '\n';
+            std::cout << best_solution.cost << '\n';
             ro.pop_back();
         }
 
@@ -281,6 +280,5 @@ Solution DE_PLS::solve() {
         }
     }
 
-    return m_pop[best_solution_idx];
-    ;
+    return best_solution;
 }

@@ -7,10 +7,10 @@
 
 #include <vector>
 
-class DePls {
+class DE_PLS {
 
   public:
-    DePls(Instance instance, Parameters params);
+    DE_PLS(Instance instance, Parameters params);
 
     // Generate a random sequence using PF-NEH and other PS-1 randomly
     void initialize_population();
@@ -41,7 +41,6 @@ class DePls {
     Parameters m_params;
     size_t m_time_limit;
     std::vector<Solution> m_pop;
-    size_t m_best_solution_idx{};
     double m_T{};
 };
 
