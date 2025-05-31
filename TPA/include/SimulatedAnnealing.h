@@ -3,17 +3,19 @@
 
 #include "Instance.h"
 #include "Solution.h"
+#include "Parameters.h"
 
 #include <iostream>
 
 class SimulatedAnnealing {
   public:
-    SimulatedAnnealing(Solution &solution, Instance &instance, double final_temp, int n_iter);
+    SimulatedAnnealing(Solution &solution, Instance &instance, Parameters &params, double final_temp, int n_iter);
     Solution solve();
 
   private:
     Solution &m_solution;
     Instance &m_instance;
+    Parameters &m_params;
 
     int m_n_iter;
 

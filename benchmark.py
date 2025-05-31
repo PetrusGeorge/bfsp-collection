@@ -11,12 +11,12 @@ def process_iteration(binary_path, instance_name, instance_size, iteration):
     os.makedirs(os.path.dirname(destination_base), exist_ok=True)
 
     with open(destination_base, "w") as f:
-        subprocess.run([f"./{binary_path}", "-b", f"instances/{instance_size}/{instance_name}"], stdout=f)
+        subprocess.run([f"./{binary_path}", f"instances/{instance_size}/{instance_name}"], stdout=f)
 
     return destination_base
 
 def main(binary_path):
-    num_threads = 10  # Defina o número de threads no pool
+    num_threads = 1  # Defina o número de threads no pool
     instances_sizes = ["J20M5", "J20M10", "J20M20", "J50M5", "J50M10", "J50M20", "J100M5", "J100M10", "J100M20", "J200M5", "J200M10", "J200M20", "J500M5", "J500M10", "J500M20",]
     os.makedirs("results", exist_ok=True)
     with open("results/.gitignore", "w") as gitignore:
@@ -26,7 +26,7 @@ def main(binary_path):
         instances = [f for f in listdir(f"instances/{size}/")]
         instances.sort()
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
-            futures = [executor.submit(process_iteration, binary_path, instance, size, i) for instance in instances for i in range(num_threads)]             
+            futures = [executor.submit(process_iteration, binary_path, instance, size, i) for instance in instances for i in range(10)]             
             for future in as_completed(futures):
                 result = future.result()
                 print(f"Tarefa concluída:{result}")

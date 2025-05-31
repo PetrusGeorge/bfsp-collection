@@ -11,11 +11,41 @@ void config_argparse(argparse::ArgumentParser &cli) {
 
     cli.add_argument("-v", "--verbose").help("set program verbosity").metavar("VERBOSE").default_value(false).flag();
 
+    cli.add_argument("-b", "--benchmark")
+        .help("set program to benchmark mode")
+        .metavar("BENCHMARK")
+        .default_value(false)
+        .flag();
+
+    cli.add_argument("-t", "--time")
+        .help("set the time limit for the program")
+        .metavar("TIME_LIMIT")
+        .scan<'i', size_t>();
+
+
     cli.add_argument("-r", "--ro")
         .help("set the ro parameter which delimits the time limit of the program")
         .metavar("RO")
-        .default_value(size_t(30))
+        .default_value(size_t(100))
         .scan<'i', size_t>();
+
+    cli.add_argument("-i", "--iter")
+        .help("")
+        .metavar("N_ITER")
+        .default_value(size_t(18e5))
+        .scan<'i', size_t>();
+
+    cli.add_argument("--ft")
+        .help("")
+        .metavar("FINAL TEMPERATURE")
+        .default_value(1.0)
+        .scan<'f', double>();
+
+    cli.add_argument("-a", "--alpha")
+        .help("")
+        .metavar("ALPHA")
+        .default_value(0.8)
+        .scan<'f', double>();
 }
 } // namespace
 
@@ -38,5 +68,9 @@ Parameters::Parameters(int argc, char **argv) {
     m_instance_path = cli.get<std::string>("instance");
     m_verbose = cli.get<bool>("--verbose");
     m_seed = cli.present<size_t>("--seed");
+    m_benchmark = cli.get<bool>("--benchmark");
     m_ro = cli.get<size_t>("--ro");
+    m_n_iter = cli.get<size_t>("--iter");
+    m_final_temperature = cli.get<double>("--ft");
+    m_alpha = cli.get<double>("--alpha");
 }

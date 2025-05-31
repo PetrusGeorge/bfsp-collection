@@ -4,14 +4,14 @@
 #include "Instance.h"
 #include "Solution.h"
 
-TPA::TPA(Instance &instance) : instance(instance) {}
+TPA::TPA(Instance &instance, Parameters &params) : instance(instance), params(params) {}
 
 Solution TPA::solve() {
     // 1st step: modified NEH
-    Solution s_neh = MNEH::solve(0.8, instance);
+    Solution s_neh = MNEH::solve(params.alpha(), instance);
 
     // 2nd step: simulated annealing
-    SimulatedAnnealing sa(s_neh, instance, 1, 50000);
+    SimulatedAnnealing sa(s_neh, instance, params, params.final_temperature(), params.n_iter());
     Solution best = sa.solve();
 
     return best;

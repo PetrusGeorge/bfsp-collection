@@ -5,18 +5,42 @@
 #include "Instance.h"
 #include "RNG.h"
 #include "Solution.h"
+#include <chrono>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
 
-SimulatedAnnealing::SimulatedAnnealing(Solution &solution, Instance &instance, double final_temp, int n_iter)
-    : m_solution(solution), m_instance(instance), m_n_iter(n_iter), m_final_temp(final_temp), m_initial_temp(0),
-      m_decay(0) {
+namespace {
+size_t uptime() {
+    static const auto global_start_time = std::chrono::steady_clock::now();
+    auto now = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - global_start_time);
+    return duration.count();
+}
+} // namespace
+
+SimulatedAnnealing::SimulatedAnnealing(Solution &solution, Instance &instance, Parameters &params, double final_temp, int n_iter)
+    : m_solution(solution), m_instance(instance),  m_params(params), m_n_iter(n_iter), m_final_temp(1), 
+    m_initial_temp(final_temp), m_decay(0) {
     calculate_initial_temp();
     calculate_decay();
 }
 
 Solution SimulatedAnnealing::solve() {
+
+    size_t time_limit = 0;
+    const size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
+    if (auto tl = m_params.tl()) {
+        time_limit = *tl;
+    } else {
+        time_limit = (m_params.ro() * mxn) / 1000;
+    }
+
+    std::vector<size_t> ro;
+    if (m_params.benchmark()) {
+        time_limit = (100 * mxn) / 1000; // RO == 100
+        ro = {90, 60, 30};
+    }
 
     double current_temp = m_initial_temp;
     size_t reference_cost = m_solution.cost;
@@ -27,13 +51,23 @@ Solution SimulatedAnnealing::solve() {
     Solution best_solution = m_solution;
     Solution current_solution = m_solution;
 
-    while (current_temp > m_final_temp) {
+    while (true) {
         auto position = RNG::instance().generate<size_t>(0, n_jobs - 1);
         Solution new_sol = anneal(current_solution, position);
-        core::recalculate_solution(m_instance, new_sol);
+        // core::recalculate_solution(m_instance, new_sol);
 
         int delta = (int)new_sol.cost - (int)current_solution.cost;
 
+        if (!ro.empty() && uptime() >= (ro.back() * mxn) / 1000) {
+
+            std::cout << best_cost << '\n';
+            ro.pop_back();
+        }
+        //  Program should not accept any solution if the time is out
+        if (uptime() > time_limit) {
+            break;
+        }
+        
         if (delta <= 0) {
             current_solution = new_sol;
             reference_cost = new_sol.cost;
@@ -82,7 +116,7 @@ Solution SimulatedAnnealing::anneal(Solution &current_solution, size_t position)
     size_t job = current_solution.sequence[position];
     new_sol.sequence.erase(new_sol.sequence.begin() + position);
 
-    auto [best_index, makespan] = helper.taillard_best_insertion(new_sol.sequence, job);
+    auto [best_index, makespan] = helper.taillard_best_insertion(new_sol.sequence, job, position);
 
     new_sol.sequence.insert(new_sol.sequence.begin() + best_index, job);
     new_sol.cost = makespan;

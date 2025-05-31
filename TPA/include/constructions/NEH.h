@@ -13,7 +13,7 @@ class NEH {
 
     // This function returns a pair with according to the populated TDS matrices
     // {best_index,resultant_makespan}
-    std::pair<size_t, size_t> taillard_best_insertion(const std::vector<size_t> &sequence, size_t pos);
+    std::pair<size_t, size_t> taillard_best_insertion(const std::vector<size_t> &sequence, size_t pos, size_t original_position);
 
     void second_step(std::vector<size_t> phi, Solution &s);
 

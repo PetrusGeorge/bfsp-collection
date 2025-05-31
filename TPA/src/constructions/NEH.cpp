@@ -18,7 +18,8 @@ Solution NEH::solve(std::vector<size_t> phi) {
 }
 
 // TODO: IMPLEMENTAR PRUNING
-std::pair<size_t, size_t> NEH::taillard_best_insertion(const std::vector<size_t> &sequence, size_t pos) {
+std::pair<size_t, size_t> NEH::taillard_best_insertion(const std::vector<size_t> &sequence, size_t job,
+                                                       size_t original_position) {
     m_e = core::calculate_departure_times(m_instance, sequence);
 
     m_q = core::calculate_tail(m_instance, sequence);
@@ -38,24 +39,34 @@ std::pair<size_t, size_t> NEH::taillard_best_insertion(const std::vector<size_t>
         max_value = std::max(value + m_q[i][j], max_value);
     };
 
-    set_f_and_max(0, 0, p(pos, 0));
-    for (size_t j = 1; j < m_instance.num_machines(); j++) {
-        set_f_and_max(0, j, m_f[0][j - 1] + p(pos, j));
+    size_t best_index = 0;
+    size_t best_value = 0;
+    if (original_position != 0) {
+        set_f_and_max(0, 0, p(job, 0));
+        for (size_t j = 1; j < m_instance.num_machines(); j++) {
+            set_f_and_max(0, j, m_f[0][j - 1] + p(job, j));
+        }
+        best_index = 0;
+        best_value = max_value;
+    } else {
+        best_index = 1;
+        best_value = std::numeric_limits<size_t>::max();
     }
 
-    size_t best_index = 0;
-    size_t best_value = max_value;
-
     for (size_t i = 1; i <= sequence.size(); i++) {
+        if (original_position == i) {
+            continue;
+        }
+
         max_value = 0;
-        size_t value = std::max(m_e[i - 1][0] + p(pos, 0), m_e[i - 1][1]);
+        size_t value = std::max(m_e[i - 1][0] + p(job, 0), m_e[i - 1][1]);
         set_f_and_max(i, 0, value);
 
         for (size_t j = 1; j < m_instance.num_machines() - 1; j++) {
-            value = std::max(m_f[i][j - 1] + p(pos, j), m_e[i - 1][j + 1]);
+            value = std::max(m_f[i][j - 1] + p(job, j), m_e[i - 1][j + 1]);
             set_f_and_max(i, j, value);
         }
-        value = m_f[i][m_instance.num_machines() - 2] + p(pos, m_instance.num_machines() - 1);
+        value = m_f[i][m_instance.num_machines() - 2] + p(job, m_instance.num_machines() - 1);
         set_f_and_max(i, m_instance.num_machines() - 1, value);
 
         if (max_value < best_value) {
@@ -70,7 +81,7 @@ std::pair<size_t, size_t> NEH::taillard_best_insertion(const std::vector<size_t>
 void NEH::second_step(std::vector<size_t> phi, Solution &s) {
 
     while (!phi.empty()) {
-        auto [best_index, makespan] = taillard_best_insertion(s.sequence, phi.front());
+        auto [best_index, makespan] = taillard_best_insertion(s.sequence, phi.front(), std::numeric_limits<size_t>::max());
 
         s.sequence.insert(s.sequence.begin() + (long)best_index, phi.front());
         s.cost = makespan;
