@@ -88,8 +88,7 @@ Solution MinMax::solve() {
 
     Solution s;
     s.sequence = sequence;
-    s.departure_times = core::calculate_departure_times(m_instance, sequence);
-    s.cost = s.departure_times.back().back();
+    core::recalculate_solution(m_instance, s);
 
     return s;
 }

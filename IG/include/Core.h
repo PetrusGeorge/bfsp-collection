@@ -6,9 +6,9 @@
 
 namespace core {
 
-std::vector<std::vector<size_t>> calculate_departure_times(Instance &instance, const std::vector<size_t> &sequence);
+void calculate_departure_times(Instance &instance, Solution &s);
 
-std::vector<std::vector<size_t>> calculate_tail(Instance &instance, const std::vector<size_t> &sequence);
+void calculate_tail(Instance &instance, Solution &s);
 
 std::vector<size_t> stpt_sort(Instance &instance);
 
