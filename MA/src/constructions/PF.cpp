@@ -27,7 +27,6 @@ Solution PF::solve() {
 
 void PF::pf_insertion_phase(Solution &s, size_t first_job) {
     const size_t n = m_instance.num_jobs();     // número de jobs
-    const size_t m = m_instance.num_machines(); // número de máquinas
 
     // selects job with smallest total processing time to be the first one
     std::vector<bool> scheduled(n, false);
@@ -50,22 +49,25 @@ void PF::pf_insertion_phase(Solution &s, size_t first_job) {
     // sigma(j,k) represents the sum of idle and blocking times from adding job j to position k+1
     // after computing sigma for all jobs in the unscheduled vector
     // add the job with the lowest sigma to the main sequence
+    Solution s_current;
+    s_current.sequence = new_seq;
+    Solution s_candidate;
     for (size_t k = 1; k < n - 1; ++k) {
 
-        std::vector<std::vector<size_t>> d_current = core::calculate_departure_times(m_instance, new_seq);
+        core::recalculate_solution(m_instance, s_current);
         size_t best_sigma = std::numeric_limits<size_t>::max();
         size_t best_job = unscheduled.front();
 
         for (const size_t candidate : unscheduled) {
             std::vector<size_t> candidate_sequence = new_seq;
             candidate_sequence.push_back(candidate);
+            s_candidate.sequence = candidate_sequence;
 
-            std::vector<std::vector<size_t>> d_candidate =
-                core::calculate_departure_times(m_instance, candidate_sequence);
-            std::vector<size_t> &d_new = d_candidate.back();
+            core::recalculate_solution(m_instance, s_candidate);
+            std::vector<size_t> &d_new = s_candidate.departure_times.back();
 
             // computing sigma(j,k) criterium
-            const size_t sigma = core::calculate_sigma(m_instance, d_current, d_new, candidate, k);
+            const size_t sigma = core::calculate_sigma(m_instance, s_current.departure_times, d_new, candidate, k);
             if (sigma < best_sigma) {
                 best_sigma = sigma;
                 best_job = candidate;
@@ -79,6 +81,5 @@ void PF::pf_insertion_phase(Solution &s, size_t first_job) {
     new_seq.push_back(unscheduled.front());
 
     s.sequence = new_seq;
-    std::vector<std::vector<size_t>> d_final = core::calculate_departure_times(m_instance, new_seq);
-    s.cost = d_final.back()[m - 1]; // the makespan is the departure time of the final job at the last machine
+    core::recalculate_solution(m_instance, s);
 }
