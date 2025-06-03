@@ -7,7 +7,7 @@
 #include <utility>
 
 NEH::NEH(Instance &instance) : m_instance(instance) {
-    
+
     // f needs to store all possibilities of insertion so it has s.sequence.size + 1
     m_f = std::vector(instance.num_jobs() + 1, std::vector<size_t>(m_instance.num_machines()));
     m_inner.departure_times = std::vector(instance.num_jobs(), std::vector<size_t>(instance.num_machines()));
@@ -16,12 +16,10 @@ NEH::NEH(Instance &instance) : m_instance(instance) {
 
 Solution NEH::solve(std::vector<size_t> phi) {
 
-    std::reverse(phi.begin(), phi.end());
-
     Solution s;
     s.sequence.reserve(m_instance.num_jobs());
-    s.sequence = {phi.back()};
-    phi.pop_back();
+    s.sequence = {phi.front()};
+    phi.erase(phi.begin());
 
 
     second_step(std::move(phi), s);
@@ -35,7 +33,7 @@ size_t NEH::insert_calculation(const size_t i, const size_t k, const size_t best
 
     auto &q = m_inner.tail;
     auto &e = m_inner.departure_times;
-    
+
     auto set_f_and_max = [this, &max_value, &q](size_t i, size_t j, size_t value) {
         m_f[i][j] = value;
         max_value = std::max(value + q[i][j], max_value);
@@ -68,7 +66,7 @@ std::pair<size_t, size_t> NEH::taillard_grabowski_best_ins(const Solution &s, co
 
     m_inner.sequence = s.sequence;
     // const std::vector<size_t> &sequence = s.sequence;
-    
+
     core::calculate_departure_times(m_instance, m_inner);
 
     core::calculate_tail(m_instance, m_inner);
@@ -160,11 +158,11 @@ std::pair<size_t, size_t> NEH::taillard_best_insertion(const std::vector<size_t>
 void NEH::second_step(std::vector<size_t> phi, Solution &s) {
 
     while (!phi.empty()) {
-        auto [best_index, makespan] = taillard_best_insertion(s.sequence, phi.back());
+        auto [best_index, makespan] = taillard_best_insertion(s.sequence, phi.front());
 
-        s.sequence.insert(s.sequence.begin() + (long)best_index, phi.back());
+        s.sequence.insert(s.sequence.begin() + (long)best_index, phi.front());
         s.cost = makespan;
 
-        phi.pop_back();
+        phi.erase(phi.begin());
     }
 }
