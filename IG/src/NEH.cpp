@@ -1,4 +1,4 @@
-#include "constructions/NEH.h"
+#include "NEH.h"
 
 #include "Core.h"
 #include "Instance.h"
@@ -16,12 +16,10 @@ NEH::NEH(Instance &instance) : m_instance(instance) {
 
 Solution NEH::solve(std::vector<size_t> phi) {
 
-    std::reverse(phi.begin(), phi.end());
-
     Solution s;
     s.sequence.reserve(m_instance.num_jobs());
-    s.sequence = {phi.back()};
-    phi.pop_back();
+    s.sequence = {phi.front()};
+    phi.erase(phi.begin());
 
 
     second_step(std::move(phi), s);
@@ -160,11 +158,11 @@ std::pair<size_t, size_t> NEH::taillard_best_insertion(const std::vector<size_t>
 void NEH::second_step(std::vector<size_t> phi, Solution &s) {
 
     while (!phi.empty()) {
-        auto [best_index, makespan] = taillard_best_insertion(s.sequence, phi.back());
+        auto [best_index, makespan] = taillard_best_insertion(s.sequence, phi.front());
 
-        s.sequence.insert(s.sequence.begin() + (long)best_index, phi.back());
+        s.sequence.insert(s.sequence.begin() + (long)best_index, phi.front());
         s.cost = makespan;
 
-        phi.pop_back();
+        phi.erase(phi.begin());
     }
 }
