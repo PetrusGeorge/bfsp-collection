@@ -16,13 +16,15 @@ class hmgHS {
   public:
     hmgHS(Instance instance, Parameters params);
 
+    void check_minmax(Solution &s);
+
     // Generate 2 random sequence using NEH and NEH-WPT and other (MS-2) randomly
     void generate_initial_pop();
 
     std::vector<size_t> generate_random_sequence();
 
     // Generate a random harmony (vector of double that can be converted on a job permutation)
-    std::vector<double> generate_random_harmony();
+    void generate_random_harmony(Solution &sol);
 
     // convert a permutation into an harmony
     void permutation_to_harmony(Solution &s);
@@ -34,7 +36,7 @@ class hmgHS {
     std::pair<double, double> get_min_max_of_position(size_t j);
 
     // create a new harmony using the other ones as inspiration
-    std::vector<double> improvise_new_harmony();
+    void improvise_new_harmony(Solution &s);
 
     // This function deals with job with the same value on the harmony
     void revision(Solution &s);
@@ -53,6 +55,8 @@ class hmgHS {
     Parameters m_params;
     size_t m_time_limit;
     std::vector<Solution> m_pop;
+    std::vector<double> m_min;
+    std::vector<double> m_max;
 };
 
 #endif
