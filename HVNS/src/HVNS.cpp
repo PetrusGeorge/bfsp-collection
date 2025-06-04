@@ -33,14 +33,209 @@ HVNS::HVNS(Instance instance, Parameters params) : m_instance(std::move(instance
     m_T = m_T_init;
     m_T_fin = m_T_init * 0.1;
     m_beta = (m_T_init - m_T_fin) / (m_params.n_iter() * m_T_init * m_T_fin);
+
+    m_inner.departure_times = std::vector<std::vector<size_t>>(m_instance.num_jobs(), std::vector<size_t>(m_instance.num_machines(), 0));
+    m_inner.tail = std::vector<std::vector<size_t>>(m_instance.num_jobs(), std::vector<size_t>(m_instance.num_machines(), 0));
+    m_f = std::vector<std::vector<size_t>>(m_instance.num_jobs(), std::vector<size_t>(m_instance.num_machines(), 0));
+}
+
+size_t HVNS::insert_calculation(const size_t i, const size_t k, const size_t best_value) {
+    size_t max_value = 0;
+
+    auto p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
+
+    auto &q = m_inner.tail;
+    auto &e = m_inner.departure_times;
+
+    auto set_f_and_max = [this, &max_value, &q](size_t i, size_t j, size_t value) {
+        m_f[i][j] = value;
+        max_value = std::max(value + q[i][j], max_value);
+    };
+
+    size_t value = std::max(e[i - 1][0] + p(k, 0), e[i - 1][1]);
+    set_f_and_max(i, 0, value);
+
+    if (max_value >= best_value) {
+        return max_value;
+    }
+
+    for (size_t j = 1; j < m_instance.num_machines() - 1; j++) {
+        value = std::max(m_f[i][j - 1] + p(k, j), e[i - 1][j + 1]);
+        set_f_and_max(i, j, value);
+
+        if (max_value >= best_value) {
+            return max_value;
+        }
+    }
+
+    value = m_f[i][m_instance.num_machines() - 2] + p(k, m_instance.num_machines() - 1);
+    set_f_and_max(i, m_instance.num_machines() - 1, value);
+
+    return max_value;
+}
+
+std::pair<size_t, size_t> HVNS::taillard_best_insertion(const std::vector<size_t> &s, size_t job,size_t original_position) {
+    m_inner.sequence = s;
+
+    core::calculate_departure_times(m_instance, m_inner);
+    core::calculate_tail(m_instance, m_inner);
+    // Make it easier to implement find_best_insertion
+    // without an out of bound access
+    // inner.tail.emplace_back(m_instance.num_machines(), 0);
+
+    auto &q = m_inner.tail;
+
+    auto p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
+
+    // Evaluate best insertion
+    size_t max_value = 0;
+    auto set_f_and_max = [this, &max_value, &q](size_t i, size_t j, size_t value) {
+        m_f[i][j] = value;
+        max_value = std::max(value + q[i][j], max_value);
+    };
+
+    size_t best_index = 0;
+    size_t best_value = 0;
+    if (original_position != 0) {
+        set_f_and_max(0, 0, p(job, 0));
+        for (size_t j = 1; j < m_instance.num_machines(); j++) {
+            set_f_and_max(0, j, m_f[0][j - 1] + p(job, j));
+        }
+        best_index = 0;
+        best_value = max_value;
+    } else {
+        best_index = 1;
+        best_value = std::numeric_limits<size_t>::max();
+    }
+
+    for (size_t i = 1; i <= s.size(); i++) {
+        if (original_position == i) {
+            continue;
+        }
+
+        max_value = insert_calculation(i, job, best_value);
+
+        if (max_value < best_value) {
+            best_value = max_value;
+            best_index = i;
+        }
+    }
+
+    return {best_index, best_value};
+}
+
+std::pair<size_t, size_t> HVNS::taillard_best_edge_insertion(const std::vector<size_t> &s,
+                                                             std::pair<size_t, size_t> &jobs,
+                                                             size_t original_position) {
+                                                                 
+    const size_t m = m_instance.num_machines();
+    m_inner.sequence = s;
+    core::calculate_departure_times(m_instance, m_inner);
+
+    core::calculate_tail(m_instance, m_inner);
+
+    // Make it easier to implement find_best_insertion
+    // without an out of bound access
+    // m_inner.tail.emplace_back(m_instance.num_machines(), 0);
+
+    auto &q = m_inner.tail;
+
+    auto p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
+
+    // calculating departure time of the first job
+    m_f[0][0] = p(jobs.first, 0);
+    for (size_t j = 1; j < m; j++) {
+        m_f[0][j] = m_f[0][j - 1] + p(jobs.first, j);
+    }
+
+    for (size_t i = 1; i < m_inner.sequence.size(); i++) {
+
+        m_f[i][0] = std::max(m_inner.departure_times[i - 1][0] + p(jobs.first, 0), m_inner.departure_times[i - 1][1]);
+        size_t j = 0;
+        for (j = 1; j < m_f[i].size() - 1; j++) {
+            m_f[i][j] = std::max(m_f[i][j - 1] + p(jobs.first, j), m_inner.departure_times[i - 1][j + 1]);
+        }
+        m_f[i][j] = m_f[i][j - 1] + p(jobs.first, j);
+    }
+
+    // Evaluate best insertion
+    size_t max_value = 0;
+    auto set_f_and_max = [this, &q, &max_value](size_t i, size_t j, size_t value) {
+        m_f[i][j] = value;
+        max_value = std::max(value + q[i][j], max_value);
+    };
+
+    size_t best_index = 0;
+    size_t best_value = 0;
+    if (original_position != 0) {
+        set_f_and_max(0, 0, std::max(m_f[0][0] + p(jobs.second, 0), m_f[0][1]));
+        size_t j = 0;
+        for (j = 1; j < m_instance.num_machines() - 1; j++) {
+            set_f_and_max(0, j, std::max(m_f[0][j - 1] + p(jobs.second, j), m_f[0][j + 1]));
+        }
+        set_f_and_max(0, j, m_f[0][j - 1] + p(jobs.second, j));
+
+        best_index = 0;
+        best_value = max_value;
+    } else {
+        best_index = 1;
+        best_value = std::numeric_limits<size_t>::max();
+    }
+
+    for (size_t i = 1; i < m_inner.sequence.size(); i++) {
+        if (original_position == i) {
+            continue;
+        }
+
+        max_value = 0;
+        size_t value = std::max(m_f[i][0] + p(jobs.second, 0), m_f[i][1]);
+        set_f_and_max(i, 0, value);
+
+        for (size_t j = 1; j < m_instance.num_machines() - 1; j++) {
+            value = std::max(m_f[i][j - 1] + p(jobs.second, j), m_f[i][j + 1]);
+            set_f_and_max(i, j, value);
+        }
+        value = m_f[i][m_instance.num_machines() - 2] + p(jobs.second, m_instance.num_machines() - 1);
+        set_f_and_max(i, m_instance.num_machines() - 1, value);
+
+        if (max_value < best_value) {
+            best_value = max_value;
+            best_index = i;
+        }
+    }
+
+    return {best_index, best_value};
+}
+
+void HVNS::neh_second_step(std::vector<size_t> phi, Solution &s) {
+
+    while (!phi.empty()) {
+        auto [best_index, makespan] = taillard_best_insertion(s.sequence, phi.front(), std::numeric_limits<size_t>::max());
+
+        s.sequence.insert(s.sequence.begin() + (long)best_index, phi.front());
+        s.cost = makespan;
+
+        phi.erase(phi.begin());
+    }
+}
+
+Solution HVNS::neh(std::vector<size_t> phi) {
+
+    Solution s;
+    s.sequence.reserve(m_instance.num_jobs());
+    s.sequence = {phi.front()};
+    phi.erase(phi.begin());
+
+
+    neh_second_step(std::move(phi), s);
+    return s;
 }
 
 Solution HVNS::generate_first_solution() {
 
     const std::vector<size_t> sorted_sequece = core::stpt_sort(m_instance);
 
-    NEH neh(m_instance);
-    Solution s = neh.solve(sorted_sequece);
+    Solution s = neh(sorted_sequece);
 
     return s;
 }
@@ -70,89 +265,8 @@ bool HVNS::equal_solution(Solution &s1, Solution &s2) {
     return true;
 }
 
-std::pair<size_t, size_t> HVNS::taillard_best_edge_insertion(const std::vector<size_t> &sequence,
-                                                             std::pair<size_t, size_t> &jobs,
-                                                             size_t original_position) {
-    const size_t m = m_instance.num_machines();
-
-    auto m_e = core::calculate_departure_times(m_instance, sequence);
-
-    auto m_q = core::calculate_tail(m_instance, sequence);
-    // Make it easier to implement find_best_insertion
-    // without an out of bound access
-    m_q.emplace_back(m_instance.num_machines(), 0);
-
-    auto p = [this](size_t i, size_t j) { return m_instance.p(i, j); };
-
-    auto m_f = std::vector(sequence.size() + 1, std::vector<size_t>(m_instance.num_machines()));
-
-    m_f[0][0] = p(jobs.first, 0);
-    for (size_t j = 1; j < m; j++) {
-        m_f[0][j] = m_f[0][j - 1] + p(jobs.first, j);
-    }
-
-    for (size_t i = 1; i < m_f.size(); i++) {
-
-        m_f[i][0] = std::max(m_e[i - 1][0] + p(jobs.first, 0), m_e[i - 1][1]);
-        size_t j = 0;
-        for (j = 1; j < m_f[i].size() - 1; j++) {
-            m_f[i][j] = std::max(m_f[i][j - 1] + p(jobs.first, j), m_e[i - 1][j + 1]);
-        }
-        m_f[i][j] = m_f[i][j - 1] + p(jobs.first, j);
-    }
-
-    // Evaluate best insertion
-    size_t max_value = 0;
-    auto set_f_and_max = [&m_f, &m_q, &max_value](size_t i, size_t j, size_t value) {
-        m_f[i][j] = value;
-        max_value = std::max(value + m_q[i][j], max_value);
-    };
-
-    size_t best_index = 0;
-    size_t best_value = 0;
-    if (original_position != 0) {
-        set_f_and_max(0, 0, std::max(m_f[0][0] + p(jobs.second, 0), m_f[0][1]));
-        size_t j = 0;
-        for (j = 1; j < m_instance.num_machines() - 1; j++) {
-            set_f_and_max(0, j, std::max(m_f[0][j - 1] + p(jobs.second, j), m_f[0][j + 1]));
-        }
-        set_f_and_max(0, j, m_f[0][j - 1] + p(jobs.second, j));
-
-        best_index = 0;
-        best_value = max_value;
-    } else {
-        best_index = 1;
-        best_value = std::numeric_limits<size_t>::max();
-    }
-
-    for (size_t i = 1; i <= sequence.size(); i++) {
-        if (original_position == i) {
-            continue;
-        }
-
-        max_value = 0;
-        size_t value = std::max(m_f[i][0] + p(jobs.second, 0), m_f[i][1]);
-        set_f_and_max(i, 0, value);
-
-        for (size_t j = 1; j < m_instance.num_machines() - 1; j++) {
-            value = std::max(m_f[i][j - 1] + p(jobs.second, j), m_f[i][j + 1]);
-            set_f_and_max(i, j, value);
-        }
-        value = m_f[i][m_instance.num_machines() - 2] + p(jobs.second, m_instance.num_machines() - 1);
-        set_f_and_max(i, m_instance.num_machines() - 1, value);
-
-        if (max_value < best_value) {
-            best_value = max_value;
-            best_index = i;
-        }
-    }
-
-    return {best_index, best_value};
-}
-
 void HVNS::best_insertion(Solution &s) {
 
-    NEH helper(m_instance);
     size_t best_job_index = 0;
     size_t best_obj = s.cost;
     size_t best_index = std::numeric_limits<size_t>::max();
@@ -162,7 +276,7 @@ void HVNS::best_insertion(Solution &s) {
         const size_t job = s.sequence[i];
         s.sequence.erase(s.sequence.begin() + (long)i);
 
-        auto [index, obj] = helper.taillard_best_insertion(s.sequence, job, std::numeric_limits<size_t>::max());
+        auto [index, obj] = taillard_best_insertion(s.sequence, job, std::numeric_limits<size_t>::max());
 
         s.sequence.insert(s.sequence.begin() + (long)i, job);
 
@@ -223,6 +337,7 @@ void HVNS::best_edge_insertion(Solution &s) {
     }
 
     core::recalculate_solution(m_instance, s);
+    s.cost = best_obj;
 }
 
 void HVNS::best_swap(Solution &s) {
@@ -285,7 +400,6 @@ void HVNS::sa_rls(Solution &current, Solution &best) {
 
     std::vector<size_t> ref = generate_random_sequence();
     size_t cnt = 0;
-    NEH helper(m_instance);
     while (cnt < m_instance.num_jobs()) {
 
         const size_t job = ref[cnt];
@@ -297,7 +411,7 @@ void HVNS::sa_rls(Solution &current, Solution &best) {
             }
         }
 
-        auto [best_index, best_nei_obj] = helper.taillard_best_insertion(current.sequence, job, i);
+        auto [best_index, best_nei_obj] = taillard_best_insertion(current.sequence, job, i);
 
         const double delta = static_cast<double>(current.cost) - static_cast<double>(best_nei_obj);
 
@@ -324,7 +438,6 @@ void HVNS::sa_best_edge_insertion(Solution &current, Solution &best) {
 
     std::vector<size_t> ref = generate_random_sequence();
     size_t cnt = 0;
-    NEH const helper(m_instance);
     while (cnt < m_instance.num_jobs()) {
         std::pair<size_t, size_t> jobs;
         jobs.first = ref[cnt];
