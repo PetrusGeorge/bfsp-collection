@@ -20,7 +20,7 @@ subdir('src')
 executable(
   'hdde',
   sources,
-  include_directories: include_directories('include'),
+  include_directories: include_directories('include', 'include/constructions', 'include/local-search'),
   cpp_args: extra_args,
   dependencies: argparse_dep,
 )

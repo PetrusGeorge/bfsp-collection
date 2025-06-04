@@ -1,0 +1,27 @@
+#ifndef INSTANCE_H
+#define INSTANCE_H
+
+#include <filesystem>
+#include <numeric>
+#include <vector>
+
+struct Instance {
+  public:
+    Instance(const std::filesystem::path &path);
+
+    size_t num_jobs() const { return m_num_jobs; }
+    size_t num_machines() const { return m_num_machines; }
+
+    long p(size_t i, size_t j) const { return m_matrix[i][j]; }
+    // Reverse matrix
+    long rp(size_t i, size_t j) const { return m_matrix[i][m_num_machines - j - 1]; }
+
+    inline long psum(size_t i) const { return std::reduce(m_matrix[i].begin(), m_matrix[i].end()); }
+
+  private:
+    size_t m_num_jobs = 0;
+    size_t m_num_machines = 0;
+    std::vector<std::vector<long>> m_matrix;
+};
+
+#endif

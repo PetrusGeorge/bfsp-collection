@@ -1,0 +1,552 @@
+instances/J100M10
+instances/J100M10/J100M10N1
+Tempo de parada: 100000 us
+custo: 7499
+
+
+instances/J100M10/J100M10N10
+Tempo de parada: 100000 us
+custo: 7519
+
+
+instances/J100M10/J100M10N2
+Tempo de parada: 100000 us
+custo: 7287
+
+
+instances/J100M10/J100M10N3
+Tempo de parada: 100000 us
+custo: 7402
+
+
+instances/J100M10/J100M10N4
+Tempo de parada: 100000 us
+custo: 7667
+
+
+instances/J100M10/J100M10N5
+Tempo de parada: 100000 us
+custo: 7362
+
+
+instances/J100M10/J100M10N6
+Tempo de parada: 100000 us
+custo: 7143
+
+
+instances/J100M10/J100M10N7
+Tempo de parada: 100000 us
+custo: 7450
+
+
+instances/J100M10/J100M10N8
+Tempo de parada: 100000 us
+custo: 7297
+
+
+instances/J100M10/J100M10N9
+Tempo de parada: 100000 us
+custo: 7505
+
+
+instances/J100M20
+instances/J100M20/J100M20N1
+Tempo de parada: 200000 us
+custo: 8286
+
+
+instances/J100M20/J100M20N10
+Tempo de parada: 200000 us
+custo: 8351
+
+
+instances/J100M20/J100M20N2
+Tempo de parada: 200000 us
+custo: 8262
+
+
+instances/J100M20/J100M20N3
+Tempo de parada: 200000 us
+custo: 8372
+
+
+instances/J100M20/J100M20N4
+Tempo de parada: 200000 us
+custo: 8312
+
+
+instances/J100M20/J100M20N5
+Tempo de parada: 200000 us
+custo: 8260
+
+
+instances/J100M20/J100M20N6
+Tempo de parada: 200000 us
+custo: 8263
+
+
+instances/J100M20/J100M20N7
+Tempo de parada: 200000 us
+custo: 8404
+
+
+instances/J100M20/J100M20N8
+Tempo de parada: 200000 us
+custo: 8464
+
+
+instances/J100M20/J100M20N9
+Tempo de parada: 200000 us
+custo: 8454
+
+
+instances/J100M5
+instances/J100M5/J100M5N1
+Tempo de parada: 50000 us
+custo: 6710
+
+
+instances/J100M5/J100M5N10
+Tempo de parada: 50000 us
+custo: 6758
+
+
+instances/J100M5/J100M5N2
+Tempo de parada: 50000 us
+custo: 6648
+
+
+instances/J100M5/J100M5N3
+Tempo de parada: 50000 us
+custo: 6392
+
+
+instances/J100M5/J100M5N4
+Tempo de parada: 50000 us
+custo: 6314
+
+
+instances/J100M5/J100M5N5
+instances/J100M5/J100M5N6
+Tempo de parada: 50000 us
+custo: 6448
+
+
+instances/J100M5/J100M5N7
+instances/J100M5/J100M5N8
+instances/J100M5/J100M5N9
+instances/J200M10
+instances/J200M10/J200M10N1
+Tempo de parada: 200000 us
+custo: 14849
+
+
+instances/J200M10/J200M10N10
+Tempo de parada: 200000 us
+custo: 14834
+
+
+instances/J200M10/J200M10N2
+Tempo de parada: 200000 us
+custo: 14609
+
+
+instances/J200M10/J200M10N3
+Tempo de parada: 200000 us
+custo: 14846
+
+
+instances/J200M10/J200M10N4
+Tempo de parada: 200000 us
+custo: 14751
+
+
+instances/J200M10/J200M10N5
+Tempo de parada: 200000 us
+custo: 14671
+
+
+instances/J200M10/J200M10N6
+Tempo de parada: 200000 us
+custo: 14635
+
+
+instances/J200M10/J200M10N7
+Tempo de parada: 200000 us
+custo: 15040
+
+
+instances/J200M10/J200M10N8
+Tempo de parada: 200000 us
+custo: 15036
+
+
+instances/J200M10/J200M10N9
+Tempo de parada: 200000 us
+custo: 14599
+
+
+instances/J200M20
+instances/J200M20/J200M20N1
+Tempo de parada: 400000 us
+custo: 15921
+
+
+instances/J200M20/J200M20N10
+Tempo de parada: 400000 us
+custo: 16130
+
+
+instances/J200M20/J200M20N2
+Tempo de parada: 400000 us
+custo: 16014
+
+
+instances/J200M20/J200M20N3
+Tempo de parada: 400000 us
+custo: 16281
+
+
+instances/J200M20/J200M20N4
+Tempo de parada: 400000 us
+custo: 16029
+
+
+instances/J200M20/J200M20N5
+Tempo de parada: 400000 us
+custo: 16094
+
+
+instances/J200M20/J200M20N6
+Tempo de parada: 400000 us
+custo: 16133
+
+
+instances/J200M20/J200M20N7
+Tempo de parada: 400000 us
+custo: 16231
+
+
+instances/J200M20/J200M20N8
+Tempo de parada: 400000 us
+custo: 16209
+
+
+instances/J200M20/J200M20N9
+Tempo de parada: 400000 us
+custo: 16085
+
+
+instances/J200M5
+instances/J200M5/J200M5N1
+Tempo de parada: 100000 us
+custo: 13397
+
+
+instances/J200M5/J200M5N10
+Tempo de parada: 100000 us
+custo: 13163
+
+
+instances/J200M5/J200M5N2
+Tempo de parada: 100000 us
+custo: 13170
+
+
+instances/J200M5/J200M5N3
+Tempo de parada: 100000 us
+custo: 13474
+
+
+instances/J200M5/J200M5N4
+Tempo de parada: 100000 us
+custo: 13549
+
+
+instances/J200M5/J200M5N5
+Tempo de parada: 100000 us
+custo: 13489
+
+
+instances/J200M5/J200M5N6
+Tempo de parada: 100000 us
+custo: 13120
+
+
+instances/J200M5/J200M5N7
+Tempo de parada: 100000 us
+custo: 13440
+
+
+instances/J200M5/J200M5N8
+Tempo de parada: 100000 us
+custo: 13619
+
+
+instances/J200M5/J200M5N9
+Tempo de parada: 100000 us
+custo: 13253
+
+
+instances/J20M10
+instances/J20M10/J20M10N1
+Tempo de parada: 20000 us
+custo: 1706
+
+
+instances/J20M10/J20M10N10
+instances/J20M10/J20M10N2
+instances/J20M10/J20M10N3
+instances/J20M10/J20M10N4
+instances/J20M10/J20M10N5
+instances/J20M10/J20M10N6
+instances/J20M10/J20M10N7
+instances/J20M10/J20M10N8
+instances/J20M10/J20M10N9
+instances/J20M20
+instances/J20M20/J20M20N1
+instances/J20M20/J20M20N10
+Tempo de parada: 40000 us
+custo: 2368
+
+
+instances/J20M20/J20M20N2
+Tempo de parada: 40000 us
+custo: 2279
+
+
+instances/J20M20/J20M20N3
+Tempo de parada: 40000 us
+custo: 2520
+
+
+instances/J20M20/J20M20N4
+Tempo de parada: 40000 us
+custo: 2477
+
+
+instances/J20M20/J20M20N5
+Tempo de parada: 40000 us
+custo: 2498
+
+
+instances/J20M20/J20M20N6
+Tempo de parada: 40000 us
+custo: 2449
+
+
+instances/J20M20/J20M20N7
+Tempo de parada: 40000 us
+custo: 2469
+
+
+instances/J20M20/J20M20N8
+Tempo de parada: 40000 us
+custo: 2328
+
+
+instances/J20M20/J20M20N9
+Tempo de parada: 40000 us
+custo: 2394
+
+
+instances/J20M5
+instances/J20M5/J20M5N1
+Tempo de parada: 10000 us
+custo: 1447
+
+
+instances/J20M5/J20M5N10
+Tempo de parada: 10000 us
+custo: 1315
+
+
+instances/J20M5/J20M5N2
+Tempo de parada: 10000 us
+custo: 1454
+
+
+instances/J20M5/J20M5N3
+Tempo de parada: 10000 us
+custo: 1323
+
+
+instances/J20M5/J20M5N4
+Tempo de parada: 10000 us
+custo: 1480
+
+
+instances/J20M5/J20M5N5
+Tempo de parada: 10000 us
+custo: 1394
+
+
+instances/J20M5/J20M5N6
+Tempo de parada: 10000 us
+custo: 1403
+
+
+instances/J20M5/J20M5N7
+Tempo de parada: 10000 us
+custo: 1432
+
+
+instances/J20M5/J20M5N8
+instances/J20M5/J20M5N9
+instances/J500M10
+instances/J500M10/J500M10N1
+instances/J500M10/J500M10N10
+instances/J500M10/J500M10N2
+instances/J500M10/J500M10N3
+instances/J500M10/J500M10N4
+instances/J500M10/J500M10N5
+instances/J500M10/J500M10N6
+instances/J500M10/J500M10N7
+instances/J500M10/J500M10N8
+instances/J500M10/J500M10N9
+instances/J500M20
+instances/J500M20/J500M20N1
+Tempo de parada: 1000000 us
+custo: 39799
+
+
+instances/J500M20/J500M20N10
+Tempo de parada: 1000000 us
+custo: 39802
+
+
+instances/J500M20/J500M20N2
+Tempo de parada: 1000000 us
+custo: 40033
+
+
+instances/J500M20/J500M20N3
+Tempo de parada: 1000000 us
+custo: 39614
+
+
+instances/J500M20/J500M20N4
+Tempo de parada: 1000000 us
+custo: 39867
+
+
+instances/J500M20/J500M20N5
+Tempo de parada: 1000000 us
+custo: 39657
+
+
+instances/J500M20/J500M20N6
+Tempo de parada: 1000000 us
+custo: 40107
+
+
+instances/J500M20/J500M20N7
+Tempo de parada: 1000000 us
+custo: 39817
+
+
+instances/J500M20/J500M20N8
+Tempo de parada: 1000000 us
+custo: 39768
+
+
+instances/J500M20/J500M20N9
+Tempo de parada: 1000000 us
+custo: 39638
+
+
+instances/J500M5
+instances/J500M5/J500M5N1
+instances/J500M5/J500M5N10
+instances/J500M5/J500M5N2
+instances/J500M5/J500M5N3
+instances/J500M5/J500M5N4
+instances/J500M5/J500M5N5
+instances/J500M5/J500M5N6
+instances/J500M5/J500M5N7
+instances/J500M5/J500M5N8
+instances/J500M5/J500M5N9
+instances/J50M10
+instances/J50M10/J50M10N1
+instances/J50M10/J50M10N10
+instances/J50M10/J50M10N2
+Tempo de parada: 50000 us
+custo: 3722
+
+
+instances/J50M10/J50M10N3
+instances/J50M10/J50M10N4
+instances/J50M10/J50M10N5
+instances/J50M10/J50M10N6
+instances/J50M10/J50M10N7
+Tempo de parada: 50000 us
+custo: 3904
+
+
+instances/J50M10/J50M10N8
+instances/J50M10/J50M10N9
+instances/J50M20
+instances/J50M20/J50M20N1
+instances/J50M20/J50M20N10
+Tempo de parada: 100000 us
+custo: 4615
+
+
+instances/J50M20/J50M20N11
+Tempo de parada: 100000 us
+custo: 4631
+
+
+instances/J50M20/J50M20N12
+instances/J50M20/J50M20N2
+instances/J50M20/J50M20N3
+instances/J50M20/J50M20N4
+instances/J50M20/J50M20N5
+instances/J50M20/J50M20N6
+Tempo de parada: 100000 us
+custo: 4472
+
+
+instances/J50M20/J50M20N7
+Tempo de parada: 100000 us
+custo: 4475
+
+
+instances/J50M20/J50M20N8
+Tempo de parada: 100000 us
+custo: 4541
+
+
+instances/J50M20/J50M20N9
+Tempo de parada: 100000 us
+custo: 4497
+
+
+instances/J50M5
+instances/J50M5/J50M5N1
+Tempo de parada: 25000 us
+custo: 3235
+
+
+instances/J50M5/J50M5N10
+instances/J50M5/J50M5N2
+instances/J50M5/J50M5N3
+Tempo de parada: 25000 us
+custo: 3233
+
+
+instances/J50M5/J50M5N4
+instances/J50M5/J50M5N5
+Tempo de parada: 25000 us
+custo: 3378
+
+
+instances/J50M5/J50M5N6
+instances/J50M5/J50M5N7
+instances/J50M5/J50M5N8
+Tempo de parada: 25000 us
+custo: 3215
+
+
+instances/J50M5/J50M5N9
+-
