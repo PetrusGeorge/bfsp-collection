@@ -7,7 +7,6 @@
 #include "Parameters.h"
 #include "RNG.h"
 #include "Solution.h"
-#include "constructions/NEH.h"
 
 #define KMAX 3 // number of neighborhoods
 
@@ -19,15 +18,25 @@ class HVNS {
     // use neh to generate one solution
     Solution generate_first_solution();
 
+    size_t insert_calculation(const size_t i, const size_t k, const size_t best_value);
+
+    // use departure times and tail to reduce the complexity of best insertion
+    std::pair<size_t, size_t> taillard_best_insertion(const std::vector<size_t> &s, size_t k, size_t original_position);
+
+    // adaptation of taillard_best_insertion to edge insertion method
+    std::pair<size_t, size_t> taillard_best_edge_insertion(const std::vector<size_t> &sequence,
+                                                           std::pair<size_t, size_t> &jobs, size_t original_position);
+
+    // we had to put neh inside hvns to optimize it
+    void neh_second_step(std::vector<size_t> phi, Solution &s);
+
+    Solution neh(std::vector<size_t> phi);
+
     // Generate a random permutation of jobs
     std::vector<size_t> generate_random_sequence();
 
     // verify if two solutions are equal
     static bool equal_solution(Solution &s1, Solution &s2);
-
-    // adaptation of taillard_best_insertion to edge insertion method
-    std::pair<size_t, size_t> taillard_best_edge_insertion(const std::vector<size_t> &sequence,
-                                                           std::pair<size_t, size_t> &jobs, size_t original_position);
 
     // finds the best position to reinsert a job and reinserts it
     void best_insertion(Solution &s);
@@ -57,6 +66,8 @@ class HVNS {
     double m_T_init; // initial temperature
     double m_T_fin;  // "final" temperature
     double m_beta;   // cooling adjustment
+    Solution m_inner;
+    std::vector<std::vector<size_t>> m_f;
 };
 
 #endif

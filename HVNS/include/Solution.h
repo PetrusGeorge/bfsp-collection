@@ -9,6 +9,7 @@ struct Solution {
     size_t cost = std::numeric_limits<size_t>::max();
     std::vector<size_t> sequence;
     std::vector<std::vector<size_t>> departure_times;
+    std::vector<std::vector<size_t>> tail;
 };
 
 inline std::ostream &operator<<(std::ostream &os, const Solution &sol) {
@@ -21,6 +22,14 @@ inline std::ostream &operator<<(std::ostream &os, const Solution &sol) {
 
     os << "Departure Times:\n";
     for (const auto &row : sol.departure_times) {
+        os << "[";
+        for (size_t i = 0; i < row.size(); ++i) {
+            os << row[i] << (i != row.size() - 1 ? ", " : "");
+        }
+        os << "]\n";
+    }
+    os << "\nTail:\n";
+    for (const auto &row : sol.tail) {
         os << "[";
         for (size_t i = 0; i < row.size(); ++i) {
             os << row[i] << (i != row.size() - 1 ? ", " : "");
