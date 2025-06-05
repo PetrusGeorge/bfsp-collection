@@ -92,7 +92,7 @@ size_t DE_ABC::tournament() {
     return i;
 }
 
-std::vector<size_t> DE_ABC::mutation() {
+void DE_ABC::mutation(std::vector<size_t> &new_pi) {
     const size_t n = m_instance.num_jobs();
 
     // taking three random solutions
@@ -108,7 +108,6 @@ std::vector<size_t> DE_ABC::mutation() {
         ind_3 = RNG::instance().generate((size_t)0, m_pop.size() - 1);
     }
 
-    std::vector<size_t> new_pi(n);
     for (size_t i = 0; i < n; i++) {
 
         // use the formula given in the article to generate a(n possibly invalid) new solution
@@ -119,7 +118,6 @@ std::vector<size_t> DE_ABC::mutation() {
         }
     }
 
-    return new_pi;
 }
 
 Solution DE_ABC::crossover(std::vector<size_t> &pi) {
@@ -171,18 +169,24 @@ Solution DE_ABC::crossover(std::vector<size_t> &pi) {
         ref.erase(ref.begin() + i);
     }
 
-    // neh second step in ref to make ref have all the jobs missing in the best position
     Solution s;
-    s.sequence.swap(ref);
 
-    helper.second_step(pi_temp, s);
+    // in the rare case that mutation generates a valid solution and all probabilities are bigger than pc, ref will have size = 0
+    if (ref.size() == 0) {
+        s = helper.solve(pi_temp);
+    } else {
+        // neh second step in ref to make ref have all the jobs missing in the best position
+        s.sequence.swap(ref);
+        helper.second_step(pi_temp, s);
+    }
 
     return s;
 }
 
 Solution DE_ABC::generate_new_solution() {
     Solution s;
-    std::vector<size_t> new_seq = mutation();
+    std::vector<size_t> new_seq(m_instance.num_jobs());
+    mutation(new_seq);
     s = crossover(new_seq);
 
     core::recalculate_solution(m_instance, s);
@@ -244,10 +248,6 @@ void DE_ABC::self_adaptative() {
 
         core::partial_recalculate_solution(m_instance, s, idx_to_recalculate);
 
-        if (s.cost < 1280) {
-            std::cout << i << " " << m_NL[i] << " " << idx_to_recalculate << std::endl;
-        }
-
         if (s.cost < m_pop[idx].cost) {
             m_pop[idx] = s;
             m_BNL.push_back(m_NL[i]); // saving the good neighbors to use them more
@@ -258,26 +258,6 @@ void DE_ABC::self_adaptative() {
     }
 
     update_neighborhood();
-}
-
-void DE_ABC::replace_unchanged() {
-
-    // modifying unm_changed solutions
-    for (size_t i = 0; i < m_pop.size(); i++) {
-        if (m_changed[i]) {
-            m_changed[i] = false;
-            continue;
-        }
-
-        size_t idx_to_recalculate = std::numeric_limits<size_t>::max();
-        const size_t it = m_params.it();
-        for (size_t j = 0; j < it; j++) {
-            size_t idx = insertion(m_pop[i]);
-            idx_to_recalculate = std::min(idx, idx_to_recalculate);
-        }
-
-        core::partial_recalculate_solution(m_instance, m_pop[i], idx_to_recalculate);
-    }
 }
 
 void DE_ABC::replace_worst_solution(Solution &s) {
@@ -325,6 +305,29 @@ void DE_ABC::local_search() {
     }
 }
 
+void DE_ABC::replace_unchanged() {
+
+    size_t idx_to_recalculate = std::numeric_limits<size_t>::max();
+    size_t idx;
+
+    // modifying unm_changed solutions
+    for (size_t i = 0; i < m_pop.size(); i++) {
+        if (m_changed[i]) {
+            m_changed[i] = false;
+            continue;
+        }
+
+        idx_to_recalculate = std::numeric_limits<size_t>::max();
+        const size_t it = m_params.it();
+        for (size_t j = 0; j < it; j++) {
+            idx = insertion(m_pop[i]);
+            idx_to_recalculate = std::min(idx, idx_to_recalculate);
+        }
+
+        core::partial_recalculate_solution(m_instance, m_pop[i], idx_to_recalculate);
+    }
+}
+
 Solution DE_ABC::solve() {
 
     const size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
@@ -343,8 +346,9 @@ Solution DE_ABC::solve() {
     best_solution = m_pop[idx];
 
     while (true) {
-        Solution s = generate_new_solution();
 
+        Solution s = generate_new_solution();
+        
         replace_worst_solution(s);
 
         self_adaptative();
