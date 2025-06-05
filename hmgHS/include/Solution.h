@@ -29,6 +29,16 @@ inline std::ostream &operator<<(std::ostream &os, const Solution &sol) {
         }
         os << "]\n";
     }
+
+    os << "\nTail:\n";
+    for (const auto &row : sol.tail) {
+        os << "[";
+        for (size_t i = 0; i < row.size(); ++i) {
+            os << row[i] << (i != row.size() - 1 ? ", " : "");
+        }
+        os << "]\n";
+    }
+
     os << "Cost: " << sol.cost << "\n";
 
     return os;
