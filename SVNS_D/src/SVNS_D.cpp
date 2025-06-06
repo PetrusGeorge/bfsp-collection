@@ -103,6 +103,7 @@ bool SVNS_D::LS2_D_insertion(Solution &solution, std::vector<size_t> &reference)
         for (size_t i = 0; i < solution.sequence.size(); i++) {
             if (solution.sequence[i] == job) {
                 solution.sequence.erase(solution.sequence.begin() + (long)i);
+                break;
             }
         }
 
@@ -165,6 +166,9 @@ Solution SVNS_D::solve() {
         ro = {90, 60, 30};
     }
     VERBOSE(m_params.verbose()) << "Time limit: " << time_limit << "s\n";
+
+    std::vector<size_t> reference(m_instance.num_jobs());
+    std::iota(reference.begin(), reference.end(), 0);
     while (true) {
         size_t counter = 0;
         size_t local_search_type = 0;
@@ -182,11 +186,6 @@ Solution SVNS_D::solve() {
             size_t original_cost = current.cost;
 
             if (local_search_type == 0) {
-                std::vector<size_t> reference(m_instance.num_jobs());
-
-                for (size_t i = 0; i < m_instance.num_jobs(); ++i) {
-                    reference[i] = i;
-                }
                 while (uptime() <= time_limit) {
                     std::shuffle(reference.begin(), reference.end(), RNG::instance().gen());
 
@@ -195,11 +194,6 @@ Solution SVNS_D::solve() {
                     }
                 }
             } else {
-                std::vector<size_t> reference(m_instance.num_jobs());
-
-                for (size_t i = 0; i < m_instance.num_jobs(); ++i) {
-                    reference[i] = i;
-                }
                 while (uptime() <= time_limit) {
                     std::shuffle(reference.begin(), reference.end(), RNG::instance().gen());
 
