@@ -106,7 +106,7 @@ Solution P_EDA::solve() {
 
     // the p[i][j] represents how many times job j appeared before or in position i give the current population
     auto p = get_p();
-    // the t[i][j][k] represents how many times job k appeared immideatly after job j in position i
+    // the t[i][j][k] represents how many times job k appeared immediately after job j in position i
     auto t = get_t();
 
     while (true) {
@@ -324,7 +324,7 @@ void P_EDA::modified_linear_rank_selection() {
         }
     }
     
-    m_pc = new_pc;
+    m_pc.swap(new_pc);
 }
 
 Solution P_EDA::probabilistic_model(const SizeTMatrix &p, const std::vector<SizeTMatrix> &t) {
@@ -333,8 +333,8 @@ Solution P_EDA::probabilistic_model(const SizeTMatrix &p, const std::vector<Size
 
     const size_t n = m_instance.num_jobs();
 
-    std::vector<size_t> unasigned_jobs(m_instance.num_jobs());
-    std::iota(unasigned_jobs.begin(), unasigned_jobs.end(), 0);
+    std::vector<size_t> unassigned_jobs(m_instance.num_jobs());
+    std::iota(unassigned_jobs.begin(), unassigned_jobs.end(), 0);
     std::vector<size_t> final_sequence;
     final_sequence.reserve(n);
 
@@ -342,27 +342,27 @@ Solution P_EDA::probabilistic_model(const SizeTMatrix &p, const std::vector<Size
         // this probability vector has the size of the unasigned jobs
         // each element of this vector represents the probability of adding the job in that position
         // to the current solution
-        auto probabilities = get_probability_vector(final_sequence, unasigned_jobs, p, t);
+        auto probabilities = get_probability_vector(final_sequence, unassigned_jobs, p, t);
 
         double roulette_wheel = 0;
 
-        size_t job_to_insert = unasigned_jobs[0];
+        size_t job_to_insert = unassigned_jobs[0];
 
         // this roulette wheel works the same way as the sum of probabilities
         // in the modified linear rank selection
         const double r = RNG::instance().generate_real_number(0, 1);
 
-        for (size_t j = 0; j < unasigned_jobs.size(); j++) {
+        for (size_t j = 0; j < unassigned_jobs.size(); j++) {
 
             if (roulette_wheel <= r && r < roulette_wheel + probabilities[j]) {
-                job_to_insert = unasigned_jobs[j];
+                job_to_insert = unassigned_jobs[j];
             }
             roulette_wheel += probabilities[j];
         }
         final_sequence.push_back(job_to_insert);
-        unasigned_jobs.erase(std::remove(unasigned_jobs.begin(), unasigned_jobs.end(), job_to_insert));
+        unassigned_jobs.erase(std::remove(unassigned_jobs.begin(), unassigned_jobs.end(), job_to_insert));
     }
-    final_sequence.push_back(unasigned_jobs.front());
+    final_sequence.push_back(unassigned_jobs.front());
 
     Solution s;
     s.sequence = final_sequence;
@@ -410,20 +410,20 @@ std::vector<SizeTMatrix> P_EDA::get_t() {
 }
 
 std::vector<double> P_EDA::get_probability_vector(const std::vector<size_t> &sequence,
-                                                  const std::vector<size_t> &unasigned_jobs, const SizeTMatrix &p,
+                                                  const std::vector<size_t> &unassigned_jobs, const SizeTMatrix &p,
                                                   const std::vector<SizeTMatrix> &t) {
     const size_t n = m_instance.num_jobs();
-    std::vector<double> probabilities(unasigned_jobs.size());
+    std::vector<double> probabilities(unassigned_jobs.size());
 
     if (sequence.empty()) {
 
         double sum_p = 0;
-        for (const auto &j : unasigned_jobs) {
+        for (const auto &j : unassigned_jobs) {
             sum_p += (double)p[0][j];
         }
 
         for (size_t j = 0; j < n; j++) {
-            const size_t job = unasigned_jobs[j];
+            const size_t job = unassigned_jobs[j];
             probabilities[j] = (double)p[0][job] / sum_p;
         }
     } else {
@@ -433,18 +433,18 @@ std::vector<double> P_EDA::get_probability_vector(const std::vector<size_t> &seq
 
         double sum_p = 0;
         double sum_t = 0;
-        for (const auto &j : unasigned_jobs) {
+        for (const auto &j : unassigned_jobs) {
             sum_p += (double)p[pos][j];
             sum_t += (double)t[pos][last_job][j];
         }
 
-        for (size_t j = 0; j < unasigned_jobs.size(); j++) {
-            const size_t job = unasigned_jobs[j];
+        for (size_t j = 0; j < unassigned_jobs.size(); j++) {
+            const size_t job = unassigned_jobs[j];
 
             double n_i_j_k = -1;
 
             if (sum_t == 0) {
-                n_i_j_k = 1 / (double)unasigned_jobs.size();
+                n_i_j_k = 1 / (double)unassigned_jobs.size();
             } else {
                 n_i_j_k = (double)t[pos][last_job][job] / sum_t;
             }
