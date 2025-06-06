@@ -31,7 +31,6 @@ class NEH {
     // std::vector<std::vector<size_t>> m_e; // Departure time
     // std::vector<std::vector<size_t>> m_q; // Tail duration
     Solution m_inner; // Inner solution to avoid mallocs
-    std::vector<std::vector<size_t>> m_f;
 };
 
 #endif
