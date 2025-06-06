@@ -94,29 +94,22 @@ bool SVNS_S::LS1_S_swap(Solution &solution, std::vector<size_t> &reference) { //
 bool SVNS_S::LS2_S_insertion(Solution &solution, std::vector<size_t> &reference) { // NOLINT
     size_t original_cost = solution.cost;
 
-    for (size_t i = 0; i < solution.sequence.size()-1; i++) {
-        size_t index = reference[i];
-        size_t best_j = 0;
-        size_t best_cost = solution.cost;
+    NEH helper(m_instance);
+    
+    for(size_t j = 0; j < reference.size(); j++) {
+        const size_t job = reference[j];
 
-        for (size_t j = 0; j < solution.sequence.size(); j++) {
-            size_t cost_temp = solution.cost;
-            // Apply move
-            apply_insertion(solution, (long)index, (long)j);
-
-            core::recalculate_solution(m_instance, solution);
-
-            if (solution.cost <= best_cost) {
-                best_cost = solution.cost;
-                best_j = j;
+        for (size_t i = 0; i < solution.sequence.size(); i++) {
+            if (solution.sequence[i] == job) {
+                solution.sequence.erase(solution.sequence.begin() + (long)i);
             }
-            // undo move
-            apply_insertion(solution, (long)j, (long)index);
-            solution.cost = cost_temp;
         }
-        if (best_cost < solution.cost) {
-            apply_insertion(solution, (long)index, (long)best_j);
-            solution.cost = best_cost;
+
+        auto [best_index, makespan] = helper.taillard_best_insertion(solution.sequence, job);
+        solution.sequence.insert(solution.sequence.begin() + (long)best_index, job);
+
+        if (makespan < solution.cost) {
+            solution.cost = makespan;
         }
     }
 

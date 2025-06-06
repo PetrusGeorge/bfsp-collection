@@ -72,7 +72,7 @@ bool SVNS_D::LS1_D_swap(Solution &solution, std::vector<size_t> &reference) { //
             // Apply move
             std::swap(solution.sequence[index], solution.sequence[j]);
 
-            core::recalculate_solution(m_instance, solution);
+            core::partial_recalculate_solution(m_instance, solution, index);
 
             if (solution.cost <= best_cost) {
                 best_cost = solution.cost;
@@ -87,6 +87,7 @@ bool SVNS_D::LS1_D_swap(Solution &solution, std::vector<size_t> &reference) { //
             std::swap(solution.sequence[index], solution.sequence[best_j]);
             solution.cost = best_cost;
         }
+        core::partial_recalculate_solution(m_instance, solution, index);
     }
 
     return solution.cost < original_cost;
@@ -95,33 +96,26 @@ bool SVNS_D::LS1_D_swap(Solution &solution, std::vector<size_t> &reference) { //
 bool SVNS_D::LS2_D_insertion(Solution &solution, std::vector<size_t> &reference) { // NOLINT
     size_t original_cost = solution.cost;
 
-    for (size_t i = 0; i < solution.sequence.size(); i++) {
-        size_t index = reference[i];
-        size_t best_j = 0;
-        size_t best_cost = solution.cost;
+    NEH helper(m_instance);
+    
+    for(size_t j = 0; j < reference.size(); j++) {
+        const size_t job = reference[j];
 
-        for (size_t j = 0; j < solution.sequence.size(); j++) {
-            size_t copy_cost = solution.cost;
-
-            // Apply move
-            apply_insertion(solution, (long)index, (long)j);
-
-            core::recalculate_solution(m_instance, solution);
-
-            if (solution.cost <= best_cost) {
-                best_cost = solution.cost;
-                best_j = j;
+        for (size_t i = 0; i < solution.sequence.size(); i++) {
+            if (solution.sequence[i] == job) {
+                solution.sequence.erase(solution.sequence.begin() + (long)i);
+                break;
             }
-            // undo move
-            apply_insertion(solution, (long)j, (long)index);
-
-            solution.cost = copy_cost;
         }
-        if (best_cost < solution.cost) {
-            apply_insertion(solution, (long)index, (long)best_j);
-            solution.cost = best_cost;
+
+        auto [best_index, makespan] = helper.taillard_best_insertion(solution.sequence, job);
+        solution.sequence.insert(solution.sequence.begin() + (long)best_index, job);
+
+        if (makespan < solution.cost) {
+            solution.cost = makespan;
         }
     }
+
     return solution.cost < original_cost;
 }
 
@@ -173,6 +167,9 @@ Solution SVNS_D::solve() {
         ro = {90, 60, 30};
     }
     VERBOSE(m_params.verbose()) << "Time limit: " << time_limit << "s\n";
+
+    std::vector<size_t> reference(m_instance.num_jobs());
+    std::iota(reference.begin(), reference.end(), 0);
     while (true) {
         size_t counter = 0;
         size_t local_search_type = 0;
@@ -190,11 +187,6 @@ Solution SVNS_D::solve() {
             size_t original_cost = current.cost;
 
             if (local_search_type == 0) {
-                std::vector<size_t> reference(m_instance.num_jobs());
-
-                for (size_t i = 0; i < m_instance.num_jobs(); ++i) {
-                    reference[i] = i;
-                }
                 while (uptime() <= time_limit) {
                     std::shuffle(reference.begin(), reference.end(), RNG::instance().gen());
 
@@ -203,11 +195,6 @@ Solution SVNS_D::solve() {
                     }
                 }
             } else {
-                std::vector<size_t> reference(m_instance.num_jobs());
-
-                for (size_t i = 0; i < m_instance.num_jobs(); ++i) {
-                    reference[i] = i;
-                }
                 while (uptime() <= time_limit) {
                     std::shuffle(reference.begin(), reference.end(), RNG::instance().gen());
 
