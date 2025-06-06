@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <stack>
 #include <vector>
+#include <iostream>
 
 enum class BlockType : std::uint8_t {
     NORMAL,
@@ -186,12 +187,14 @@ bool rls(Solution &s, Instance &instance) {
     bool improved = false;
     size_t cnt = 0;
     NEH helper(instance);
+    std::vector<size_t> ref = s.sequence;
     while (cnt < instance.num_jobs()) {
-
-        const size_t job = cnt;
+        
+        const size_t job = ref[cnt];
         for (size_t i = 0; i < s.sequence.size(); i++) {
             if (s.sequence[i] == job) {
                 s.sequence.erase(s.sequence.begin() + (long)i);
+                break;
             }
         }
 
@@ -201,7 +204,6 @@ bool rls(Solution &s, Instance &instance) {
         if (makespan < s.cost) {
             s.cost = makespan;
             improved = true;
-            continue;
         }
 
         cnt++;
