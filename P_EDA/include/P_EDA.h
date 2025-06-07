@@ -28,7 +28,7 @@ class P_EDA { // NOLINT
     Solution probabilistic_model(const SizeTMatrix &p, const std::vector<SizeTMatrix> &t);
     std::vector<std::vector<size_t>> get_p();
     std::vector<SizeTMatrix> get_t();
-    std::vector<double> get_probability_vector(const std::vector<size_t> &sequence,
+    void get_probability_vector(const std::vector<size_t> &sequence,
                                                const std::vector<size_t> &unasigned_jobs, const SizeTMatrix &p,
                                                const std::vector<SizeTMatrix> &t);
 
@@ -53,6 +53,7 @@ class P_EDA { // NOLINT
     size_t m_ps = 50;           // population size
     std::vector<Solution> m_pc; // population vector
     NEH neh;
+    std::vector<double> m_probabilities;
 };
 
 #endif

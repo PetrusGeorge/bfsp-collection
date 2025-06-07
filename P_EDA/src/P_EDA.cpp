@@ -31,6 +31,7 @@ namespace {
 P_EDA::P_EDA(Instance &instance, Parameters &params, size_t ps, double lambda)
     : m_instance(instance), m_params(params), m_lambda(lambda), m_ps(ps), neh(m_instance) {
     m_pc.reserve(m_ps);
+    m_probabilities = std::vector<double>(m_instance.num_jobs(), 0);
 }
 
 bool P_EDA::mrls(Solution &s, std::vector<size_t> &ref, Instance &instance) {
@@ -111,6 +112,7 @@ Solution P_EDA::solve() {
     // the t[i][j][k] represents how many times job k appeared immediately after job j in position i
     auto t = get_t();
 
+    size_t count = 0;
     while (true) {
         const Solution alpha = probabilistic_model(p, t);
 
@@ -160,7 +162,7 @@ Solution P_EDA::solve() {
 
         gen = (gen + 1) % m_ps;
         if (gen == 0) {
-
+            count++;
             VERBOSE(m_params.verbose()) << "\ngen = 0...\n";
 
             // idk if this works, the if block is never executed...
@@ -173,6 +175,7 @@ Solution P_EDA::solve() {
                 // it said in the arcticle we only recalculate P and T when we generated PS new individuals
                 // but recalculating P and T only if we regenerate the population proved to generate better solutions
                 population_regen();
+                modified_linear_rank_selection();
             }
             p = get_p();
             t = get_t();
@@ -186,6 +189,7 @@ Solution P_EDA::solve() {
         }
     }
 
+    std::cout << count << std::endl;
     return best_of_all;
 }
 
@@ -307,7 +311,7 @@ void P_EDA::modified_linear_rank_selection() {
         } else {
             // PROCEDURE 2 --------
             // we generate a random number sigma and we will iterate to the sum of probabilities sequence
-            // and search the range of proabibilities that contains sigma
+            // and search the range of probabilities that contains sigma
             // so if we are lucky we will get good individuals
             const double sigma = RNG::instance().generate_real_number(0, 1);
 
@@ -339,7 +343,7 @@ Solution P_EDA::probabilistic_model(const SizeTMatrix &p, const std::vector<Size
         // this probability vector has the size of the unasigned jobs
         // each element of this vector represents the probability of adding the job in that position
         // to the current solution
-        auto probabilities = get_probability_vector(final_sequence, unassigned_jobs, p, t);
+        get_probability_vector(final_sequence, unassigned_jobs, p, t);
 
         double roulette_wheel = 0;
 
@@ -352,11 +356,11 @@ Solution P_EDA::probabilistic_model(const SizeTMatrix &p, const std::vector<Size
         size_t j;
         for (j = 0; j < unassigned_jobs.size(); j++) {
 
-            if (roulette_wheel <= r && r < roulette_wheel + probabilities[j]) {
+            if (roulette_wheel <= r && r < roulette_wheel + m_probabilities[j]) {
                 job_to_insert = unassigned_jobs[j];
                 break;
             }
-            roulette_wheel += probabilities[j];
+            roulette_wheel += m_probabilities[j];
         }
         final_sequence.push_back(job_to_insert);
         unassigned_jobs.erase(unassigned_jobs.begin() + j);
@@ -409,11 +413,10 @@ std::vector<SizeTMatrix> P_EDA::get_t() {
     return t;
 }
 
-std::vector<double> P_EDA::get_probability_vector(const std::vector<size_t> &sequence,
+void P_EDA::get_probability_vector(const std::vector<size_t> &sequence,
                                                   const std::vector<size_t> &unassigned_jobs, const SizeTMatrix &p,
                                                   const std::vector<SizeTMatrix> &t) {
     const size_t n = m_instance.num_jobs();
-    std::vector<double> probabilities(unassigned_jobs.size());
 
     if (sequence.empty()) {
 
@@ -424,7 +427,7 @@ std::vector<double> P_EDA::get_probability_vector(const std::vector<size_t> &seq
 
         for (size_t j = 0; j < n; j++) {
             const size_t job = unassigned_jobs[j];
-            probabilities[j] = (double)p[0][job] / sum_p;
+            m_probabilities[j] = (double)p[0][job] / sum_p;
         }
     } else {
 
@@ -449,39 +452,17 @@ std::vector<double> P_EDA::get_probability_vector(const std::vector<size_t> &seq
                 n_i_j_k = (double)t[pos][last_job][job] / sum_t;
             }
 
-            probabilities[j] = ((double)p[pos][job] / sum_p) + n_i_j_k;
-            probabilities[j] /= 2;
+            m_probabilities[j] = ((double)p[pos][job] / sum_p) + n_i_j_k;
+            m_probabilities[j] /= 2;
         }
     }
 
-    return probabilities;
 }
 
 Solution P_EDA::path_relink_swap(const Solution &alpha, const Solution &beta) {
     Solution best;
     Solution current = alpha;
     const size_t n = m_instance.num_jobs();
-
-    /*
-    Or the difference is 0 (and the solution are equal), or is greater than or equal to 2.
-    If is less than or equal to 2, maybe one swap can make the solutions equal, hence it's
-    applied a mutation.
-    */
-    size_t difference = 0;
-    for (size_t k = 0; k < n; k++) {
-        if (alpha.sequence[k] != beta.sequence[k]) {
-
-            difference++;
-            if (difference > 2) {
-                break;
-            }
-        }
-    }
-
-    if (difference <= 2) {
-        mutation(current);
-        best = current;
-    }
 
     // cnt = number of jobs that are already in the correct position
     /*
@@ -493,6 +474,7 @@ Solution P_EDA::path_relink_swap(const Solution &alpha, const Solution &beta) {
     move on to the next iteration.
     */
     size_t i = 0;
+    size_t qt_solutions = 0;
     for (size_t cnt = 0; cnt < n; cnt++) {
 
         if (current.sequence[i] == beta.sequence[i]) {
@@ -507,6 +489,7 @@ Solution P_EDA::path_relink_swap(const Solution &alpha, const Solution &beta) {
                 continue;
             }
 
+            qt_solutions++;
             std::swap(current.sequence[i], current.sequence[j]);
             core::partial_recalculate_solution(m_instance, current, i);
 
@@ -516,6 +499,11 @@ Solution P_EDA::path_relink_swap(const Solution &alpha, const Solution &beta) {
 
             break;
         }
+    }
+
+    if (qt_solutions == 0) {
+        mutation(current);
+        best = current;
     }
 
     return best;
