@@ -20,7 +20,7 @@ class Parameters {
     bool m_verbose = false;
     bool m_benchmark = false;
     std::optional<size_t> m_seed;
-    size_t m_ro = 30;
+    size_t m_ro = 100;
 };
 
 #endif

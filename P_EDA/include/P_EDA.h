@@ -3,6 +3,7 @@
 #include "Instance.h"
 #include "Parameters.h"
 #include "Solution.h"
+#include "constructions/NEH.h"
 
 using SizeTMatrix = std::vector<std::vector<size_t>>;
 
@@ -51,6 +52,7 @@ class P_EDA { // NOLINT
     double m_lambda = 0.3;      // diversity threshold (differs from lambda used in pf-neh)
     size_t m_ps = 50;           // population size
     std::vector<Solution> m_pc; // population vector
+    NEH neh;
 };
 
 #endif

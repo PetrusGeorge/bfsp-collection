@@ -5,7 +5,6 @@
 #include "Parameters.h"
 #include "RNG.h"
 #include "Solution.h"
-#include "constructions/NEH.h"
 #include "constructions/PF.h"
 #include "local-search/RLS.h"
 #include <algorithm>
@@ -30,7 +29,7 @@ namespace {
 } // namespace
 
 P_EDA::P_EDA(Instance &instance, Parameters &params, size_t ps, double lambda)
-    : m_instance(instance), m_params(params), m_lambda(lambda), m_ps(ps) {
+    : m_instance(instance), m_params(params), m_lambda(lambda), m_ps(ps), neh(m_instance) {
     m_pc.reserve(m_ps);
 }
 
@@ -39,7 +38,6 @@ bool P_EDA::mrls(Solution &s, std::vector<size_t> &ref, Instance &instance) {
     size_t n = instance.num_jobs();
     size_t j = 0;
     size_t cnt = 0;
-    NEH helper(instance);
     while (cnt <= n) {
         j++;
         if(j >= n){
@@ -54,7 +52,7 @@ bool P_EDA::mrls(Solution &s, std::vector<size_t> &ref, Instance &instance) {
                 ref.erase(ref.begin() + k);
             }
 
-            ref = shuffled;
+            ref.swap(shuffled);
         }
 
         const size_t job = ref[j];
@@ -65,14 +63,13 @@ bool P_EDA::mrls(Solution &s, std::vector<size_t> &ref, Instance &instance) {
             }
         }
 
-        auto [best_index, makespan] = helper.taillard_best_insertion(s.sequence, job);
+        auto [best_index, makespan] = neh.taillard_best_insertion(s.sequence, job);
         s.sequence.insert(s.sequence.begin() + (long)best_index, job);
 
         if (makespan < s.cost) {
             cnt = 0;
             s.cost = makespan;
             improved = true;
-            continue;
         }
         else{
             cnt++;
@@ -91,7 +88,6 @@ Solution P_EDA::solve() {
     
     std::vector<size_t> ro;
     if (m_params.benchmark()) {
-        time_limit = (100 * mxn); // RO == 100
         ro = {90, 60, 30};
     }
     // Shao ran tests with this duration, chaging ro parameter between 30,60,90
@@ -103,6 +99,12 @@ Solution P_EDA::solve() {
     modified_linear_rank_selection();
     std::vector<size_t> ref(m_instance.num_jobs()); // referencied shuffled sequence to mrls
     std::iota(ref.begin(), ref.end(), 0);
+
+    // getting the individual with the lowest makespan
+    auto min_it = std::min_element(m_pc.begin(), m_pc.end(), [](const Solution &a, const Solution &b) { return a.cost < b.cost; });
+
+    Solution best_of_all;
+    best_of_all = *min_it;
 
     // the p[i][j] represents how many times job j appeared before or in position i give the current population
     auto p = get_p();
@@ -116,9 +118,6 @@ Solution P_EDA::solve() {
             std::cout << "alpha: \n";
             std::cout << alpha << "\n";
         }
-        // getting the individual with the lowest makespan
-        auto min_it = std::min_element(m_pc.begin(), m_pc.end(),
-                                       [](const Solution &a, const Solution &b) { return a.cost < b.cost; });
 
         if (m_params.verbose()) {
             std::cout << "min: \n";
@@ -126,7 +125,7 @@ Solution P_EDA::solve() {
         }
 
         // the original individual is alpha and the goal is the lowest makespan individual
-        Solution best = path_relink_swap(alpha, *min_it);
+        Solution best = path_relink_swap(alpha, best_of_all);
 
         if (m_params.verbose()) {
             std::cout << "path relink: \n";
@@ -136,12 +135,10 @@ Solution P_EDA::solve() {
         std::shuffle(ref.begin(), ref.end(), RNG::instance().gen());
 
         mrls(best, ref, m_instance);
-        
+        core::recalculate_solution(m_instance, best);
+
         if (!ro.empty() && uptime() >= (ro.back() * mxn)) {
-            auto min_sofar = std::min_element(m_pc.begin(), m_pc.end(), [](const Solution &a, const Solution &b) {
-                return a.cost < b.cost; // Compare costs
-            });
-            std::cout << min_sofar[0].cost << '\n';
+            std::cout << best_of_all.cost << '\n';
             ro.pop_back();
         }
 
@@ -150,12 +147,15 @@ Solution P_EDA::solve() {
             break;
         }
 
+        if(best.cost < best_of_all.cost) {
+            best_of_all = best;
+        }
+
         const auto [found_in_population, max_cost_pos] = in_population_and_max_makespan(best.sequence);
         const auto &max_cost = m_pc[max_cost_pos].cost;
 
         if (!found_in_population && best.cost < max_cost) {
-            m_pc.erase(m_pc.begin() + max_cost_pos);
-            m_pc.push_back(best);
+            m_pc[max_cost_pos] = best;
         }
 
         gen = (gen + 1) % m_ps;
@@ -173,9 +173,9 @@ Solution P_EDA::solve() {
                 // it said in the arcticle we only recalculate P and T when we generated PS new individuals
                 // but recalculating P and T only if we regenerate the population proved to generate better solutions
                 population_regen();
-                p = get_p();
-                t = get_t();
             }
+            p = get_p();
+            t = get_t();
         }
         if (m_params.verbose()) {
             std::cout << "best sequence: ";
@@ -186,10 +186,7 @@ Solution P_EDA::solve() {
         }
     }
 
-    auto min_it = std::min_element(m_pc.begin(), m_pc.end(), [](const Solution &a, const Solution &b) {
-        return a.cost < b.cost; // Compare costs
-    });
-    return *min_it;
+    return best_of_all;
 }
 
 void P_EDA::generate_random_individuals() {
@@ -230,7 +227,6 @@ void P_EDA::generate_initial_population() {
     const size_t n = m_instance.num_jobs();
 
     PF pf(m_instance);
-    NEH neh(m_instance);
 
     const size_t lambda_pf_neh = std::min((size_t)25, n);
 
@@ -261,6 +257,7 @@ void P_EDA::generate_initial_population() {
 
         neh.second_step(std::move(candidate_jobs), s);
 
+        core::recalculate_solution(m_instance, s);
         m_pc.push_back(s);
 
         l++;
@@ -352,17 +349,19 @@ Solution P_EDA::probabilistic_model(const SizeTMatrix &p, const std::vector<Size
         // in the modified linear rank selection
         const double r = RNG::instance().generate_real_number(0, 1);
 
-        for (size_t j = 0; j < unassigned_jobs.size(); j++) {
+        size_t j;
+        for (j = 0; j < unassigned_jobs.size(); j++) {
 
             if (roulette_wheel <= r && r < roulette_wheel + probabilities[j]) {
                 job_to_insert = unassigned_jobs[j];
+                break;
             }
             roulette_wheel += probabilities[j];
         }
         final_sequence.push_back(job_to_insert);
-        unassigned_jobs.erase(std::remove(unassigned_jobs.begin(), unassigned_jobs.end(), job_to_insert));
+        unassigned_jobs.erase(unassigned_jobs.begin() + j);
     }
-    final_sequence.push_back(unassigned_jobs.front());
+    final_sequence.push_back(unassigned_jobs[0]);
 
     Solution s;
     s.sequence = final_sequence;
@@ -388,6 +387,7 @@ std::vector<std::vector<size_t>> P_EDA::get_p() {
             p[i][j] += p[i - 1][j];
         }
     }
+
     return p;
 }
 
@@ -480,6 +480,7 @@ Solution P_EDA::path_relink_swap(const Solution &alpha, const Solution &beta) {
 
     if (difference <= 2) {
         mutation(current);
+        best = current;
     }
 
     // cnt = number of jobs that are already in the correct position
@@ -507,7 +508,7 @@ Solution P_EDA::path_relink_swap(const Solution &alpha, const Solution &beta) {
             }
 
             std::swap(current.sequence[i], current.sequence[j]);
-            core::recalculate_solution(m_instance, current);
+            core::partial_recalculate_solution(m_instance, current, i);
 
             if (current.cost < best.cost) {
                 best = current; // new best interdiary solution
@@ -537,7 +538,7 @@ inline void P_EDA::mutation(Solution &individual) {
         individual.sequence.erase(individual.sequence.begin() + job_position + 1);
     }
 
-    core::recalculate_solution(m_instance, individual);
+    core::partial_recalculate_solution(m_instance, individual, std::min(insertion_position, job_position));
 }
 
 std::vector<size_t> P_EDA::fisher_yates_shuffle() {
@@ -605,15 +606,16 @@ double P_EDA::get_diversity() {
     for (size_t k = 0; k < n; k++) {
         for (size_t alpha = 0; alpha < n; alpha++) {
 
-            diversity += ((double)c[k][alpha] / m_ps) * (1 - ((double)c[k][alpha] / m_ps));
+            diversity += ((double)c[k][alpha]) * (m_ps - ((double)c[k][alpha]));
         }
     }
     VERBOSE(m_params.verbose()) << "diversity without div: " << diversity << "\n";
 
-    diversity /= (double)n - 1;
+    diversity /= ((double)(n - 1) * m_ps * m_ps);
 
     return diversity;
 }
+
 void P_EDA::population_regen() {
     auto sort_criteria = [](Solution &a, Solution &b) { return a.cost < b.cost; };
 
@@ -628,12 +630,12 @@ void P_EDA::population_regen() {
         auto &current_seq = current_individual.sequence;
 
         // random reinsert
-        auto pos = RNG::instance().generate((size_t)0, current_seq.size() - 1);
-        auto job = current_seq[pos];
-        current_seq.erase(current_seq.begin() + pos);
-        pos = RNG::instance().generate((size_t)0, current_seq.size());
-        current_seq.insert(current_seq.begin() + pos, job);
-        core::recalculate_solution(m_instance, current_individual);
+        auto pos1 = RNG::instance().generate((size_t)0, current_seq.size() - 1);
+        auto job = current_seq[pos1];
+        current_seq.erase(current_seq.begin() + pos1);
+        auto pos2 = RNG::instance().generate((size_t)0, current_seq.size());
+        current_seq.insert(current_seq.begin() + pos2, job);
+        core::partial_recalculate_solution(m_instance, current_individual, std::min(pos1, pos2));
     }
     generate_random_individuals();
 }
@@ -652,6 +654,7 @@ inline bool P_EDA::is_similar(const std::vector<size_t> &a, const std::vector<si
     }
     return true;
 }
+
 void P_EDA::print_pc() const {
     std::cout << "Population: \n";
     for (size_t i = 0; i < m_pc.size(); i++) {
