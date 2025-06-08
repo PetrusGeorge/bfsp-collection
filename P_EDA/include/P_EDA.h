@@ -25,12 +25,11 @@ class P_EDA { // NOLINT
     bool mrls(Solution &s, std::vector<size_t> &ref, Instance &instance);
 
     // functions related to the probabilistic model
-    Solution probabilistic_model(const SizeTMatrix &p, const std::vector<SizeTMatrix> &t);
-    std::vector<std::vector<size_t>> get_p();
-    std::vector<SizeTMatrix> get_t();
+    Solution probabilistic_model();
+    void get_p();
+    void get_t();
     void get_probability_vector(const std::vector<size_t> &sequence,
-                                               const std::vector<size_t> &unasigned_jobs, const SizeTMatrix &p,
-                                               const std::vector<SizeTMatrix> &t);
+                                               const std::vector<size_t> &unassigned_jobs, std::vector<bool> &check_unassigned);
 
     // Path relink
     Solution path_relink_swap(const Solution &alpha, const Solution &beta);
@@ -54,6 +53,8 @@ class P_EDA { // NOLINT
     std::vector<Solution> m_pc; // population vector
     NEH neh;
     std::vector<double> m_probabilities;
+    std::vector<std::vector<size_t>> p;
+    std::vector<SizeTMatrix> t;
 };
 
 #endif

@@ -32,6 +32,7 @@ P_EDA::P_EDA(Instance &instance, Parameters &params, size_t ps, double lambda)
     : m_instance(instance), m_params(params), m_lambda(lambda), m_ps(ps), neh(m_instance) {
     m_pc.reserve(m_ps);
     m_probabilities = std::vector<double>(m_instance.num_jobs(), 0);
+    t = std::vector<SizeTMatrix>(m_instance.num_jobs(), SizeTMatrix(m_instance.num_jobs()));
 }
 
 bool P_EDA::mrls(Solution &s, std::vector<size_t> &ref, Instance &instance) {
@@ -40,7 +41,6 @@ bool P_EDA::mrls(Solution &s, std::vector<size_t> &ref, Instance &instance) {
     size_t j = 0;
     size_t cnt = 0;
     while (cnt <= n) {
-        j++;
         if(j >= n){
             j = j % n;
             std::vector<size_t> shuffled;
@@ -63,6 +63,8 @@ bool P_EDA::mrls(Solution &s, std::vector<size_t> &ref, Instance &instance) {
                 break;
             }
         }
+
+        j++;
 
         auto [best_index, makespan] = neh.taillard_best_insertion(s.sequence, job);
         s.sequence.insert(s.sequence.begin() + (long)best_index, job);
@@ -93,6 +95,8 @@ Solution P_EDA::solve() {
     }
     // Shao ran tests with this duration, chaging ro parameter between 30,60,90
 
+    uptime(); 
+
     size_t gen = 1;
 
     // generating the initial population and applying the modified linear rank selection
@@ -108,12 +112,13 @@ Solution P_EDA::solve() {
     best_of_all = *min_it;
 
     // the p[i][j] represents how many times job j appeared before or in position i give the current population
-    auto p = get_p();
+    get_p();
     // the t[i][j][k] represents how many times job k appeared immediately after job j in position i
-    auto t = get_t();
+    // get_t();
+    std::vector<SizeTMatrix> t;
 
     while (true) {
-        const Solution alpha = probabilistic_model(p, t);
+        const Solution alpha = probabilistic_model();
 
         if (m_params.verbose()) {
             std::cout << "alpha: \n";
@@ -167,16 +172,15 @@ Solution P_EDA::solve() {
             const auto &diversity = get_diversity();
             if (diversity < m_lambda) {
 
-                if (m_params.verbose()) {
+                // if (m_params.verbose()) {
                     std::cout << "\nregenerating population...\n";
-                }
+                // }
                 // it said in the arcticle we only recalculate P and T when we generated PS new individuals
                 // but recalculating P and T only if we regenerate the population proved to generate better solutions
                 population_regen();
-                modified_linear_rank_selection();
             }
-            p = get_p();
-            t = get_t();
+            get_p();
+            // get_t();
         }
         if (m_params.verbose()) {
             std::cout << "best sequence: ";
@@ -325,7 +329,7 @@ void P_EDA::modified_linear_rank_selection() {
     m_pc.swap(new_pc);
 }
 
-Solution P_EDA::probabilistic_model(const SizeTMatrix &p, const std::vector<SizeTMatrix> &t) {
+Solution P_EDA::probabilistic_model() {
     // in this probabilistic model, the objective is to get an individual that represents
     // accuratly the current population
 
@@ -335,12 +339,13 @@ Solution P_EDA::probabilistic_model(const SizeTMatrix &p, const std::vector<Size
     std::iota(unassigned_jobs.begin(), unassigned_jobs.end(), 0);
     std::vector<size_t> final_sequence;
     final_sequence.reserve(n);
+    std::vector<bool> check_unassigned(n, true); // true = unassigned
 
     while (final_sequence.size() < n - 1) {
-        // this probability vector has the size of the unasigned jobs
+        // this probability vector has the size of the unassigned jobs
         // each element of this vector represents the probability of adding the job in that position
         // to the current solution
-        get_probability_vector(final_sequence, unassigned_jobs, p, t);
+        get_probability_vector(final_sequence, unassigned_jobs, check_unassigned);
 
         double roulette_wheel = 0;
 
@@ -359,21 +364,24 @@ Solution P_EDA::probabilistic_model(const SizeTMatrix &p, const std::vector<Size
             }
             roulette_wheel += m_probabilities[j];
         }
+        check_unassigned[job_to_insert] = false;
         final_sequence.push_back(job_to_insert);
-        unassigned_jobs.erase(unassigned_jobs.begin() + j);
+        std::swap(unassigned_jobs[j], unassigned_jobs[unassigned_jobs.size()-1]);
+        unassigned_jobs.pop_back();
     }
+
     final_sequence.push_back(unassigned_jobs[0]);
 
     Solution s;
-    s.sequence = final_sequence;
+    s.sequence.swap(final_sequence);
     core::recalculate_solution(m_instance, s);
     return s;
 }
 
-std::vector<std::vector<size_t>> P_EDA::get_p() {
+void P_EDA::get_p() {
     const size_t n = m_instance.num_jobs();
 
-    std::vector<std::vector<size_t>> p(n, std::vector<size_t>(n, 0));
+    p = std::vector<std::vector<size_t>>(n, std::vector<size_t>(n, 0));
     for (const auto &s : m_pc) {
         const auto &sequence = s.sequence;
 
@@ -389,15 +397,15 @@ std::vector<std::vector<size_t>> P_EDA::get_p() {
         }
     }
 
-    return p;
 }
 
-std::vector<SizeTMatrix> P_EDA::get_t() {
+void P_EDA::get_t() {
     const size_t n = m_instance.num_jobs();
-    std::vector<SizeTMatrix> t(n);
 
-    for (auto &lambda_jk : t) {
-        lambda_jk = std::vector<std::vector<size_t>>(n, std::vector<size_t>(n, 0));
+    for (size_t i = 0; i < t.size(); i++) {
+        for (size_t j = 0; j < t.size(); j++) {
+            t[i][j] = std::vector<size_t>(n, 0);
+        }
     }
 
     for (auto &s : m_pc) {
@@ -407,24 +415,18 @@ std::vector<SizeTMatrix> P_EDA::get_t() {
         }
     }
 
-    return t;
 }
 
 void P_EDA::get_probability_vector(const std::vector<size_t> &sequence,
-                                                  const std::vector<size_t> &unassigned_jobs, const SizeTMatrix &p,
-                                                  const std::vector<SizeTMatrix> &t) {
+                                                  const std::vector<size_t> &unassigned_jobs, std::vector<bool> &check_unassigned) {
     const size_t n = m_instance.num_jobs();
 
     if (sequence.empty()) {
 
-        double sum_p = 0;
-        for (const auto &j : unassigned_jobs) {
-            sum_p += (double)p[0][j];
-        }
+        double sum_p = (double) m_ps;
 
         for (size_t j = 0; j < n; j++) {
-            const size_t job = unassigned_jobs[j];
-            m_probabilities[j] = (double)p[0][job] / sum_p;
+            m_probabilities[j] = (double)p[0][j] / sum_p;
         }
     } else {
 
@@ -433,20 +435,26 @@ void P_EDA::get_probability_vector(const std::vector<size_t> &sequence,
 
         double sum_p = 0;
         double sum_t = 0;
+        std::vector<size_t> tau(n, 0);
         for (const auto &j : unassigned_jobs) {
             sum_p += (double)p[pos][j];
-            sum_t += (double)t[pos][last_job][j];
+            // sum_t += (double)t[pos][last_job][j];
         }
 
+        for(size_t i = 0; i < m_pc.size(); i++) {
+            if (m_pc[i].sequence[pos-1] == last_job && check_unassigned[ m_pc[i].sequence[pos] ]) {
+                tau[ m_pc[i].sequence[pos] ]++;
+                sum_t++;
+            }
+        }
+
+        double n_i_j_k = 1 / (double)unassigned_jobs.size();
         for (size_t j = 0; j < unassigned_jobs.size(); j++) {
             const size_t job = unassigned_jobs[j];
 
-            double n_i_j_k = -1;
-
-            if (sum_t == 0) {
-                n_i_j_k = 1 / (double)unassigned_jobs.size();
-            } else {
-                n_i_j_k = (double)t[pos][last_job][job] / sum_t;
+            if (sum_t != 0) {
+                // n_i_j_k = (double)t[pos][last_job][job] / sum_t;
+                n_i_j_k = (double)tau[job] / sum_t;
             }
 
             m_probabilities[j] = ((double)p[pos][job] / sum_p) + n_i_j_k;
@@ -591,7 +599,7 @@ double P_EDA::get_diversity() {
     for (size_t k = 0; k < n; k++) {
         for (size_t alpha = 0; alpha < n; alpha++) {
 
-            diversity += ((double)c[k][alpha]) * (m_ps - ((double)c[k][alpha]));
+            diversity += (double) c[k][alpha] * (m_ps - c[k][alpha]);
         }
     }
     VERBOSE(m_params.verbose()) << "diversity without div: " << diversity << "\n";
