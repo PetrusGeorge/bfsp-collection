@@ -172,9 +172,9 @@ Solution P_EDA::solve() {
             const auto &diversity = get_diversity();
             if (diversity < m_lambda) {
 
-                // if (m_params.verbose()) {
+                if (m_params.verbose()) {
                     std::cout << "\nregenerating population...\n";
-                // }
+                }
                 // it said in the arcticle we only recalculate P and T when we generated PS new individuals
                 // but recalculating P and T only if we regenerate the population proved to generate better solutions
                 population_regen();
