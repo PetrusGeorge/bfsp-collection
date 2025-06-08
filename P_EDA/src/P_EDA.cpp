@@ -112,7 +112,6 @@ Solution P_EDA::solve() {
     // the t[i][j][k] represents how many times job k appeared immediately after job j in position i
     auto t = get_t();
 
-    size_t count = 0;
     while (true) {
         const Solution alpha = probabilistic_model(p, t);
 
@@ -162,7 +161,6 @@ Solution P_EDA::solve() {
 
         gen = (gen + 1) % m_ps;
         if (gen == 0) {
-            count++;
             VERBOSE(m_params.verbose()) << "\ngen = 0...\n";
 
             // idk if this works, the if block is never executed...
@@ -189,7 +187,6 @@ Solution P_EDA::solve() {
         }
     }
 
-    std::cout << count << std::endl;
     return best_of_all;
 }
 
