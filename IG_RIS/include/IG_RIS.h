@@ -1,5 +1,5 @@
-#ifndef IG_H
-#define IG_H
+#ifndef IG_RIS_H
+#define IG_RIS_H
 
 #include "constructions/PF_NEH.h"
 #include "local-search/RLS.h"
@@ -7,9 +7,9 @@
 #include "Parameters.h"
 #include "Solution.h"
 
-class IG {
+class IG_RIS {
   public:
-    IG(Instance instance, Parameters params);
+    IG_RIS(Instance instance, Parameters params);
     Solution solve();
 
   private:
@@ -17,8 +17,7 @@ class IG {
     std::vector<size_t> destroy(Solution &s);
 
     // Constant Temperature to calculate acceptance criterion
-    double acceptance_criterion_temperature()
-    { return m_T = m_params.tP() * m_instance.all_processing_times_sum() / 10*m_instance.num_jobs()*m_instance.num_machines(); }
+    double acceptance_criterion_temperature();
 
     // Calculate acceptance criterion to worse solution
     double acceptance_criterion(Solution&, Solution&);

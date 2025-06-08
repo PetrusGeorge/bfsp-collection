@@ -28,11 +28,14 @@ size_t uptime() {
 IG_VND2::IG_VND2(Instance instance, Parameters params)
     : m_instance(std::move(instance)), m_instance_reverse(m_instance.create_reverse_instance()),
       m_params(std::move(params)) {
-        m_T = m_params.tP() * m_instance.all_processing_times_sum() / 10*m_instance.num_jobs()*m_instance.num_machines();
+        m_T = m_params.tP() * m_instance.all_processing_times_sum() / (10*m_instance.num_jobs()*m_instance.num_machines());
         }
 
-double IG_VND2::acceptance_criterion(Solution pi_0, Solution pi_2) {
-    return (pi_0.cost - pi_2.cost)/m_T;
+double IG_VND2::acceptance_criterion(Solution& pi_0, Solution& pi_2) {
+    double delta = pi_0.cost - pi_2.cost;
+    std::cout << delta << " - " << m_T << std::endl;
+    
+    return std::exp(-delta/m_T);
 }
 
 void IG_VND2::BestSwap(Solution &solution) { // NOLINT
@@ -114,8 +117,6 @@ Solution IG_VND2::solve() {
     NEH neh(m_instance);
 
     while (true) {
-        // random value to each interation
-        double r = RNG::instance().generate_real_number(0, 1);
         size_t k_max = 2;
         size_t k = 1;
 
@@ -163,7 +164,7 @@ Solution IG_VND2::solve() {
             }
         }
         // If the solution is worse than the best it's accepted according to the acceptance criterion
-        else if (r < acceptance_criterion(incumbent, current)) {
+        else if (RNG::instance().generate_real_number(0, 1) < acceptance_criterion(incumbent, current)) {
             current = std::move(incumbent);
         }
 

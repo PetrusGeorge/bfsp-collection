@@ -55,6 +55,7 @@ Instance::Instance(const std::filesystem::path &path) {
     // Used for LPT
     calculate_processing_times_sum();
     calculate_initial_sum();
+    calculate_all_processing_times_sum();
 }
 
 void Instance::calculate_processing_times_sum() {

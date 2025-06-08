@@ -79,6 +79,7 @@ Instance Instance::create_reverse_instance() {
 }
 
 void Instance::calculate_all_processing_times_sum(){
+    m_all_processing_times_sum = 0;
     for(size_t i =0; i < m_num_jobs; i++) {
         m_all_processing_times_sum += m_processing_times_sum[i];
     }

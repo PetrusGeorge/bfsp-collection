@@ -21,7 +21,7 @@ class IG_VND2 {
     { return m_T = m_params.tP() * m_instance.all_processing_times_sum() / 10*m_instance.num_jobs()*m_instance.num_machines(); }
     
     // Calculate acceptance criterion to worse solution
-    double acceptance_criterion(Solution, Solution);
+    double acceptance_criterion(Solution&, Solution&);
 
     // Apply Best Swap
     void BestSwap(Solution &solution);
