@@ -33,7 +33,6 @@ IG_VND2::IG_VND2(Instance instance, Parameters params)
 
 double IG_VND2::acceptance_criterion(Solution& pi_0, Solution& pi_2) {
     double delta = pi_0.cost - pi_2.cost;
-    std::cout << delta << " - " << m_T << std::endl;
     
     return std::exp(-delta/m_T);
 }
