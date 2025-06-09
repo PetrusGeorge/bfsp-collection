@@ -78,7 +78,7 @@ void RAIS::mutation(Solution &antibody, bool recalculate) {
   size_t n = m_instance.num_jobs();
 
   // getting indexes for movements
-  size_t i = RNG::instance().generate((size_t)0, n);
+  size_t i = RNG::instance().generate((size_t)0, n-1);
   size_t j = i;
 
   while(i == j || j == i-1) {
@@ -107,7 +107,7 @@ void RAIS::mutation(Solution &antibody, bool recalculate) {
   if (recalculate) {
     core::partial_recalculate_solution(m_instance, antibody, m_departure_times, m_auxiliar_matrix, 0);
   } else {
-    core::partial_recalculate_solution(m_instance, antibody, m_departure_times, m_auxiliar_matrix, i);
+    core::partial_recalculate_solution(m_instance, antibody, m_departure_times, m_auxiliar_matrix, std::min(i, j));
   }
   
 }
