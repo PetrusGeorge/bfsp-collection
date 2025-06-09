@@ -33,7 +33,7 @@ RAIS::RAIS(Instance instance, Parameters params)
     processing_times_sum += vec_processing_times_sum[i];
   }
 
-  this->m_T = 0.6 * static_cast<double>(processing_times_sum) /
+  this->m_T = 1.8 * static_cast<double>(processing_times_sum) /
               (m_instance.num_jobs() * 10);
 
   m_departure_times = std::vector<std::vector<size_t>>(m_instance.num_jobs(), std::vector<size_t>(m_instance.num_machines(), 0));
@@ -78,8 +78,12 @@ void RAIS::mutation(Solution &antibody, bool recalculate) {
   size_t n = m_instance.num_jobs();
 
   // getting indexes for movements
-  size_t i = RNG::instance().generate((size_t)0, n - 2);
-  size_t j = RNG::instance().generate((size_t)i + 1, n - 1);
+  size_t i = RNG::instance().generate((size_t)0, n);
+  size_t j = i;
+
+  while(i == j || j == i-1) {
+    j = RNG::instance().generate((size_t)0, n - 2);
+  }
 
   // Swap
   if (RNG::instance().generate_real_number(0.0, 1.0) > 0.5) {
@@ -89,9 +93,15 @@ void RAIS::mutation(Solution &antibody, bool recalculate) {
   }
   // Insertion
   else {
-    std::rotate(antibody.sequence.begin() + i,
-                antibody.sequence.begin() + j,
-                antibody.sequence.begin() + j + 1);
+    if (i < j) {
+      std::rotate(antibody.sequence.begin() + i,
+                  antibody.sequence.begin() + j,
+                  antibody.sequence.begin() + j + 1);
+    } else {
+      std::rotate(antibody.sequence.begin() + j,
+                  antibody.sequence.begin() + j+1,
+                  antibody.sequence.begin() + i);
+    }
   }
 
   if (recalculate) {
@@ -124,7 +134,7 @@ void RAIS::supression() {
   size_t j = m_pop.size() - 1;
   while(m_pop.size() > m_params.nc()) {
 
-    if (nearby_antibody(m_pop[i], m_pop[j])) {
+    if (!nearby_antibody(m_pop[i], m_pop[j])) {
       m_pop.erase(m_pop.begin() + j);
     }
 
