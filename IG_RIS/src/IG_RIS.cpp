@@ -77,7 +77,7 @@ Solution IG_RIS::solve() {
         neh.second_step(std::move(removed), incumbent); // Construct phase
 
         // local search
-        rls_grabowski(incumbent, reference, m_instance);
+        rls(incumbent, reference, m_instance);
         
         if (!ro.empty() && uptime() >= (ro.back() * mxn)) {
             std::cout << best.cost << '\n';

@@ -130,7 +130,7 @@ Solution IG_VND2::solve() {
             if(k == 1)
                 BestSwap(incumbent);
             else if(k == 2)
-                rls_grabowski(incumbent, reference, m_instance);
+                rls(incumbent, reference, m_instance);
 
             if(incumbent.cost < temporal.cost){
                 temporal = incumbent;

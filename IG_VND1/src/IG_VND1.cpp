@@ -127,7 +127,7 @@ Solution IG_VND1::solve() {
 
         while(k <= k_max) {
             if(k == 1)
-                rls_grabowski(incumbent, reference, m_instance);
+                rls(incumbent, reference, m_instance);
             else if(k == 2)
                 BestSwap(incumbent);
 

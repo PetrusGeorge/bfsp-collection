@@ -127,7 +127,7 @@ Solution IG_IJ::solve() {
         if(RNG::instance().generate_real_number(0, 1) < jP)
             BestSwap(incumbent);
         else{
-            rls_grabowski(incumbent, reference, m_instance);
+            rls(incumbent, reference, m_instance);
         }
 
         if (!ro.empty() && uptime() >= (ro.back() * mxn)) {
