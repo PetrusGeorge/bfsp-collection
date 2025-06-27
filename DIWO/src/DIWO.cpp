@@ -134,20 +134,18 @@ Population DIWO::spatial_dispersal(const Population &pop) {
     NEH neh(m_instance);
 
     const size_t max_time = m_params.ro() * m_instance.num_jobs() * m_instance.num_machines();
-
-    double deviation = ((1 - static_cast<double>(uptime()) / static_cast<double>(max_time)) *
-                        static_cast<double>(m_params.sigma_max() - m_params.sigma_min())) +
-                       static_cast<double>(m_params.sigma_min());
+    const size_t middle = pop.solutions.size() / 2;
+    const double median =
+        pop.solutions.size() % 2 == 0
+            ? static_cast<double>(pop.solutions[middle - 1].cost + pop.solutions[middle].cost) / 2.0
+            : static_cast<double>(pop.solutions[middle].cost);
 
     for (size_t i = 0; i < pop.solutions.size(); ++i) {
         const auto &sol = pop.solutions[i];
 
-        const size_t half_size = pop.solutions.size() / 2;
-        const double median =
-            pop.solutions.size() % 2 == 0
-                ? static_cast<double>(pop.solutions[half_size - 1].cost + pop.solutions[half_size].cost) / 2.0
-                : static_cast<double>(pop.solutions[half_size].cost);
-
+        double deviation = ((1 - static_cast<double>(uptime()) / static_cast<double>(max_time)) *
+                            static_cast<double>(m_params.sigma_max() - m_params.sigma_min())) +
+                           static_cast<double>(m_params.sigma_min());
         if (static_cast<double>(sol.cost) > median) {
             deviation *= ((static_cast<double>(sol.cost) - median) /
                           (static_cast<double>(pop.solutions[pop.worst_solution_idx].cost) - median)) *
@@ -188,13 +186,15 @@ void DIWO::local_search(Population &pop) {
             continue;
         }
         std::vector<size_t> ref = pop.solutions[pop.best_solution_idx].sequence;
-        for (size_t j = 0; j < 3; j++) {
+        for (size_t j = 0; j < 2; j++) {
             rls_grabowski(pop.solutions[i], ref, m_instance);
             // Update best solution if it's found by rls
             if (pop.solutions[i].cost < pop.solutions[pop.best_solution_idx].cost) {
                 pop.best_solution_idx = i;
             }
-            std::shuffle(ref.begin(), ref.end(), m_rng);
+            if ( j == 0 ) {
+                std::shuffle(ref.begin(), ref.end(), m_rng);
+            }
         }
     }
 }
@@ -225,6 +225,7 @@ Population DIWO::competitive_exclusion(Population pop, Population new_pop) const
 }
 
 Solution DIWO::solve() {
+    uptime(); // Start timer
     const size_t mxn = m_instance.num_jobs() * m_instance.num_machines();
     size_t time_limit = m_params.ro() * m_instance.num_jobs() * m_instance.num_machines();
     std::vector<size_t> ro;
