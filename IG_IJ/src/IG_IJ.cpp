@@ -28,11 +28,13 @@ size_t uptime() {
 IG_IJ::IG_IJ(Instance instance, Parameters params)
     : m_instance(std::move(instance)), m_instance_reverse(m_instance.create_reverse_instance()),
       m_params(std::move(params)) {
-        m_T = m_params.tP() * m_instance.all_processing_times_sum() / 10*m_instance.num_jobs()*m_instance.num_machines();
+        m_T = m_params.tP() * m_instance.all_processing_times_sum() / (10*m_instance.num_jobs()*m_instance.num_machines());
         }
 
-double IG_IJ::acceptance_criterion(Solution pi_0, Solution pi_2) {
-    return (pi_0.cost - pi_2.cost)/m_T;
+double IG_IJ::acceptance_criterion(Solution& pi_0, Solution& pi_2) {
+    double delta = pi_0.cost - pi_2.cost;
+    
+    return std::exp(-delta/m_T);
 }
 
 void IG_IJ::BestSwap(Solution &solution) { // NOLINT
@@ -117,18 +119,15 @@ Solution IG_IJ::solve() {
     double jP = m_params.jP();
 
     while (true) {
-        // random value to each interation
-        double r = RNG::instance().generate_real_number(0, 1);
-
         // DestructConstruct Perturbation
         std::vector<size_t> removed = destroy(incumbent);
         neh.second_step(std::move(removed), incumbent); // Construct phase
 
         // Local Search
-        if(r < jP)
+        if(RNG::instance().generate_real_number(0, 1) < jP)
             BestSwap(incumbent);
         else{
-            rls_grabowski(incumbent, reference, m_instance);
+            rls(incumbent, reference, m_instance);
         }
 
         if (!ro.empty() && uptime() >= (ro.back() * mxn)) {
@@ -150,7 +149,7 @@ Solution IG_IJ::solve() {
             }
         }
         // If the solution is worse than the best it's accepted according to the acceptance criterion
-        else if (r < acceptance_criterion(incumbent, current)) {
+        else if (RNG::instance().generate_real_number(0, 1) < acceptance_criterion(incumbent, current)) {
             current = std::move(incumbent);
         }
 

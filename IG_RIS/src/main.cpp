@@ -16,8 +16,8 @@ int main(int argc, char *argv[]) {
         RNG::instance().set_seed(*seed);
     }
 
-    IG ig(std::move(instance), std::move(params));
-    const Solution best = ig.solve();
+    IG_RIS ig_ris(std::move(instance), std::move(params));
+    const Solution best = ig_ris.solve();
 
     std::cout << best.cost << '\n';
 }

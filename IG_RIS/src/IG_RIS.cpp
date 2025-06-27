@@ -25,16 +25,20 @@ size_t uptime() {
 }
 } // namespace
 
-IG::IG(Instance instance, Parameters params)
+IG_RIS::IG_RIS(Instance instance, Parameters params)
     : m_instance(std::move(instance)), m_instance_reverse(m_instance.create_reverse_instance()),
-      m_params(std::move(params)) {}
+      m_params(std::move(params)) {
+        m_T = m_params.tP() * m_instance.all_processing_times_sum() / (10*m_instance.num_jobs()*m_instance.num_machines());
+      }
 
 
-double IG::acceptance_criterion(Solution &pi_0, Solution &pi_2) {
-    return (pi_0.cost - pi_2.cost)/m_T;
+double IG_RIS::acceptance_criterion(Solution& pi_0, Solution& pi_2) {
+    double delta = pi_0.cost - pi_2.cost;
+    
+    return std::exp(-delta/m_T);
 }
 
-Solution IG::solve() {
+Solution IG_RIS::solve() {
 
     VERBOSE(m_params.verbose()) << "Initial solution started\n";
 
@@ -68,15 +72,12 @@ Solution IG::solve() {
     NEH neh(m_instance);
 
     while (true) {
-        // random value to each interation
-        double r = RNG::instance().generate_real_number(0, 1);
-
         // DestructConstruct Perturbation
         std::vector<size_t> removed = destroy(incumbent);
         neh.second_step(std::move(removed), incumbent); // Construct phase
 
         // local search
-        rls_grabowski(incumbent, reference, m_instance);
+        rls(incumbent, reference, m_instance);
         
         if (!ro.empty() && uptime() >= (ro.back() * mxn)) {
             std::cout << best.cost << '\n';
@@ -97,7 +98,7 @@ Solution IG::solve() {
             }
         }
         // If the solution is worse than the best it's accepted 50% of the times
-        else if (r < acceptance_criterion(incumbent, current)) {
+        else if (RNG::instance().generate_real_number(0, 1) < acceptance_criterion(incumbent, current)) {
             current = std::move(incumbent);
         }
 
@@ -107,7 +108,7 @@ Solution IG::solve() {
     return best;
 }
 
-std::vector<size_t> IG::destroy(Solution &s) {
+std::vector<size_t> IG_RIS::destroy(Solution &s) {
 
     // This mostly avoids crashes on really small toy instances
     const size_t destroy_size = std::min(s.sequence.size() - 1, m_params.d());
